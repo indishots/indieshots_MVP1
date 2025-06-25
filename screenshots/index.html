@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IndieShots - Page Screenshots</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #0C0E13;
+      color: #ffffff;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 40px;
+    }
+    .screenshot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      gap: 30px;
+    }
+    .screenshot-container {
+      border: 1px solid #3C3C45;
+      border-radius: 8px;
+      overflow: hidden;
+      transition: transform 0.2s ease;
+      background-color: #1A1B23;
+    }
+    .screenshot-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+    .screenshot-img {
+      width: 100%;
+      display: block;
+    }
+    .screenshot-info {
+      padding: 15px;
+    }
+    .screenshot-title {
+      font-size: 18px;
+      margin: 0 0 10px 0;
+      color: #ffffff;
+    }
+    .screenshot-description {
+      font-size: 14px;
+      color: #A0A0B0;
+      line-height: 1.5;
+      margin: 0 0 15px 0;
+    }
+    .primary {
+      color: #330099;
+    }
+    .placeholder-img {
+      height: 400px;
+      background: linear-gradient(135deg, #330099 0%, #5500CC 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+    .placeholder-content {
+      text-align: center;
+      padding: 20px;
+    }
+    .placeholder-content h3 {
+      font-size: 24px;
+      margin: 0 0 10px 0;
+    }
+    .placeholder-content p {
+      font-size: 16px;
+      opacity: 0.8;
+      margin: 0;
+    }
+    .btn-view {
+      display: inline-block;
+      background-color: #330099;
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    .btn-view:hover {
+      background-color: #4400cc;
+    }
+  </style>
+</head>
+<body>
+  <h1>IndieShots - <span class="primary">Page Screenshots</span></h1>
+  
+  <div class="screenshot-grid">
+    <div class="screenshot-container">
+      <img src="images/01_Home.png" alt="Home Page" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">Home Page</h2>
+        <p class="screenshot-description">Landing page featuring hero section, workflow steps, features, and pricing for unauthenticated users.</p>
+        <a href="pages/01_Home.html" target="_blank" class="btn-view">View Interactive HTML</a>
+      </div>
+    </div>
+    
+    <div class="screenshot-container">
+      <img src="images/02_Dashboard.png" alt="Dashboard" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">Dashboard</h2>
+        <p class="screenshot-description">Central hub for authenticated users showing scripts, usage statistics, and quick actions.</p>
+        <a href="pages/02_Dashboard.html" target="_blank" class="btn-view">View Interactive HTML</a>
+      </div>
+    </div>
+    
+    <div class="screenshot-container">
+      <img src="images/03_Upload.png" alt="Upload Page" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">Upload Page</h2>
+        <p class="screenshot-description">Page for uploading screenplays via file upload or direct text entry.</p>
+        <a href="pages/03_Upload.html" target="_blank" class="btn-view">View Interactive HTML</a>
+      </div>
+    </div>
+    
+    <div class="screenshot-container">
+      <img src="images/04_Columns.png" alt="Columns Selection Page" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">Columns Selection</h2>
+        <p class="screenshot-description">Enhanced interface for selecting which elements to extract from scripts.</p>
+      </div>
+    </div>
+    
+    <div class="screenshot-container">
+      <img src="images/05_Parse.png" alt="Parse Page" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">Parse Page</h2>
+        <p class="screenshot-description">Processing interface showing script being converted to shot list elements.</p>
+      </div>
+    </div>
+    
+    <div class="screenshot-container">
+      <img src="images/06_Review.png" alt="Review Page" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">Review Page</h2>
+        <p class="screenshot-description">Results page showing the complete shot list with download options.</p>
+      </div>
+    </div>
+    
+    <div class="screenshot-container">
+      <img src="images/07_Feedback.png" alt="Feedback Page" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">Feedback Page</h2>
+        <p class="screenshot-description">Interface for rating and providing feedback on the parsing quality.</p>
+      </div>
+    </div>
+    
+    <div class="screenshot-container">
+      <img src="images/08_NotFound.png" alt="404 Not Found Page" class="screenshot-img">
+      <div class="screenshot-info">
+        <h2 class="screenshot-title">404 Not Found Page</h2>
+        <p class="screenshot-description">Error page shown when users navigate to a non-existent route.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
