@@ -246,6 +246,9 @@ The application uses modern development practices:
 4. Add tests if applicable
 5. Submit a pull request
 
+# Trigger Cloud Build
+Just testing trigger for deployment 🚀
+
 ## License
 
 This project is licensed under the MIT License.
