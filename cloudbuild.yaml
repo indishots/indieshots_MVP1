@@ -1,48 +1,5 @@
-# Cloud Build configuration for IndieShots
-steps:
-  # Build the Docker image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/indieshots:latest', '.']
-    
-  # Push the Docker image to Container Registry
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA']
-    
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/indieshots:latest']
-    
-  # Deploy to Cloud Run
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'run'
-      - 'deploy'
-      - 'indieshots'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA'
-      - '--region'
-      - 'us-central1'
-      - '--platform'
-      - 'managed'
-      - '--allow-unauthenticated'
-      - '--set-secrets'
-      - 'DATABASE_URL=database-url:latest,OPENAI_API_KEY=openai-api-key:latest,JWT_SECRET=jwt-secret:latest,VITE_FIREBASE_API_KEY=firebase-api-key:latest,VITE_FIREBASE_PROJECT_ID=firebase-project-id:latest'
-      - '--set-env-vars'
-      - 'NODE_ENV=production'
-      - '--memory'
-      - '512Mi'
-      - '--cpu'
-      - '1000m'
-      - '--max-instances'
-      - '10'
-      - '--timeout'
-      - '300s'
+# FROM:
+args: ['build', '-f', 'Dockerfile.simple', '-t', 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/indieshots:latest', '.']
 
-# Store build artifacts
-images:
-  - 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/indieshots:latest'
-
-# Build configuration
-options:
-  logging: CLOUD_LOGGING_ONLY
-  machineType: 'E2_HIGHCPU_8'
+# TO:
+args: ['build', '-f', 'Dockerfile.final', '-t', 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/indieshots:latest', '.']
