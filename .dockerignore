@@ -12,7 +12,6 @@ Dockerfile
 .dockerignore
 coverage
 .nyc_output
-dist
 screenshots
 attached_assets
 generated_images
