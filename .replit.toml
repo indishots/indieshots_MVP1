@@ -1,8 +1,1 @@
 run = "npm run dev"
-
-[[workflows]]
-name = "Start application"
-
-[[workflows.tasks]]
-name = "start server"
-command = "npm run dev"
