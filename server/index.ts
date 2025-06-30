@@ -72,20 +72,14 @@ app.use((req, res, next) => {
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
     
-    // Environment-specific logging
-    if (process.env.NODE_ENV === 'production' && process.env.K_SERVICE) {
-      // Cloud Run environment
-      log(`Cloud Run service: ${process.env.K_SERVICE}`);
-      log(`Cloud Run revision: ${process.env.K_REVISION}`);
-    } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-      // Replit environment - using reliable domain format
-      log(`External access: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.app`);
-    } else if (process.env.REPLIT_DEV_DOMAIN) {
-      // Fallback to dev domain if standard format unavailable
-      log(`External access: https://${process.env.REPLIT_DEV_DOMAIN}`);
+    // Force reliable Replit preview access
+    if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      // Use stable domain format for reliable preview access
+      log(`Preview access: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.app`);
+      log(`Replit preview configured for port ${port}`);
     }
     
     log(`Local access: http://localhost:${port}`);
-    log(`Server bound to all interfaces (0.0.0.0:${port})`);
+    log(`Server bound to all interfaces (0.0.0.0:${port}) for preview compatibility`);
   });
 })();
