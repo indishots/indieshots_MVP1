@@ -67,7 +67,7 @@ app.use((req, res, next) => {
   });
 
   // Port configuration for both Replit and Cloud Run
-  const port = process.env.PORT || 5000;
+  const port = parseInt(process.env.PORT || '5000', 10);
   
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
