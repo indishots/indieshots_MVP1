@@ -1,5 +1,8 @@
-[workflows]
+run = "npm run dev"
 
-[workflows.main]
+[[workflows]]
+name = "Start application"
+
+[[workflows.tasks]]
+name = "start server"
 command = "npm run dev"
-description = "Start the IndieShots application server"
