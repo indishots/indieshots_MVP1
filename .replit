@@ -5,3 +5,15 @@ externalPort = 80
 
 [nix]
 channel = "stable-24_05"
+
+[workflows]
+runButton = "Start App"
+
+[[workflows.workflow]]
+name = "Start App"
+author = 43778578
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
