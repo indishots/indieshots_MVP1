@@ -1,0 +1,11 @@
+# Replit configuration for IndieShots
+run = "npm run dev"
+
+[env]
+NODE_ENV = "development"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "npm run dev"]
