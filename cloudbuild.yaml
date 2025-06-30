@@ -1,0 +1,5 @@
+# FROM:
+args: ['build', '-f', 'Dockerfile.simple', '-t', 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/indieshots:latest', '.']
+
+# TO:
+args: ['build', '-f', 'Dockerfile.final', '-t', 'gcr.io/$PROJECT_ID/indieshots:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/indieshots:latest', '.']
