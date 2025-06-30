@@ -16,7 +16,8 @@ const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters')
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  couponCode: z.string().optional()
 });
 
 const loginSchema = z.object({
@@ -60,7 +61,11 @@ export async function register(req: Request, res: Response) {
     // Generate verification token
     const verificationToken = crypto.randomBytes(32).toString('hex');
     
-    // Create user
+    // Check coupon code for premium upgrade
+    const validCouponCodes = ['DEMO2024', 'PREMIUM', 'LAUNCH'];
+    const isPremiumCoupon = validatedData.couponCode && validCouponCodes.includes(validatedData.couponCode.toUpperCase());
+    
+    // Create user with appropriate tier based on coupon
     const user = await storage.createUser({
       email: validatedData.email.toLowerCase(),
       firstName: validatedData.firstName,
@@ -68,8 +73,8 @@ export async function register(req: Request, res: Response) {
       password: hashedPassword,
       provider: 'local',
       verificationToken,
-      tier: 'free',
-      totalPages: 20, // Free tier gets 20 pages
+      tier: isPremiumCoupon ? 'premium' : 'free',
+      totalPages: isPremiumCoupon ? 1000 : 20, // Premium gets 1000 pages, free gets 20
       usedPages: 0,
       createdAt: new Date(),
       updatedAt: new Date()

@@ -8,16 +8,17 @@ import { generateToken } from '../auth/jwt';
 export async function firebaseLogin(req: Request, res: Response) {
   try {
     console.log('=== Firebase Authentication (Firebase-Only Mode) ===');
-    
+
     const { 
       idToken, 
       provider, 
       providerUserId, 
       email, 
       displayName, 
-      photoURL 
+      photoURL,
+      couponCode 
     } = req.body;
-    
+
     console.log('Firebase auth data:', {
       hasIdToken: !!idToken,
       provider,
@@ -25,11 +26,11 @@ export async function firebaseLogin(req: Request, res: Response) {
       email,
       displayName
     });
-    
+
     // Check if user is permanently banned
     const { tokenBlacklist } = await import('../auth/tokenBlacklist');
     const userId = providerUserId || email.replace('@', '_').replace('.', '_');
-    
+
     if (tokenBlacklist.isUserBanned(userId) || tokenBlacklist.isEmailBanned(email)) {
       console.log('Blocked login attempt from permanently deleted account:', email);
       return res.status(403).json({ 
@@ -37,13 +38,13 @@ export async function firebaseLogin(req: Request, res: Response) {
         code: 'ACCOUNT_PERMANENTLY_DELETED'
       });
     }
-    
+
     // For demo/development mode, allow authentication with just email if idToken is test token
     if (!email) {
       console.error('Missing required authentication data');
       return res.status(400).json({ message: 'Email is required for authentication' });
     }
-    
+
     // Allow test/development authentication with special test token
     if (!idToken && process.env.NODE_ENV === 'development') {
       console.log('Development mode: allowing authentication without valid idToken');
@@ -51,7 +52,7 @@ export async function firebaseLogin(req: Request, res: Response) {
       console.error('Missing Firebase ID token');
       return res.status(400).json({ message: 'Firebase ID token is required' });
     }
-    
+
     // Create Firebase user data structure with tier information
     const userData = {
       id: providerUserId || email.replace('@', '_').replace('.', '_'),
@@ -66,9 +67,9 @@ export async function firebaseLogin(req: Request, res: Response) {
       canGenerateStoryboards: false, // Pro feature only
       createdAt: new Date().toISOString()
     };
-    
+
     console.log('Creating Firebase user:', userData.email);
-    
+
     // Generate JWT token with Firebase user data including tier info
     const token = generateToken({
       id: userData.id,
@@ -80,7 +81,7 @@ export async function firebaseLogin(req: Request, res: Response) {
       maxShotsPerScene: userData.maxShotsPerScene,
       canGenerateStoryboards: userData.canGenerateStoryboards
     });
-    
+
     // Set authentication cookie
     const cookieOptions = {
       httpOnly: true,
@@ -90,14 +91,14 @@ export async function firebaseLogin(req: Request, res: Response) {
       path: '/',
       domain: undefined
     };
-    
+
     console.log('Setting auth cookie with Firebase user data');
     res.cookie('auth_token', token, cookieOptions);
-    
+
     console.log('✓ Firebase authentication successful for user:', userData.email);
     console.log('✓ Auth cookie set with tier information:', userData.tier);
     console.log('✓ User limits - Pages:', userData.totalPages, 'Shots:', userData.maxShotsPerScene);
-    
+
     // Return complete user data including tier information
     res.json({
       id: userData.id,
@@ -110,7 +111,7 @@ export async function firebaseLogin(req: Request, res: Response) {
       maxShotsPerScene: userData.maxShotsPerScene,
       canGenerateStoryboards: userData.canGenerateStoryboards
     });
-    
+
   } catch (error) {
     console.error('Firebase authentication error:', error);
     res.status(500).json({ message: 'Authentication failed' });

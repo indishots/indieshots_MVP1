@@ -29,6 +29,7 @@ const registerSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters long.",
   }),
+  couponCode: z.string().optional(),
 });
 
 const forgotPasswordSchema = z.object({
@@ -85,6 +86,7 @@ export default function AuthPage() {
       lastName: "",
       email: "",
       password: "",
+      couponCode: "",
     },
   });
 

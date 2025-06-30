@@ -18,7 +18,8 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
     email: '',
     password: '',
     firstName: '',
-    lastName: ''
+    lastName: '',
+    couponCode: '' // Added coupon code field
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -32,11 +33,11 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
     try {
       const { getRedirectResult } = await import("firebase/auth");
       const { auth } = await import("@/lib/firebase");
-      
+
       const result = await getRedirectResult(auth);
       if (result?.user) {
         console.log("Google redirect successful:", result.user.email);
-        await handleFirebaseUser(result.user, 'google');
+        await handleFirebaseUser(result.user, 'google', formData.couponCode);
       }
     } catch (error: any) {
       console.log("Redirect result error:", error.code);
@@ -57,7 +58,7 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
       if (mode === 'register') {
         // Create new Firebase user
         userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-        
+
         // Update user profile with name
         await updateProfile(userCredential.user, {
           displayName: `${formData.firstName} ${formData.lastName}`
@@ -70,11 +71,11 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
         console.log("Firebase user signed in:", userCredential.user.email);
       }
 
-      await handleFirebaseUser(userCredential.user, 'email');
+      await handleFirebaseUser(userCredential.user, 'email', formData.couponCode);
 
     } catch (error: any) {
       console.error("Firebase email/password auth error:", error);
-      
+
       let errorMessage = "";
       if (error.code === 'auth/email-already-in-use') {
         errorMessage = "This email is already registered. Please sign in instead.";
@@ -89,7 +90,7 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
       } else {
         errorMessage = error.message || "Authentication failed";
       }
-      
+
       setError(errorMessage);
       setLoading(false);
     }
@@ -114,7 +115,7 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
         // Try popup first
         const result = await signInWithPopup(auth, provider);
         console.log("Google popup successful:", result.user.email);
-        await handleFirebaseUser(result.user, 'google');
+        await handleFirebaseUser(result.user, 'google', formData.couponCode);
       } catch (popupError: any) {
         if (popupError.code === 'auth/popup-blocked' || popupError.code === 'auth/popup-closed-by-user') {
           // Fallback to redirect
@@ -127,7 +128,7 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
 
     } catch (error: any) {
       console.error("Google auth error:", error);
-      
+
       let errorMessage = "";
       if (error.code === 'auth/unauthorized-domain') {
         errorMessage = "This domain is not authorized for Google sign-in. Please contact support at indieshots@theindierise.com.";
@@ -136,19 +137,19 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
       } else {
         errorMessage = error.message || "Google authentication failed";
       }
-      
+
       setError(errorMessage);
       setLoading(false);
     }
   };
 
-  const handleFirebaseUser = async (firebaseUser: any, provider: string) => {
+  const handleFirebaseUser = async (firebaseUser: any, provider: string, couponCode?: string) => {
     try {
       console.log("Processing Firebase user:", firebaseUser.email);
-      
+
       // Get Firebase ID token
       const idToken = await firebaseUser.getIdToken(true);
-      
+
       // Create/update user in our backend database
       const response = await fetch('/api/auth/firebase-sync', {
         method: 'POST',
@@ -163,22 +164,23 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
             emailVerified: firebaseUser.emailVerified
           },
           idToken,
-          provider
+          provider,
+          couponCode
         }),
       });
 
       if (response.ok) {
         const userData = await response.json();
         console.log("User synced successfully:", userData.email);
-        
+
         // Update auth cache
         queryClient.setQueryData(["/api/auth/user"], userData);
         queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-        
+
         toast({
           description: `Welcome ${firebaseUser.displayName || firebaseUser.email}!`,
         });
-        
+
         // Redirect to dashboard
         setTimeout(() => {
           window.location.href = '/dashboard';
@@ -227,7 +229,7 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
             </div>
           </div>
         )}
-        
+
         <div className="relative">
           <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -239,7 +241,7 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
             required
           />
         </div>
-        
+
         <div className="relative">
           <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
@@ -252,7 +254,19 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
             required
           />
         </div>
-        
+         {mode === 'register' && (
+          <div className="relative">
+            <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Enter coupon code (optional)"
+              value={formData.couponCode}
+              onChange={(e) => handleInputChange('couponCode', e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        )}
+
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? (mode === 'register' ? 'Creating Account...' : 'Signing In...') : 
                     (mode === 'register' ? 'Create Account' : 'Sign In')}
