@@ -77,8 +77,11 @@ app.use((req, res, next) => {
       // Cloud Run environment
       log(`Cloud Run service: ${process.env.K_SERVICE}`);
       log(`Cloud Run revision: ${process.env.K_REVISION}`);
-    } else if (process.env.REPL_SLUG) {
+    } else if (process.env.REPLIT_DEV_DOMAIN) {
       // Replit environment
+      log(`External access: https://${process.env.REPLIT_DEV_DOMAIN}`);
+    } else if (process.env.REPL_SLUG) {
+      // Fallback for older Replit environments
       log(`External access: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.app`);
     }
     
