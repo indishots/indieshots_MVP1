@@ -151,24 +151,28 @@ export default function Dashboard() {
           </CardFooter>
         </Card>
         
-{user?.email === 'premium@demo.com' && (
-          <Card className="border-dashed border-2 border-orange-200 bg-orange-50">
+{(user?.email === 'premium@demo.com' || userTier === 'premium') && (
+          <Card className="border-dashed border-2 border-amber-200 bg-amber-50">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
-                <TestTube className="h-5 w-5 text-orange-600" />
-                Test Payment System
+                <Crown className="h-5 w-5 text-amber-600" />
+                Premium Demo Features
               </CardTitle>
-              <CardDescription>Development testing for tier functionality</CardDescription>
+              <CardDescription>Experience premium functionality</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-2">
-                Test free vs pro tier features and PayU integration options
-              </p>
+              <div className="space-y-2 text-sm">
+                <p className="text-amber-700">✨ <strong>Unlimited Script Processing</strong></p>
+                <p className="text-amber-700">🎬 <strong>Advanced Storyboard Generation</strong></p>
+                <p className="text-amber-700">📊 <strong>Detailed Analytics & Reports</strong></p>
+                <p className="text-amber-700">🔄 <strong>Batch Processing</strong></p>
+                <p className="text-amber-700">💾 <strong>Priority Support</strong></p>
+              </div>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" size="sm" asChild className="border-orange-300 hover:bg-orange-100">
+              <Button variant="outline" size="sm" asChild className="border-amber-300 hover:bg-amber-100">
                 <Link href="/test-payment">
-                  Open Test Panel
+                  Test Premium Features
                 </Link>
               </Button>
             </CardFooter>

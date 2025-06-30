@@ -45,7 +45,7 @@ export default function AuthPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [location] = useLocation();
   const { toast } = useToast();
-  
+
   const { 
     user, 
     isAuthenticated, 
@@ -102,7 +102,7 @@ export default function AuthPage() {
   useEffect(() => {
     if (error) {
       let errorMessage = "An error occurred";
-      
+
       switch (error) {
         case "invalid-token":
           errorMessage = "Invalid or expired token";
@@ -120,14 +120,14 @@ export default function AuthPage() {
           errorMessage = "Invalid verification token";
           break;
       }
-      
+
       toast({
         title: "Error",
         description: errorMessage,
         variant: "destructive",
       });
     }
-    
+
     if (verified) {
       toast({
         title: "Email Verified",
@@ -181,7 +181,7 @@ export default function AuthPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <RedirectHandler />
-      
+
       {/* Left column with auth forms */}
       <div className="flex flex-col justify-center flex-1 px-4 py-12 sm:px-6 lg:flex-none lg:px-20 xl:px-24">
         <div className="w-full max-w-sm mx-auto lg:w-96">
@@ -260,7 +260,7 @@ export default function AuthPage() {
                 <TabsTrigger value="login">Sign In</TabsTrigger>
                 <TabsTrigger value="register">Sign Up</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="login">
                 <Card>
                   <CardHeader>
@@ -274,7 +274,7 @@ export default function AuthPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="register">
                 <Card>
                   <CardHeader>
@@ -292,7 +292,7 @@ export default function AuthPage() {
           )}
         </div>
       </div>
-      
+
       {/* Right column with hero image and text */}
       <div className="relative hidden w-0 flex-1 lg:block">
         <div className="absolute inset-0 object-cover bg-gradient-to-tr from-primary/90 via-primary/70 to-background flex flex-col justify-center px-12">
