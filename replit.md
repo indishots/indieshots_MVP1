@@ -204,7 +204,7 @@ Recent Changes:
 ## Current Status
 - Application successfully running on port 5000 with external access configured
 - Production deployment live at: https://indieshots.replit.app
-- Development environment: https://workspace.shruti37.replit.app
+- Development environment: https://workspace.indieshots.replit.app
 - GitHub repository prepared for: https://github.com/indishots/IndieShots
 - Unified Firebase Authentication system implemented (email/password + Google OAuth)
 - All users stored in Firebase Console with PostgreSQL sync
@@ -215,6 +215,7 @@ Recent Changes:
 - Frontend updated to support proper scene selection workflow
 - Server configured with 50MB limits for large image processing
 - CORS and external connectivity issues resolved
+- **CONFIGURATION CLEANUP COMPLETED** - Removed conflicting configuration files and set up proper Replit run configuration with replit.toml and .replit.toml for persistent execution
 
 ## User Preferences
 
