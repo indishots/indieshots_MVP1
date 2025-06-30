@@ -1,0 +1,5 @@
+[workflows]
+
+[workflows."Start Server"]
+command = "npm run dev"
+description = "Start the IndieShots application server"
