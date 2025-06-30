@@ -1,7 +1,11 @@
-run = "npm run dev"
+run = "NODE_ENV=development npx tsx server/index.ts"
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "npm run dev"]
+run = ["sh", "-c", "NODE_ENV=production npx tsx server/index.ts"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
