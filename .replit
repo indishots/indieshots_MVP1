@@ -20,3 +20,5 @@ args = "npm run dev"
 
 [deployment]
 deploymentTarget = "cloudrun"
+run = ["sh", "-c", "npm run start"]
+build = ["sh", "-c", "npm run build"]
