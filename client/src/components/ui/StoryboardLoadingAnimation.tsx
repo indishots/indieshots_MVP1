@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Camera, Film, Clapperboard, Video, Wand2 } from 'lucide-react';
+import { Camera, Film, Clapperboard, Video, Wand2, Sparkles } from 'lucide-react';
 
 interface LoadingFrame {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
   color: string;
+  animation: string;
 }
 
 const loadingFrames: LoadingFrame[] = [
@@ -13,31 +14,43 @@ const loadingFrames: LoadingFrame[] = [
     icon: <Camera className="w-8 h-8" />,
     title: "Rolling camera on your story...",
     subtitle: "Generating high-quality images with cinematic precision.",
-    color: "text-blue-500"
+    color: "text-blue-500",
+    animation: "animate-bounce"
   },
   {
     icon: <Film className="w-8 h-8" />,
     title: "Building your visual storyboard...",
     subtitle: "Generating high-quality images with cinematic precision.",
-    color: "text-purple-500"
+    color: "text-purple-500",
+    animation: "animate-pulse"
   },
   {
     icon: <Clapperboard className="w-8 h-8" />,
     title: "Bringing scenes to life, one frame at a time...",
     subtitle: "Generating high-quality images with cinematic precision.",
-    color: "text-green-500"
+    color: "text-green-500",
+    animation: "animate-wiggle"
   },
   {
     icon: <Video className="w-8 h-8" />,
     title: "Crafting cinematic moments...",
     subtitle: "Generating high-quality images with cinematic precision.",
-    color: "text-orange-500"
+    color: "text-orange-500",
+    animation: "animate-spin-slow"
   },
   {
     icon: <Wand2 className="w-8 h-8" />,
     title: "Transforming words into visuals...",
     subtitle: "Generating high-quality images with cinematic precision.",
-    color: "text-amber-500"
+    color: "text-amber-500",
+    animation: "animate-ping"
+  },
+  {
+    icon: <Sparkles className="w-8 h-8" />,
+    title: "Creating movie magic from your script...",
+    subtitle: "Generating high-quality images with cinematic precision.",
+    color: "text-pink-500",
+    animation: "animate-float"
   }
 ];
 
@@ -63,7 +76,7 @@ export default function StoryboardLoadingAnimation() {
         
         {/* Inner icon circle */}
         <div className="absolute inset-3 bg-slate-800 rounded-full flex items-center justify-center">
-          <div className={`${frame.color} transition-colors duration-500`}>
+          <div className={`${frame.color} ${frame.animation} transition-colors duration-500`}>
             {frame.icon}
           </div>
         </div>
