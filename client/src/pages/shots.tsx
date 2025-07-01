@@ -166,7 +166,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     const { headers, data } = getExportData();
     const csvRows = [headers.join(',')];
     
-    data.forEach((row) => {
+    data.forEach((row: string[]) => {
       const cleanRow = row.map((field: any) => {
         let str = String(field || '').trim();
         str = str.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
@@ -219,7 +219,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     const { headers, data } = getExportData();
     const csvRows = [headers.join('\t')]; // Use tabs for better Excel compatibility
     
-    data.forEach((row) => {
+    data.forEach((row: string[]) => {
       const cleanRow = row.map((field: any) => {
         let str = String(field || '').trim();
         str = str.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
