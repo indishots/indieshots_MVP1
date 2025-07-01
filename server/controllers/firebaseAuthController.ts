@@ -117,6 +117,7 @@ export async function firebaseLogin(req: Request, res: Response) {
     console.log('✓ Firebase authentication successful for user:', userData.email);
     console.log('✓ Auth cookie set with tier information:', userData.tier);
     console.log('✓ User limits - Pages:', userData.totalPages, 'Shots:', userData.maxShotsPerScene);
+    console.log('✓ Storyboard access:', userData.canGenerateStoryboards ? 'Enabled' : 'Disabled');
 
     // Return complete user data including tier information
     res.json({

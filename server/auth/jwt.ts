@@ -136,7 +136,8 @@ export function isPremiumMiddleware(req: Request, res: Response, next: NextFunct
     return res.status(401).json({ message: 'Unauthorized' });
   }
   
-  if (req.user.tier !== 'premium') {
+  const userTier = req.user.tier;
+  if (userTier !== 'premium' && userTier !== 'pro') {
     return res.status(403).json({ message: 'Premium subscription required' });
   }
   
