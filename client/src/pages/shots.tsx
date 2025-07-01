@@ -207,142 +207,145 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   
   // Production Details Component
   const ProductionDetailsPanel = () => (
-    <div className="w-80 bg-card border-l border-border p-6 space-y-6 overflow-y-auto">
-      <div className="flex items-center gap-2 mb-4">
-        <Film className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold">Production Details</h3>
-      </div>
-
-      {/* Comprehensive Shot List Generation */}
-      <div className="space-y-4">
-        <h4 className="font-semibold text-sm">Comprehensive Shot List Generation</h4>
-        <p className="text-xs text-muted-foreground">
-          Every shot generated includes comprehensive production details organized into these categories:
-        </p>
-      </div>
-
-      {/* Basic Information */}
-      <div className="space-y-3">
+    <div className="w-64 bg-card border-l border-border overflow-y-auto">
+      <div className="sticky top-0 bg-card border-b border-border p-6 pb-4">
         <div className="flex items-center gap-2">
-          <Video className="h-4 w-4" />
-          <h4 className="font-medium text-sm">Basic Information</h4>
-        </div>
-        <div className="space-y-2">
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Scene Number</div>
-            <div className="text-xs text-muted-foreground">Sequential numbering of scenes</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Scene Heading</div>
-            <div className="text-xs text-muted-foreground">INT/EXT and location descriptions</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Shot Number</div>
-            <div className="text-xs text-muted-foreground">Sequential shot numbering</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Shot Description</div>
-            <div className="text-xs text-muted-foreground">Detailed description of the shot</div>
-          </div>
+          <Film className="h-5 w-5 text-primary" />
+          <h3 className="text-lg font-semibold">Production Details</h3>
         </div>
       </div>
+      <div className="p-6 pt-4 space-y-6">
+        {/* Comprehensive Shot List Generation */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-sm">Comprehensive Shot List Generation</h4>
+          <p className="text-xs text-muted-foreground">
+            Every shot generated includes comprehensive production details organized into these categories:
+          </p>
+        </div>
 
-      {/* Camera & Technical */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Camera className="h-4 w-4" />
-          <h4 className="font-medium text-sm">Camera & Technical</h4>
+        {/* Basic Information */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Video className="h-4 w-4" />
+            <h4 className="font-medium text-sm">Basic Information</h4>
+          </div>
+          <div className="space-y-2">
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Scene Number</div>
+              <div className="text-xs text-muted-foreground">Sequential numbering of scenes</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Scene Heading</div>
+              <div className="text-xs text-muted-foreground">INT/EXT and location descriptions</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Shot Number</div>
+              <div className="text-xs text-muted-foreground">Sequential shot numbering</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Shot Description</div>
+              <div className="text-xs text-muted-foreground">Detailed description of the shot</div>
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Shot Type</div>
-            <div className="text-xs text-muted-foreground">Wide, Medium, Close-up, etc.</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Lens</div>
-            <div className="text-xs text-muted-foreground">Recommended lens focal length</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Camera Movement</div>
-            <div className="text-xs text-muted-foreground">Suggested camera directions</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Color Temperature</div>
-            <div className="text-xs text-muted-foreground">Lighting color recommendations</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Scene Context */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4" />
-          <h4 className="font-medium text-sm">Scene Context</h4>
+        {/* Camera & Technical */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Camera className="h-4 w-4" />
+            <h4 className="font-medium text-sm">Camera & Technical</h4>
+          </div>
+          <div className="space-y-2">
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Shot Type</div>
+              <div className="text-xs text-muted-foreground">Wide, Medium, Close-up, etc.</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Lens</div>
+              <div className="text-xs text-muted-foreground">Recommended lens focal length</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Camera Movement</div>
+              <div className="text-xs text-muted-foreground">Suggested camera directions</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Color Temperature</div>
+              <div className="text-xs text-muted-foreground">Lighting color recommendations</div>
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Location</div>
-            <div className="text-xs text-muted-foreground">Specific shooting location details</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Time of Day</div>
-            <div className="text-xs text-muted-foreground">Narrative time and lighting needs</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Props</div>
-            <div className="text-xs text-muted-foreground">Required props and set pieces</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Lighting</div>
-            <div className="text-xs text-muted-foreground">Lighting setup requirements</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Characters & Action */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4" />
-          <h4 className="font-medium text-sm">Characters & Action</h4>
+        {/* Scene Context */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <h4 className="font-medium text-sm">Scene Context</h4>
+          </div>
+          <div className="space-y-2">
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Location</div>
+              <div className="text-xs text-muted-foreground">Specific shooting location details</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Time of Day</div>
+              <div className="text-xs text-muted-foreground">Narrative time and lighting needs</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Props</div>
+              <div className="text-xs text-muted-foreground">Required props and set pieces</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Lighting</div>
+              <div className="text-xs text-muted-foreground">Lighting setup requirements</div>
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Characters</div>
-            <div className="text-xs text-muted-foreground">Characters in the shot</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Action</div>
-            <div className="text-xs text-muted-foreground">Physical actions and movements</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Dialogue</div>
-            <div className="text-xs text-muted-foreground">Spoken lines and voiceover</div>
-          </div>
-        </div>
-      </div>
 
-      {/* Production Notes */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          <h4 className="font-medium text-sm">Production Notes</h4>
+        {/* Characters & Action */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <h4 className="font-medium text-sm">Characters & Action</h4>
+          </div>
+          <div className="space-y-2">
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Characters</div>
+              <div className="text-xs text-muted-foreground">Characters in the shot</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Action</div>
+              <div className="text-xs text-muted-foreground">Physical actions and movements</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Dialogue</div>
+              <div className="text-xs text-muted-foreground">Spoken lines and voiceover</div>
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Tone</div>
-            <div className="text-xs text-muted-foreground">Emotional tone and atmosphere</div>
+
+        {/* Production Notes */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <h4 className="font-medium text-sm">Production Notes</h4>
           </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Mood & Ambience</div>
-            <div className="text-xs text-muted-foreground">Overall mood and environmental feel</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Sound Design</div>
-            <div className="text-xs text-muted-foreground">Audio requirements and notes</div>
-          </div>
-          <div className="bg-muted/50 p-3 rounded-md">
-            <div className="font-medium text-sm">Notes</div>
-            <div className="text-xs text-muted-foreground">Additional production notes</div>
+          <div className="space-y-2">
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Tone</div>
+              <div className="text-xs text-muted-foreground">Emotional tone and atmosphere</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Mood & Ambience</div>
+              <div className="text-xs text-muted-foreground">Overall mood and environmental feel</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Sound Design</div>
+              <div className="text-xs text-muted-foreground">Audio requirements and notes</div>
+            </div>
+            <div className="bg-muted/50 p-3 rounded-md">
+              <div className="font-medium text-sm">Notes</div>
+              <div className="text-xs text-muted-foreground">Additional production notes</div>
+            </div>
           </div>
         </div>
       </div>
