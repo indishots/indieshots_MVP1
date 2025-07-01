@@ -96,6 +96,8 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **SMART LEFT PANEL NAVIGATION IMPLEMENTED** - Recent projects in left sidebar now intelligently navigate to review page for completed scripts or columns page for incomplete scripts; added parse jobs query and navigation logic to provide optimal user workflow experience
+- July 1, 2025: **HEADER HELP BUTTON REMOVED** - Eliminated question mark help button from header to simplify interface; removed HelpCircle import and cleaned up header layout
 - July 1, 2025: **DASHBOARD BUTTON VISIBILITY PERMANENTLY FIXED** - Resolved persistent button invisibility issue after settings navigation by replacing shadcn Button components with explicit Tailwind div elements; eliminated dependency on conflicting CSS variables between next-themes and custom theme system; buttons now use direct Tailwind classes for reliable visibility across all navigation states
 - July 1, 2025: **DASHBOARD QUICK ACTIONS REVERTED TO CLEAN DESIGN** - Restored Quick Actions buttons to previous clean shadcn/ui styling by removing inline style overrides and theme change handling code; buttons now use proper theme-aware design that adapts naturally to light/dark themes
 - July 1, 2025: **TOOLS SECTION REMOVED FROM NAVIGATION** - Cleaned up left navigation panel by removing Tools section (Analysis, Storyboards, AI Tools) for streamlined interface; removed unused icon imports and maintained core navigation functionality

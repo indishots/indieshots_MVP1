@@ -28,6 +28,12 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
     enabled: isAuthenticated,
   });
 
+  // Query for parse jobs to find completed ones for recent projects
+  const { data: parseJobs } = useQuery({
+    queryKey: ["/api/jobs"],
+    enabled: isAuthenticated,
+  });
+
   // Query for upgrade status to get accurate tier and usage info
   const { data: upgradeStatus, refetch: refetchStatus } = useQuery({
     queryKey: ['/api/upgrade/status'], // Fixed query key
@@ -40,6 +46,19 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
   
   // Generate the recent scripts list
   const recentScripts = Array.isArray(scripts) ? scripts.slice(0, 3) : [];
+  
+  // Helper function to get the correct navigation link for a script
+  const getScriptNavigationLink = (scriptId: number) => {
+    if (!Array.isArray(parseJobs)) return `/columns/${scriptId}`;
+    
+    // Find a completed parse job for this script
+    const completedJob = parseJobs.find((job: any) => 
+      job.scriptId === scriptId && job.status === 'completed'
+    );
+    
+    // If there's a completed job, navigate to review page; otherwise go to columns
+    return completedJob ? `/review/${completedJob.id}` : `/columns/${scriptId}`;
+  };
   
   // Get tier info from upgrade status or fallback to user object
   const userTier = (upgradeStatus as any)?.tier || (user as any)?.tier || 'free';
@@ -175,7 +194,7 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
             </p>
             <div className="space-y-1.5">
               {recentScripts.map((script) => (
-                <Link key={script.id} href={`/columns/${script.id}`} className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-background/80 transition-colors group">
+                <Link key={script.id} href={getScriptNavigationLink(script.id)} className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-background/80 transition-colors group">
                   <Clock className="h-4 w-4 mr-3 text-muted-foreground" />
                   <span className="truncate text-sm">{script.title}</span>
                 </Link>
