@@ -131,27 +131,7 @@ export default function Dashboard() {
           </CardFooter>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Completed Jobs</CardTitle>
-            <CardDescription>Successfully parsed scripts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline">
-              <span className="text-3xl font-bold mr-2">
-                {isLoadingJobs ? "..." : Array.isArray(parseJobs) ? parseJobs.filter((job: any) => job.status === 'completed').length : 0}
-              </span>
-              <span className="text-muted-foreground">jobs</span>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button variant="outline" size="sm" disabled={isLoadingJobs || !Array.isArray(parseJobs) || parseJobs.length === 0}>
-              View All Jobs
-            </Button>
-          </CardFooter>
-        </Card>
-        
-{(user?.email === 'premium@demo.com' || userTier === 'premium') && (
+        {(user?.email === 'premium@demo.com' || userTier === 'premium') && (
           <Card className="border-dashed border-2 border-amber-200 bg-amber-50">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
