@@ -263,7 +263,11 @@ export default function Dashboard() {
       <div>
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <Button asChild variant="outline" className="h-auto py-4 justify-start border-border bg-background hover:bg-accent hover:text-accent-foreground">
+          <Button 
+            asChild 
+            variant="outline" 
+            className="h-auto py-4 justify-start border-2 !border-gray-400 dark:!border-gray-500 !bg-card dark:!bg-gray-800 !text-card-foreground hover:!bg-muted hover:!border-primary transition-all duration-200 shadow-md"
+          >
             <Link href="/upload">
               <div className="flex flex-col items-center text-center w-full">
                 <Upload className="h-6 w-6 mb-2" />
@@ -272,7 +276,11 @@ export default function Dashboard() {
             </Link>
           </Button>
           
-          <Button asChild variant="outline" className="h-auto py-4 justify-start border-border bg-background hover:bg-accent hover:text-accent-foreground">
+          <Button 
+            asChild 
+            variant="outline" 
+            className="h-auto py-4 justify-start border-2 !border-gray-400 dark:!border-gray-500 !bg-card dark:!bg-gray-800 !text-card-foreground hover:!bg-muted hover:!border-primary transition-all duration-200 shadow-md"
+          >
             <Link href="/projects">
               <div className="flex flex-col items-center text-center w-full">
                 <Eye className="h-6 w-6 mb-2" />
@@ -281,7 +289,11 @@ export default function Dashboard() {
             </Link>
           </Button>
           
-          <Button asChild variant="outline" className="h-auto py-4 justify-start border-border bg-background hover:bg-accent hover:text-accent-foreground">
+          <Button 
+            asChild 
+            variant="outline" 
+            className="h-auto py-4 justify-start border-2 !border-gray-400 dark:!border-gray-500 !bg-card dark:!bg-gray-800 !text-card-foreground hover:!bg-muted hover:!border-primary transition-all duration-200 shadow-md"
+          >
             <Link href="/contact">
               <div className="flex flex-col items-center text-center w-full">
                 <MessageSquare className="h-6 w-6 mb-2" />
