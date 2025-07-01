@@ -8,6 +8,9 @@ export const initializeTheme = () => {
 export const applyTheme = (theme: string) => {
   const root = document.documentElement;
   
+  // Add transition class for smooth theme changes
+  root.classList.add('theme-transition');
+  
   if (theme === 'system') {
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     root.classList.toggle('dark', systemPrefersDark);
@@ -16,6 +19,11 @@ export const applyTheme = (theme: string) => {
   } else {
     root.classList.remove('dark');
   }
+  
+  // Remove transition class after theme change completes
+  setTimeout(() => {
+    root.classList.remove('theme-transition');
+  }, 300);
 };
 
 export const setTheme = (theme: string) => {
