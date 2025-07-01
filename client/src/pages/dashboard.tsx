@@ -6,24 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Upload, Eye, Download, ArrowRight, ChevronRight, Crown, Zap, TestTube, MessageSquare } from "lucide-react";
 import { formatDate, truncate } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
-import { useEffect, useState } from "react";
-
 export default function Dashboard() {
   const { user } = useAuth();
-  const [renderKey, setRenderKey] = useState(0);
-  
-  // Listen for theme changes to force component re-render
-  useEffect(() => {
-    const handleThemeChange = () => {
-      setRenderKey(prev => prev + 1);
-    };
-    
-    window.addEventListener('themechange', handleThemeChange);
-    
-    return () => {
-      window.removeEventListener('themechange', handleThemeChange);
-    };
-  }, []);
   
   // Fetch user's scripts
   const { data: scripts = [], isLoading: isLoadingScripts } = useQuery({
@@ -275,10 +259,10 @@ export default function Dashboard() {
       </div>
       
       {/* Quick Actions */}
-      <div key={`quick-actions-${renderKey}`}>
+      <div>
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <Button asChild variant="outline" className="h-auto py-4 justify-start" style={{ backgroundColor: 'white', borderColor: '#d1d5db', color: '#111827' }}>
+          <Button asChild variant="outline" className="h-auto py-4 justify-start">
             <Link href="/upload">
               <div className="flex flex-col items-center text-center w-full">
                 <Upload className="h-6 w-6 mb-2" />
@@ -287,7 +271,7 @@ export default function Dashboard() {
             </Link>
           </Button>
           
-          <Button asChild variant="outline" className="h-auto py-4 justify-start" style={{ backgroundColor: 'white', borderColor: '#d1d5db', color: '#111827' }}>
+          <Button asChild variant="outline" className="h-auto py-4 justify-start">
             <Link href="/projects">
               <div className="flex flex-col items-center text-center w-full">
                 <Eye className="h-6 w-6 mb-2" />
@@ -296,7 +280,7 @@ export default function Dashboard() {
             </Link>
           </Button>
           
-          <Button asChild variant="outline" className="h-auto py-4 justify-start" style={{ backgroundColor: 'white', borderColor: '#d1d5db', color: '#111827' }}>
+          <Button asChild variant="outline" className="h-auto py-4 justify-start">
             <Link href="/contact">
               <div className="flex flex-col items-center text-center w-full">
                 <MessageSquare className="h-6 w-6 mb-2" />
