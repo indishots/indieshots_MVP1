@@ -129,34 +129,6 @@ export default function Dashboard() {
             </Button>
           </CardFooter>
         </Card>
-        
-        {(user?.email === 'premium@demo.com' || userTier === 'premium') && (
-          <Card className="border-dashed border-2 border-amber-200 bg-amber-50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Crown className="h-5 w-5 text-amber-600" />
-                Premium Demo Features
-              </CardTitle>
-              <CardDescription>Experience premium functionality</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm">
-                <p className="text-amber-700">✨ <strong>Unlimited Script Processing</strong></p>
-                <p className="text-amber-700">🎬 <strong>Advanced Storyboard Generation</strong></p>
-                <p className="text-amber-700">📊 <strong>Detailed Analytics & Reports</strong></p>
-                <p className="text-amber-700">🔄 <strong>Batch Processing</strong></p>
-                <p className="text-amber-700">💾 <strong>Priority Support</strong></p>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button variant="outline" size="sm" asChild className="border-amber-300 hover:bg-amber-100">
-                <Link href="/test-payment">
-                  Test Premium Features
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        )}
       </div>
       
       {/* Recent Activity */}
