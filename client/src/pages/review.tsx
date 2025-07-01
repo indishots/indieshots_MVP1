@@ -180,7 +180,7 @@ export default function Review({ id }: ReviewProps) {
                   onClick={() => setLocation(`/scene-selection/${id}`)}
                 >
                   <Image className="mr-2 h-4 w-4" />
-                  Create Storyboards
+                  Create More Storyboards
                 </Button>
 
               </CardContent>
