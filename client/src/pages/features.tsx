@@ -79,7 +79,7 @@ export default function Features() {
           <div className="text-center mt-16">
             <h2 className="text-2xl font-bold mb-4">Ready to Transform Your Filmmaking Process?</h2>
             <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Join thousands of independent filmmakers who are already using IndieShots to streamline their pre-production workflow.
+              Use IndieShots to streamline your pre-production workflow.
             </p>
             <Button onClick={handleGetStarted} size="lg">
               Get Started Free
