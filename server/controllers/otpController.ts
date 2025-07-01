@@ -36,8 +36,8 @@ export const storeOTP = (email: string, otp: string, userData: any): void => {
 
 // Validation schemas
 const registerSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
   couponCode: z.string().optional()
@@ -68,8 +68,8 @@ export async function registerWithOTP(req: Request, res: Response) {
     // Prepare user data
     const userData = {
       email: validatedData.email.toLowerCase(),
-      firstName: validatedData.firstName,
-      lastName: validatedData.lastName,
+      firstName: validatedData.firstName || '',
+      lastName: validatedData.lastName || '',
       password: hashedPassword,
       provider: 'local',
       tier: isPremium ? 'premium' : 'free',

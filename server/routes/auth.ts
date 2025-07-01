@@ -24,6 +24,7 @@ const router = Router();
 
 // User authentication routes - CSRF protection disabled for development  
 router.post('/signup', otpController.registerWithOTP);
+router.post('/send-otp', otpController.registerWithOTP); // Alias for signup
 router.post('/verify-email', otpController.verifyOTP);
 router.post('/resend-otp', otpController.resendOTP);
 router.post('/signin', authController.login);
