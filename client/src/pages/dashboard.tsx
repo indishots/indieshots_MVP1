@@ -278,11 +278,7 @@ export default function Dashboard() {
       <div key={`quick-actions-${renderKey}`}>
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <Button 
-            asChild 
-            variant="outline" 
-            className="h-auto py-4 justify-start !border-gray-300 !bg-white hover:!bg-gray-50 !text-gray-900 dark:!border-gray-600 dark:!bg-gray-800 dark:hover:!bg-gray-700 dark:!text-gray-100"
-          >
+          <Button asChild variant="outline" className="h-auto py-4 justify-start" style={{ backgroundColor: 'white', borderColor: '#d1d5db', color: '#111827' }}>
             <Link href="/upload">
               <div className="flex flex-col items-center text-center w-full">
                 <Upload className="h-6 w-6 mb-2" />
@@ -291,11 +287,7 @@ export default function Dashboard() {
             </Link>
           </Button>
           
-          <Button 
-            asChild 
-            variant="outline" 
-            className="h-auto py-4 justify-start !border-gray-300 !bg-white hover:!bg-gray-50 !text-gray-900 dark:!border-gray-600 dark:!bg-gray-800 dark:hover:!bg-gray-700 dark:!text-gray-100"
-          >
+          <Button asChild variant="outline" className="h-auto py-4 justify-start" style={{ backgroundColor: 'white', borderColor: '#d1d5db', color: '#111827' }}>
             <Link href="/projects">
               <div className="flex flex-col items-center text-center w-full">
                 <Eye className="h-6 w-6 mb-2" />
@@ -304,11 +296,7 @@ export default function Dashboard() {
             </Link>
           </Button>
           
-          <Button 
-            asChild 
-            variant="outline" 
-            className="h-auto py-4 justify-start !border-gray-300 !bg-white hover:!bg-gray-50 !text-gray-900 dark:!border-gray-600 dark:!bg-gray-800 dark:hover:!bg-gray-700 dark:!text-gray-100"
-          >
+          <Button asChild variant="outline" className="h-auto py-4 justify-start" style={{ backgroundColor: 'white', borderColor: '#d1d5db', color: '#111827' }}>
             <Link href="/contact">
               <div className="flex flex-col items-center text-center w-full">
                 <MessageSquare className="h-6 w-6 mb-2" />
