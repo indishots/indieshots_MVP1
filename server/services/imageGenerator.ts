@@ -53,23 +53,58 @@ function buildPrompt(shot: any): string {
 }
 
 /**
- * Generate visual prompt using GPT-4
+ * Generate visual prompt using GPT-4 with retry mechanism
  */
-async function generatePrompt(userMessage: string): Promise<string | null> {
-  try {
-    const response = await promptClient.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userMessage }
-      ]
-    });
-    
-    return response.choices[0].message.content?.trim() || null;
-  } catch (error) {
-    console.error('[ERROR] Prompt generation failed:', error);
-    return null;
+async function generatePrompt(userMessage: string, retries: number = 2): Promise<string | null> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Generating prompt (attempt ${attempt}/${retries})`);
+      
+      const response = await promptClient.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: 300,
+        temperature: 0.7
+      });
+      
+      const prompt = response.choices[0].message.content?.trim();
+      if (prompt && prompt.length > 10) {
+        console.log(`Generated prompt: ${prompt.substring(0, 100)}...`);
+        return prompt;
+      } else {
+        console.log(`Generated prompt too short or empty (attempt ${attempt})`);
+        if (attempt === retries) {
+          // Fallback to a basic prompt based on shot data
+          const fallbackPrompt = `A cinematic shot showing ${userMessage.includes('Shot Description:') ? 
+            userMessage.split('Shot Description:')[1]?.split('\n')[0]?.trim() || 'scene' : 'scene'}`;
+          console.log(`Using fallback prompt: ${fallbackPrompt}`);
+          return fallbackPrompt;
+        }
+      }
+    } catch (error: any) {
+      console.error(`[ERROR] Prompt generation failed (attempt ${attempt}/${retries}):`, error?.message || error);
+      
+      if (error?.status === 429) {
+        console.log('Rate limit hit for prompt generation, waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 5000 * attempt));
+      } else if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      }
+      
+      if (attempt === retries) {
+        // Final fallback - create basic prompt from shot data
+        const shotDesc = userMessage.includes('Shot Description:') ? 
+          userMessage.split('Shot Description:')[1]?.split('\n')[0]?.trim() : 'cinematic scene';
+        const fallbackPrompt = `A professional film shot of ${shotDesc || 'a scene'}`;
+        console.log(`Using emergency fallback prompt: ${fallbackPrompt}`);
+        return fallbackPrompt;
+      }
+    }
   }
+  return null;
 }
 
 /**
@@ -230,7 +265,6 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
   const frames: StoryboardFrame[] = [];
   const failedShots: any[] = [];
 
-  // Process shots one at a time for maximum reliability
   console.log(`Processing ${shots.length} shots sequentially for maximum reliability`);
 
   // First pass: process all shots sequentially
@@ -274,7 +308,6 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
       
       try {
         const retryResult = await processShot(shot, shots.findIndex(s => s.id === shot.id));
-        results.push(retryResult);
         
         if ('frame' in retryResult && retryResult.frame) {
           frames.push(retryResult.frame);
@@ -284,22 +317,16 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
         }
       } catch (error) {
         console.error(`Retry error for shot ${shot.shotNumberInScene || shot.id}:`, error);
-        results.push({ shotId: shot.shotNumberInScene?.toString() || shot.id, status: 'retry failed' });
       }
       
       // Longer delay between retries
       if (i < failedShots.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 8000));
       }
     }
   }
 
-  console.log(`Completed processing ${results.length} shots, generated ${frames.length} frames`);
-  
-  // Log detailed results for debugging
-  results.forEach((result, index) => {
-    console.log(`Shot ${index + 1}: ${result.shotId} - ${result.status}`);
-  });
+  console.log(`Completed processing: generated ${frames.length} out of ${shots.length} shots`);
   
   return { results, frames };
 }
