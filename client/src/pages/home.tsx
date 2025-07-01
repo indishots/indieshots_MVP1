@@ -118,7 +118,7 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-background p-8 rounded-xl shadow-sm border border-border">
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-6">
                 <FileText className="h-7 w-7 text-primary" />
