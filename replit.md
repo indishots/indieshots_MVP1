@@ -96,6 +96,8 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **HELP CENTER VISIBILITY FIXED** - Resolved missing Help Center link in left navigation by correcting authentication provider import from @/hooks/useAuth to @/components/auth/UltimateAuthProvider for proper authentication state detection
+- July 1, 2025: **THEME MODULE EXPORTS COMPLETED** - Added missing initializeTheme, setTheme, and setupSystemThemeListener functions to theme.ts to resolve module export errors in settings page
 - July 1, 2025: **DASHBOARD BUTTON VISIBILITY PERMANENTLY FIXED** - Replaced shadcn Button components with explicit Tailwind div elements using direct color classes to eliminate CSS variable conflicts; buttons now use text-gray-900 dark:text-gray-100 and explicit borders/backgrounds for reliable visibility across all navigation states including settings page navigation
 - July 1, 2025: **DEDICATED FEATURES PAGE CREATED** - Moved all features content from homepage to dedicated /features page accessible via "View Features" button; cleaned up homepage design by removing features section while maintaining professional feature showcase on separate page with standalone layout and navigation
 - July 1, 2025: **HOME PAGE WORKFLOW SECTION UPDATED** - Enhanced landing page with revised 4-step workflow content emphasizing professional filmmaking process: Upload Your Script (intelligent analysis), Define Your Scenes (precise selection), Generate Detailed Shots (comprehensive technical specs), Visualize Your Story (dynamic storyboards); maintained original card dimensions with 2x2 grid layout
