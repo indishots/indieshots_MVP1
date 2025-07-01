@@ -96,6 +96,9 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **STORYBOARDS TAB CONDITIONAL LOGIC IMPLEMENTED** - Enhanced storyboards tab in review page to show Generate Storyboards button (redirecting to scene selection) when no storyboards exist, or display existing storyboard images in grid layout when available
+- July 1, 2025: **REVIEW PAGE SCENE-SPECIFIC SHOT GENERATION IMPLEMENTED** - Modified Generate Shots buttons in review page scenes tab to redirect to scene-specific shot generation page (/shots/jobId/sceneIndex) instead of general scene selection, enabling direct shot generation for individual scenes
+- July 1, 2025: **REVIEW PAGE UI IMPROVEMENTS COMPLETED** - Removed right pane from review page for cleaner full-width layout, removed Continue Working button from bottom navigation, and removed Settings from dashboard Quick Actions while changing Contact Support to Get help
 - June 30, 2025: **DNS PREVIEW ISSUE COMPLETELY RESOLVED** - Fixed DNS resolution problem by switching from problematic dynamic Replit domain to reliable standard domain format; application now accessible at https://workspace.indieshots.replit.app with all systems operational
 - June 30, 2025: **APPLICATION RESTARTED WITH SECRETS CONFIGURED** - Successfully restarted IndieShots application after user added app secrets; all systems operational including Firebase authentication, OpenAI integration, and database connectivity; server accessible at https://workspace.indieshots.replit.app
 - June 30, 2025: **APPLICATION RESTART AND VERIFICATION COMPLETED** - Successfully restarted IndieShots application with all systems operational; server running on port 5000 with external access at https://workspace.indieshots.replit.app; confirmed database connectivity, authentication system, and background cleanup jobs functioning properly

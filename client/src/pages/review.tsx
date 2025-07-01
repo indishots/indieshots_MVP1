@@ -216,15 +216,13 @@ export default function Review({ id }: ReviewProps) {
                             {scene.location}
                           </Badge>
                         )}
-                        {completedShots === 0 && (
-                          <Button 
-                            size="sm" 
-                            onClick={() => setLocation(`/scene-selection/${id}`)}
-                          >
-                            <Camera className="mr-1 h-3 w-3" />
-                            Generate Shots
-                          </Button>
-                        )}
+                        <Button 
+                          size="sm" 
+                          onClick={() => setLocation(`/shots/${id}/${index}`)}
+                        >
+                          <Camera className="mr-1 h-3 w-3" />
+                          Generate Shots
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
@@ -282,42 +280,57 @@ export default function Review({ id }: ReviewProps) {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {shotsArray.filter((shot: any) => shot.imageData).map((shot: any, index: number) => (
-                <Card key={index}>
-                  <CardHeader>
-                    <CardTitle className="text-sm">
-                      Scene {shot.sceneIndex + 1} - Shot {shot.shotNumber}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video bg-muted rounded-lg mb-3 overflow-hidden">
-                      <img 
-                        src={`data:image/png;base64,${shot.imageData}`}
-                        alt={`Storyboard for scene ${shot.sceneIndex + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {shot.shotDescription}
-                    </p>
-                  </CardContent>
-                </Card>
-              )) || (
-                <Card className="col-span-full">
-                  <CardContent className="py-12 text-center">
-                    <Image className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">No storyboards created yet.</p>
-                    <Button 
-                      className="mt-4" 
-                      onClick={() => setLocation(`/storyboards/${id}`)}
-                    >
-                      Create Storyboards
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            (() => {
+              const storyboardShots = shotsArray.filter((shot: any) => shot.imageData);
+              
+              if (storyboardShots.length > 0) {
+                // Show storyboard images
+                return (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {storyboardShots.map((shot: any, index: number) => (
+                      <Card key={index}>
+                        <CardHeader>
+                          <CardTitle className="text-sm">
+                            Scene {shot.sceneIndex + 1} - Shot {shot.shotNumber}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="aspect-video bg-muted rounded-lg mb-3 overflow-hidden">
+                            <img 
+                              src={`data:image/png;base64,${shot.imageData}`}
+                              alt={`Storyboard for scene ${shot.sceneIndex + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {shot.shotDescription}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                );
+              } else {
+                // Show generate storyboards button
+                return (
+                  <Card>
+                    <CardContent className="py-12 text-center">
+                      <Image className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                      <h3 className="text-lg font-medium mb-2">No Storyboards Generated</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Generate storyboards to visualize your scenes with AI-powered images.
+                      </p>
+                      <Button 
+                        className="mt-4" 
+                        onClick={() => setLocation(`/scene-selection/${id}`)}
+                      >
+                        Generate Storyboards
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              }
+            })()
           )}
         </TabsContent>
 
