@@ -95,9 +95,12 @@ class AuthManager {
       }
 
       if (firebaseUser) {
+        console.log('Firebase auth listener triggered for user:', firebaseUser.email);
+        console.log('Pending coupon code:', this.pendingCouponCode);
         // Create backend session
         await this.createBackendSession(firebaseUser);
       } else {
+        console.log('Firebase auth listener: No user');
         this.authState = 'unauthenticated';
         this.user = null;
         this.notifyListeners();

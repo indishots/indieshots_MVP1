@@ -24,7 +24,8 @@ export async function firebaseLogin(req: Request, res: Response) {
       provider,
       providerUserId,
       email,
-      displayName
+      displayName,
+      couponCode: couponCode
     });
 
     // Check if user is permanently banned
@@ -75,8 +76,15 @@ export async function firebaseLogin(req: Request, res: Response) {
     const isPremiumCoupon = couponCode && validCouponCodes.includes(couponCode.toUpperCase());
     const isDemoAccount = userData.email === 'premium@demo.com';
 
+    console.log('Coupon code processing:');
+    console.log('- Received couponCode:', couponCode);
+    console.log('- Valid coupon codes:', validCouponCodes);
+    console.log('- isPremiumCoupon:', isPremiumCoupon);
+    console.log('- isDemoAccount:', isDemoAccount);
+
     // Set user tier based on coupon code or demo account
     const userTier = (isPremiumCoupon || isDemoAccount) ? 'pro' : 'free';
+    console.log('- Final userTier:', userTier);
 
     userData.tier = userTier;
     if (isDemoAccount || isPremiumCoupon) {
