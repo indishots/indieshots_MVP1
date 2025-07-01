@@ -1,0 +1,97 @@
+import { useState, useEffect } from 'react';
+import { Camera, Film, Clapperboard, Video, Wand2 } from 'lucide-react';
+
+interface LoadingFrame {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  color: string;
+}
+
+const loadingFrames: LoadingFrame[] = [
+  {
+    icon: <Camera className="w-8 h-8" />,
+    title: "Rolling camera on your story...",
+    subtitle: "Generating high-quality images with cinematic precision.",
+    color: "text-blue-500"
+  },
+  {
+    icon: <Film className="w-8 h-8" />,
+    title: "Building your visual storyboard...",
+    subtitle: "Generating high-quality images with cinematic precision.",
+    color: "text-purple-500"
+  },
+  {
+    icon: <Clapperboard className="w-8 h-8" />,
+    title: "Bringing scenes to life, one frame at a time...",
+    subtitle: "Generating high-quality images with cinematic precision.",
+    color: "text-green-500"
+  },
+  {
+    icon: <Video className="w-8 h-8" />,
+    title: "Crafting cinematic moments...",
+    subtitle: "Generating high-quality images with cinematic precision.",
+    color: "text-orange-500"
+  },
+  {
+    icon: <Wand2 className="w-8 h-8" />,
+    title: "Transforming words into visuals...",
+    subtitle: "Generating high-quality images with cinematic precision.",
+    color: "text-amber-500"
+  }
+];
+
+export default function StoryboardLoadingAnimation() {
+  const [currentFrame, setCurrentFrame] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFrame((prev) => (prev + 1) % loadingFrames.length);
+    }, 3000); // Change frame every 3 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const frame = loadingFrames[currentFrame];
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] bg-slate-900 rounded-lg p-8">
+      {/* Animated Icon with Spinning Ring */}
+      <div className="relative mb-8">
+        {/* Outer spinning ring */}
+        <div className="w-24 h-24 rounded-full border-4 border-slate-700 border-t-purple-500 animate-spin"></div>
+        
+        {/* Inner icon circle */}
+        <div className="absolute inset-3 bg-slate-800 rounded-full flex items-center justify-center">
+          <div className={`${frame.color} transition-colors duration-500`}>
+            {frame.icon}
+          </div>
+        </div>
+      </div>
+
+      {/* Title */}
+      <h2 className="text-2xl font-semibold text-white mb-3 text-center transition-all duration-500">
+        {frame.title}
+      </h2>
+
+      {/* Subtitle */}
+      <p className="text-slate-400 text-center mb-6 transition-all duration-500">
+        {frame.subtitle}
+      </p>
+
+      {/* Progress Dots */}
+      <div className="flex space-x-2">
+        {loadingFrames.map((_, index) => (
+          <div
+            key={index}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              index === currentFrame 
+                ? `${frame.color.replace('text-', 'bg-')}` 
+                : 'bg-slate-600'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
