@@ -217,24 +217,35 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     }
 
     const { headers, data } = getExportData();
-    const csvRows = [headers.join('\t')]; // Use tabs for better Excel compatibility
+    
+    // Create enhanced CSV with UTF-8 BOM for proper Excel compatibility
+    const csvRows = [headers.join(',')];
     
     data.forEach((row: string[]) => {
       const cleanRow = row.map((field: any) => {
         let str = String(field || '').trim();
         str = str.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
+        // Proper CSV escaping for Excel
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          str = `"${str.replace(/"/g, '""')}"`;
+        }
         return str;
       });
       
-      csvRows.push(cleanRow.join('\t'));
+      csvRows.push(cleanRow.join(','));
     });
     
     const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
+    
+    // Add UTF-8 BOM for proper Excel recognition
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { 
+      type: 'text/csv;charset=utf-8;' 
+    });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `scene_${parseInt(sceneIndex) + 1}_shots.xls`);
+    link.setAttribute('download', `scene_${parseInt(sceneIndex) + 1}_shots_excel.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
