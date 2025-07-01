@@ -96,6 +96,7 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **STREAMLINED SHOT GENERATION WORKFLOW** - Modified scene selection to skip CSV export fields page and go directly to shot generation page (/shots/jobId/sceneIndex), eliminating unnecessary intermediate step and improving user experience
 - July 1, 2025: **STORYBOARDS TAB CONDITIONAL LOGIC IMPLEMENTED** - Enhanced storyboards tab in review page to show Generate Storyboards button (redirecting to scene selection) when no storyboards exist, or display existing storyboard images in grid layout when available
 - July 1, 2025: **REVIEW PAGE SCENE-SPECIFIC SHOT GENERATION IMPLEMENTED** - Modified Generate Shots buttons in review page scenes tab to redirect to scene-specific shot generation page (/shots/jobId/sceneIndex) instead of general scene selection, enabling direct shot generation for individual scenes
 - July 1, 2025: **REVIEW PAGE UI IMPROVEMENTS COMPLETED** - Removed right pane from review page for cleaner full-width layout, removed Continue Working button from bottom navigation, and removed Settings from dashboard Quick Actions while changing Contact Support to Get help

@@ -46,8 +46,8 @@ export default function SceneSelection({ id }: SceneSelectionProps) {
       return;
     }
     
-    // Navigate to columns page with jobId and selected scene index
-    setLocation(`/columns/${id}?scene=${selectedScene}`);
+    // Navigate directly to shots generation page
+    setLocation(`/shots/${id}/${selectedScene}`);
   };
   
   const goBack = () => {
