@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import LeftPanel from "./left-panel";
 import RightPanel from "./right-panel";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
-import { Settings, HelpCircle, LogOut, Crown } from "lucide-react";
+import { Settings, LogOut, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -113,15 +113,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <span className="text-sm font-medium text-amber-900 dark:text-amber-100">Pro Member</span>
               </div>
             )}
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                  <HelpCircle className="h-5 w-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Help & Documentation</TooltipContent>
-            </Tooltip>
             
             {isAuthenticated ? (
               <DropdownMenu>
