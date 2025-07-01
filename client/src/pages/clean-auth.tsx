@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,9 +12,12 @@ import { Crown, Zap, FileText, Camera, Infinity } from "lucide-react";
 
 export default function CleanAuthPage() {
   const { isAuthenticated, loading, authState, signIn, signUp, enableAuth } = useAuth();
+  const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -59,29 +63,62 @@ export default function CleanAuthPage() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
     setIsLoading(true);
 
-    // Check if coupon code is valid for premium access
-    const isPremiumCoupon = couponCode.toUpperCase() === 'INDIE2025';
+    try {
+      // Call new OTP-based signup endpoint
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          password: password,
+          couponCode: couponCode || undefined
+        })
+      });
 
-    const result = await signUp(email, password, isPremiumCoupon);
-    
-    if (!result.success) {
-      setError(result.error || "Sign up failed");
-      setIsLoading(false);
-    } else {
-      // Show success message if premium coupon was used
-      if (isPremiumCoupon) {
-        setError(""); // Clear any errors
-        // You could add a success message here if needed
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Sign up failed");
+        setIsLoading(false);
+        return;
       }
-      // Directly navigate to dashboard on successful signup
-      window.location.href = '/dashboard';
+
+      // Check if email verification is required
+      if (data.requiresVerification) {
+        // Navigate to verification page with email
+        setLocation(`/verify-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      // If no verification required (fallback), proceed normally
+      const isPremiumCoupon = couponCode.toUpperCase() === 'INDIE2025';
+      const result = await signUp(email, password, isPremiumCoupon);
+      
+      if (!result.success) {
+        setError(result.error || "Sign up failed");
+        setIsLoading(false);
+      } else {
+        if (isPremiumCoupon) {
+          setError(""); // Clear any errors
+        }
+        // Directly navigate to dashboard on successful signup
+        window.location.href = '/dashboard';
+      }
+      
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      setError(error.message || "Sign up failed");
+      setIsLoading(false);
     }
   };
 

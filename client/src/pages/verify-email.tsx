@@ -37,12 +37,10 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
 
   // Verify email mutation
   const verifyMutation = useMutation({
-    mutationFn: (data: { email: string; otp: string }) =>
-      apiRequest('/api/auth/verify-email', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      }),
+    mutationFn: async (data: { email: string; otp: string }) => {
+      const response = await apiRequest('POST', '/api/auth/verify-email', data);
+      return response.json();
+    },
     onSuccess: (data) => {
       toast({
         title: "Email Verified!",
@@ -61,12 +59,10 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
 
   // Resend OTP mutation
   const resendMutation = useMutation({
-    mutationFn: (email: string) =>
-      apiRequest('/api/auth/resend-otp', {
-        method: 'POST',
-        body: JSON.stringify({ email }),
-        headers: { 'Content-Type': 'application/json' }
-      }),
+    mutationFn: async (email: string) => {
+      const response = await apiRequest('POST', '/api/auth/resend-otp', { email });
+      return response.json();
+    },
     onSuccess: () => {
       toast({
         title: "Code Resent",

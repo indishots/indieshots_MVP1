@@ -2,6 +2,7 @@ import { Router } from 'express';
 import passport from 'passport';
 import { authMiddleware } from '../auth/jwt';
 import * as authController from '../controllers/authController';
+import * as otpController from '../controllers/otpController';
 import { firebaseLogin } from '../controllers/firebaseAuthController';
 import { firebaseSync } from '../controllers/firebaseSyncController';
 
@@ -21,10 +22,10 @@ const router = Router();
 //   (req, res) => res.redirect('/')
 // );
 
-// User authentication routes - CSRF protection disabled for development
-router.post('/signup', authController.register);
-router.post('/verify-email', authController.verifyEmail);
-router.post('/resend-otp', authController.resendOTP);
+// User authentication routes - CSRF protection disabled for development  
+router.post('/signup', otpController.registerWithOTP);
+router.post('/verify-email', otpController.verifyOTP);
+router.post('/resend-otp', otpController.resendOTP);
 router.post('/signin', authController.login);
 router.post('/magic-link', authController.sendMagicLink);
 router.get('/magic-link/verify', authController.verifyMagicLink);
