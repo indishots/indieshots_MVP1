@@ -29,6 +29,7 @@ import TestPayment from "@/pages/test-payment";
 import PayUCheckout from "@/pages/payu-checkout";
 import Contact from "@/pages/contact";
 import Admin from "@/pages/admin";
+import Help from "@/pages/help";
 
 function App() {
   return (
@@ -206,6 +207,14 @@ function App() {
                 <ProtectedRoute component={() => (
                   <AppLayout>
                     <Admin />
+                  </AppLayout>
+                )} />
+              </Route>
+
+              <Route path="/help">
+                <ProtectedRoute component={() => (
+                  <AppLayout>
+                    <Help />
                   </AppLayout>
                 )} />
               </Route>
