@@ -554,15 +554,29 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     console.log(`Found ${shots.length} total shots`);
     
     // Find shot by storyboard index (shots with images ordered by shotNumberInScene)
-    const shotsWithImages = shots.filter(shot => shot.imageData).sort((a, b) => a.shotNumberInScene - b.shotNumberInScene);
-    const shot = shotsWithImages[parseInt(shotId)];
+    const shotsWithImages = shots.filter(shot => shot.imageData && shot.imageData.length > 0).sort((a, b) => a.shotNumberInScene - b.shotNumberInScene);
+    const storyboardIndex = parseInt(shotId);
+    const shot = shotsWithImages[storyboardIndex];
     
     console.log(`Looking for storyboard index ${shotId} in ${shotsWithImages.length} shots with images`);
-    console.log(`Shots with images:`, shotsWithImages.map(s => ({ id: s.id, shotNumber: s.shotNumberInScene })));
+    console.log(`Shots with images:`, shotsWithImages.map(s => ({ id: s.id, shotNumber: s.shotNumberInScene, hasImage: !!s.imageData })));
+    console.log(`Requesting storyboard index: ${storyboardIndex}, available indices: 0-${shotsWithImages.length - 1}`);
 
-    if (!shot || !shot.imageData) {
-      console.log(`Shot not found with ID/index ${shotId}`);
-      return res.status(404).json({ error: `Shot not found with ID/index ${shotId}` });
+    if (!shot) {
+      console.log(`Shot not found at storyboard index ${shotId}. Available shots: ${shotsWithImages.length}`);
+      return res.status(404).json({ 
+        error: `Shot not found at storyboard index ${shotId}`,
+        debug: {
+          requestedIndex: storyboardIndex,
+          availableCount: shotsWithImages.length,
+          availableIndices: shotsWithImages.map((s, i) => ({ index: i, shotId: s.id, shotNumber: s.shotNumberInScene }))
+        }
+      });
+    }
+    
+    if (!shot.imageData || shot.imageData.length === 0) {
+      console.log(`Shot found but has no image data: ${shot.id}`);
+      return res.status(400).json({ error: `Shot ${shot.id} has no image data to regenerate` });
     }
     
     console.log(`Found shot: ${shot.id}, shotNumber: ${shot.shotNumberInScene}`);
@@ -602,28 +616,13 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     const modifiedPrompt = `${basePrompt} ${modifications}`;
     console.log(`Using prompt: ${modifiedPrompt}`);
 
-    // Import OpenAI dynamically to avoid any require issues
-    const openaiModule = await import('openai');
-    const OpenAI = openaiModule.OpenAI || openaiModule.default;
+    // Use the improved image generation function with retries
+    const { generateImageData } = await import('../services/imageGenerator');
+    const imageData = await generateImageData(modifiedPrompt, 3); // 3 retry attempts
     
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: modifiedPrompt,
-      size: "1024x1024",
-      quality: "standard",
-      response_format: "b64_json",
-      n: 1,
-    });
-
-    if (!response.data || !response.data[0] || !response.data[0].b64_json) {
-      throw new Error('No image data received from OpenAI');
+    if (!imageData) {
+      throw new Error('Failed to generate image after multiple attempts');
     }
-
-    const imageData = response.data[0].b64_json;
 
     // Update shot with new image data
     await storage.updateShotImage(shot.id, imageData, modifiedPrompt);

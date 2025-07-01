@@ -72,6 +72,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     mutationFn: async (storyboardIndex: number) => {
       setIsRegenerating(true);
       
+      console.log(`Attempting to regenerate image at storyboard index: ${storyboardIndex}`);
+      console.log(`Current selected images:`, selectedImages);
+      console.log(`Editing prompt:`, editingPrompt);
+      
       // Use the storyboard index directly - backend will handle mapping
       const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${storyboardIndex}`, {
         method: 'POST',
@@ -84,10 +88,13 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to regenerate image');
+        console.error('Regeneration failed:', error);
+        throw new Error(error.error || error.message || 'Failed to regenerate image');
       }
       
-      return await response.json();
+      const result = await response.json();
+      console.log('Regeneration successful:', result);
+      return result;
     },
     onSuccess: async (data, storyboardIndex) => {
       setEditingPrompt("");
@@ -611,6 +618,26 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                       <Button 
                         onClick={() => {
                           const storyboardIndex = selectedImages[currentImageIndex];
+                          console.log(`Regenerate button clicked - currentImageIndex: ${currentImageIndex}, storyboardIndex: ${storyboardIndex}`);
+                          
+                          if (storyboardIndex === undefined || storyboardIndex < 0) {
+                            toast({
+                              title: "Invalid selection",
+                              description: "Unable to identify the selected image. Please try again.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          
+                          if (!editingPrompt.trim()) {
+                            toast({
+                              title: "Missing prompt",
+                              description: "Please enter modifications for the image.",
+                              variant: "destructive"
+                            });
+                            return;
+                          }
+                          
                           regenerateImage.mutate(storyboardIndex);
                         }}
                         disabled={!editingPrompt.trim() || isRegenerating}
