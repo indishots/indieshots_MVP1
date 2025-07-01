@@ -234,21 +234,33 @@ export default function Dashboard() {
       <div>
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <Button variant="outline" className="h-auto py-4" asChild>
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground" 
+            asChild
+          >
             <Link href="/upload" className="flex flex-col items-center">
               <Upload className="h-6 w-6 mb-2" />
               <span>Upload Script</span>
             </Link>
           </Button>
           
-          <Button variant="outline" className="h-auto py-4" asChild>
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground" 
+            asChild
+          >
             <Link href="/projects" className="flex flex-col items-center">
               <Eye className="h-6 w-6 mb-2" />
               <span>View Projects</span>
             </Link>
           </Button>
           
-          <Button variant="outline" className="h-auto py-4" asChild>
+          <Button 
+            variant="outline" 
+            className="h-auto py-4 border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground" 
+            asChild
+          >
             <Link href="/contact" className="flex flex-col items-center">
               <MessageSquare className="h-6 w-6 mb-2" />
               <span>Get help</span>
