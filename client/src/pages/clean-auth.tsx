@@ -14,6 +14,7 @@ export default function CleanAuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [couponCode, setCouponCode] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
@@ -215,6 +216,22 @@ export default function CleanAuthPage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="coupon-code" className="block text-sm font-medium text-foreground">
+                      Enter Coupon Code (Optional)
+                    </Label>
+                    <div className="mt-1">
+                      <Input
+                        id="coupon-code"
+                        type="text"
+                        placeholder="Enter your coupon code"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
                         className="w-full"
                       />
                     </div>
