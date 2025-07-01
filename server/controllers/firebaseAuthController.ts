@@ -71,18 +71,22 @@ export async function firebaseLogin(req: Request, res: Response) {
     console.log('Creating Firebase user:', userData.email);
 
     // Check coupon code for premium upgrade or demo account
-    const validCouponCodes = ['DEMO2024', 'PREMIUM', 'LAUNCH'];
+    const validCouponCodes = ['DEMO2024', 'PREMIUM', 'LAUNCH', 'INDIE2025'];
     const isPremiumCoupon = couponCode && validCouponCodes.includes(couponCode.toUpperCase());
     const isDemoAccount = userData.email === 'premium@demo.com';
 
     // Set user tier based on coupon code or demo account
-    const userTier = (isPremiumCoupon || isDemoAccount) ? 'premium' : 'free';
+    const userTier = (isPremiumCoupon || isDemoAccount) ? 'pro' : 'free';
 
     userData.tier = userTier;
-    if (isDemoAccount) {
-        userData.totalPages = 1000;
-        userData.maxShotsPerScene = 20;
+    if (isDemoAccount || isPremiumCoupon) {
+        userData.totalPages = -1; // Unlimited pages for premium users
+        userData.maxShotsPerScene = -1; // Unlimited shots for premium users
         userData.canGenerateStoryboards = true;
+        
+        if (isPremiumCoupon) {
+            console.log('✓ Premium coupon code used:', couponCode, 'for user:', userData.email);
+        }
     }
 
     // Generate JWT token with Firebase user data including tier info

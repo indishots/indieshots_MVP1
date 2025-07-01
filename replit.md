@@ -96,6 +96,7 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **INDIE2025 PREMIUM COUPON SYSTEM IMPLEMENTED** - Added coupon code functionality to sign-up page; users entering "INDIE2025" get instant premium access with unlimited pages, unlimited shots per scene, and storyboard generation capabilities; integrated frontend coupon field, backend validation, and automatic tier assignment without affecting existing premium@demo.com functionality
 - July 1, 2025: **SMART LEFT PANEL NAVIGATION IMPLEMENTED** - Recent projects in left sidebar now intelligently navigate to review page for completed scripts or columns page for incomplete scripts; added parse jobs query and navigation logic to provide optimal user workflow experience
 - July 1, 2025: **HEADER HELP BUTTON REMOVED** - Eliminated question mark help button from header to simplify interface; removed HelpCircle import and cleaned up header layout
 - July 1, 2025: **DASHBOARD BUTTON VISIBILITY PERMANENTLY FIXED** - Resolved persistent button invisibility issue after settings navigation by replacing shadcn Button components with explicit Tailwind div elements; eliminated dependency on conflicting CSS variables between next-themes and custom theme system; buttons now use direct Tailwind classes for reliable visibility across all navigation states
