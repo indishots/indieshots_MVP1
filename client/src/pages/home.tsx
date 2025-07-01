@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
-import { ArrowRight, FileText, Film, Code, CheckCircle2, Zap, Clock, Globe, Image } from "lucide-react";
+import { ArrowRight, FileText, Film, Code, CheckCircle2, Zap, Clock, Globe, Camera } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
@@ -151,7 +151,7 @@ export default function Home() {
             
             <div className="bg-background p-8 rounded-xl shadow-sm border border-border">
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-6">
-                <Image className="h-7 w-7 text-primary" />
+                <Camera className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3">4. Visualize Your Story</h3>
               <p className="text-muted-foreground leading-relaxed">
