@@ -13,6 +13,7 @@ import { ArrowLeft, Image, Download, RefreshCw, ChevronLeft, ChevronRight, Edit3
 import { apiRequest } from "@/lib/queryClient";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
+import StoryboardLoadingAnimation from "@/components/ui/StoryboardLoadingAnimation";
 
 interface StoryboardsProps {
   jobId: string;
@@ -300,53 +301,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       )}
 
       {/* Generate or Display Storyboards */}
-      {isGenerating ? (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Generating Storyboards</CardTitle>
-            <CardDescription>
-              Creating visual storyboard frames for all {shots.length} shots in this scene...
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                <h3 className="text-lg font-medium mb-2">Processing All Images</h3>
-                <p className="text-muted-foreground mb-4">
-                  Generating high-quality storyboard images for all {shots.length} shots.
-                  <br />
-                  This may take a few minutes to complete.
-                </p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  All images will appear together when ready
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : isLoadingImages ? (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Loading Images</CardTitle>
-            <CardDescription>
-              Images have been generated successfully. Now preparing them for display...
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <h3 className="text-lg font-medium mb-2">Preparing Images</h3>
-                <p className="text-muted-foreground">
-                  Loading storyboard images...
-                  <br />
-                  This will only take a moment.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {isGenerating || isLoadingImages ? (
+        <div className="mb-6">
+          <div className="mb-4">
+            <h2 className="text-2xl font-semibold mb-1">Generating Storyboards</h2>
+            <p className="text-muted-foreground">
+              Creating visual storyboard frames for this scene...
+            </p>
+          </div>
+          <StoryboardLoadingAnimation />
+        </div>
       ) : storyboardFrames.length === 0 ? (
         <Card className="mb-6">
           <CardHeader>
