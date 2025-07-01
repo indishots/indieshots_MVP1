@@ -325,12 +325,9 @@ export default function Review({ id }: ReviewProps) {
       </Tabs>
 
       {/* Navigation */}
-      <div className="flex justify-between mt-8">
+      <div className="flex justify-start mt-8">
         <Button variant="outline" onClick={() => setLocation('/projects')}>
           Back to Projects
-        </Button>
-        <Button onClick={() => setLocation(`/scene-selection/${id}`)}>
-          Continue Working
         </Button>
       </div>
     </div>
