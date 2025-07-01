@@ -111,37 +111,68 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
 /**
  * Generate image and return base64 data for database storage
  */
-export async function generateImageData(prompt: string): Promise<string | null> {
-  try {
-    console.log(`Generating image data with prompt: ${prompt}`);
-    
-    const response = await imageClient.images.generate({
-      model: "dall-e-3",
-      prompt: prompt,
-      n: 1,
-      size: "1024x1024",
-      response_format: "url"
-    });
+export async function generateImageData(prompt: string, retries: number = 3): Promise<string | null> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Generating image data (attempt ${attempt}/${retries}) with prompt: ${prompt.substring(0, 100)}...`);
+      
+      const response = await imageClient.images.generate({
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
+        response_format: "url"
+      });
 
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) {
-      console.error('No image URL returned from OpenAI');
-      return null;
+      const imageUrl = response.data?.[0]?.url;
+      if (!imageUrl) {
+        console.error(`No image URL returned from OpenAI (attempt ${attempt})`);
+        if (attempt === retries) return null;
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
+        continue;
+      }
+
+      // Download the image with timeout
+      const imageResponse = await fetch(imageUrl, { 
+        headers: {
+          'User-Agent': 'IndieShots-Server/1.0'
+        }
+      });
+
+      
+      if (!imageResponse.ok) {
+        console.error(`Failed to download image (attempt ${attempt}): ${imageResponse.statusText}`);
+        if (attempt === retries) return null;
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        continue;
+      }
+
+      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      const base64Data = imageBuffer.toString('base64');
+      
+      console.log(`Successfully generated image data (attempt ${attempt}), base64 length:`, base64Data.length);
+      return base64Data;
+    } catch (error: any) {
+      console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
+      
+      // Handle specific OpenAI errors
+      if (error?.status === 429) {
+        console.log('Rate limit hit, waiting longer before retry...');
+        await new Promise(resolve => setTimeout(resolve, 10000 * attempt)); // Longer wait for rate limits
+      } else if (error?.name === 'AbortError') {
+        console.log('Request timed out, retrying...');
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+      } else if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      }
+      
+      if (attempt === retries) {
+        console.error(`Failed to generate image after ${retries} attempts`);
+        return null;
+      }
     }
-
-    // Download the image
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      console.error(`Failed to download image: ${imageResponse.statusText}`);
-      return null;
-    }
-
-    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-    return imageBuffer.toString('base64');
-  } catch (error) {
-    console.error('Image generation failed:', error);
-    return null;
   }
+  return null;
 }
 
 /**
@@ -199,53 +230,37 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
   const frames: StoryboardFrame[] = [];
   const failedShots: any[] = [];
 
-  // Process shots in smaller batches to balance speed and rate limits
-  const batchSize = 2;
-  const batches = [];
-  
-  for (let i = 0; i < shots.length; i += batchSize) {
-    batches.push(shots.slice(i, i + batchSize));
-  }
+  // Process shots one at a time for maximum reliability
+  console.log(`Processing ${shots.length} shots sequentially for maximum reliability`);
 
-  console.log(`Processing ${shots.length} shots in ${batches.length} batches of ${batchSize}`);
-
-  // First pass: process all shots
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    console.log(`Processing batch ${batchIndex + 1}/${batches.length} with ${batch.length} shots`);
+  // First pass: process all shots sequentially
+  for (let shotIndex = 0; shotIndex < shots.length; shotIndex++) {
+    const shot = shots[shotIndex];
+    console.log(`Processing shot ${shotIndex + 1}/${shots.length} (ID: ${shot.id})`);
     
-    const batchPromises = batch.map((shot, index) => 
-      processShot(shot, batchIndex * batchSize + index)
-    );
-    
-    const batchResults = await Promise.allSettled(batchPromises);
-    
-    // Collect results from settled promises
-    for (let i = 0; i < batchResults.length; i++) {
-      const settledResult = batchResults[i];
-      const originalShot = batch[i];
+    try {
+      const shotResult = await processShot(shot, shotIndex);
       
-      if (settledResult.status === 'fulfilled' && settledResult.value) {
-        const result = settledResult.value;
-        results.push(result);
-        if ('frame' in result && result.frame) {
-          frames.push(result.frame);
-        } else {
-          // Track failed shots for retry
-          console.log(`Shot ${originalShot.shotNumberInScene || originalShot.id} failed, adding to retry list`);
-          failedShots.push(originalShot);
+      if (shotResult && shotResult.status.includes('stored in database')) {
+        results.push(shotResult);
+        if ('frame' in shotResult && shotResult.frame) {
+          frames.push(shotResult.frame);
         }
-      } else if (settledResult.status === 'rejected') {
-        console.error('Batch promise rejected:', settledResult.reason);
-        results.push({ shotId: `unknown_${results.length}`, status: 'promise rejected' });
-        failedShots.push(originalShot);
+      } else {
+        console.log(`Shot ${shot.shotNumberInScene || shot.id} failed, adding to retry list. Status: ${shotResult?.status}`);
+        failedShots.push(shot);
+        results.push(shotResult || { shotId: `shot_${shotIndex}`, status: 'processing failed' });
       }
+    } catch (error) {
+      console.error(`Error processing shot ${shot.shotNumberInScene || shot.id}:`, error);
+      failedShots.push(shot);
+      results.push({ shotId: `shot_${shotIndex}`, status: `error: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
 
-    // Delay between batches
-    if (batchIndex < batches.length - 1) {
-      console.log(`Waiting 3 seconds before next batch...`);
-      await new Promise(resolve => setTimeout(resolve, 3000));
+    // Wait between shots to respect rate limits
+    if (shotIndex < shots.length - 1) {
+      console.log(`Waiting 5 seconds before next shot...`);
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
 
