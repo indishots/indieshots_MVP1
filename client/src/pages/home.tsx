@@ -168,40 +168,40 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Designed for Independent Filmmaking</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Tools that understand the unique needs of indie productions
+              Experience the next generation of filmmaking tools, designed specifically for your vision.
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-card p-8 rounded-xl">
               <CheckCircle2 className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Intelligent Scene Detection</h3>
+              <h3 className="text-xl font-semibold mb-2">Intelligent Scene Breakdown</h3>
               <p className="text-muted-foreground">
-                Our parser automatically identifies scenes, locations, and characters from standard screenplay format.
+                Our advanced analysis meticulously dissects your script, identifying scenes, characters, locations, and dialogue for meticulous shot planning.
               </p>
             </div>
             
             <div className="bg-card p-8 rounded-xl">
               <Globe className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Location Grouping</h3>
+              <h3 className="text-xl font-semibold mb-2">Comprehensive Shot Planning</h3>
               <p className="text-muted-foreground">
-                Organize your shot list by location to optimize your shooting schedule and minimize company moves.
+                Craft production-ready shot lists featuring essential fields, including detailed camera movements, lighting requirements, props, and technical specifications.
               </p>
             </div>
             
             <div className="bg-card p-8 rounded-xl">
               <Clock className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Time-Saving Templates</h3>
+              <h3 className="text-xl font-semibold mb-2">Dynamic Visual Storyboards</h3>
               <p className="text-muted-foreground">
-                Choose from pre-configured column templates designed for different shooting scenarios and production sizes.
+                Design captivating storyboards with customizable image creation. Refine and regenerate visuals with specific prompts to perfectly match your cinematic vision.
               </p>
             </div>
             
             <div className="bg-card p-8 rounded-xl">
               <Zap className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Production-Ready Output</h3>
+              <h3 className="text-xl font-semibold mb-2">Seamless Export</h3>
               <p className="text-muted-foreground">
-                Clean, formatted shot lists ready to share with your director, DP, and crew without additional formatting.
+                Effortlessly download production-ready shot lists and complete storyboard packages.
               </p>
             </div>
           </div>
