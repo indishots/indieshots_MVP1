@@ -76,9 +76,12 @@ export async function firebaseLogin(req: Request, res: Response) {
     const isPremiumCoupon = couponCode && validCouponCodes.includes(couponCode.toUpperCase());
     const isDemoAccount = userData.email === 'premium@demo.com';
 
-    console.log('Coupon code processing:');
+    console.log('========== COUPON CODE PROCESSING ==========');
     console.log('- Received couponCode:', couponCode);
+    console.log('- Type of couponCode:', typeof couponCode);
     console.log('- Valid coupon codes:', validCouponCodes);
+    console.log('- couponCode.toUpperCase():', couponCode ? couponCode.toUpperCase() : 'undefined');
+    console.log('- includes check:', couponCode ? validCouponCodes.includes(couponCode.toUpperCase()) : 'false');
     console.log('- isPremiumCoupon:', isPremiumCoupon);
     console.log('- isDemoAccount:', isDemoAccount);
 
@@ -137,7 +140,14 @@ export async function firebaseLogin(req: Request, res: Response) {
       usedPages: userData.usedPages,
       totalPages: userData.totalPages,
       maxShotsPerScene: userData.maxShotsPerScene,
-      canGenerateStoryboards: userData.canGenerateStoryboards
+      canGenerateStoryboards: userData.canGenerateStoryboards,
+      // Debug info (temporary)
+      debug: {
+        receivedCouponCode: couponCode,
+        isPremiumCoupon: isPremiumCoupon,
+        userTier: userTier,
+        isDemoAccount: isDemoAccount
+      }
     });
 
   } catch (error) {
