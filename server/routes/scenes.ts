@@ -620,8 +620,10 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     const { generateImageData } = await import('../services/imageGenerator');
     const imageData = await generateImageData(modifiedPrompt, 3); // 3 retry attempts
     
-    if (!imageData) {
-      throw new Error('Failed to generate image after multiple attempts');
+    if (!imageData || imageData === 'GENERATION_FAILED' || imageData === 'CONTENT_POLICY_VIOLATION') {
+      const errorType = imageData || 'unknown';
+      console.error(`Regeneration failed: ${errorType}`);
+      throw new Error(`Failed to regenerate image: ${errorType}`);
     }
 
     // Update shot with new image data

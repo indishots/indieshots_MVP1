@@ -451,7 +451,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             className="text-xs px-2 py-1 h-6"
                             onClick={async () => {
                               try {
-                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${index}`, {
+                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${idx}`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   credentials: 'include',
@@ -485,7 +485,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             className="text-xs px-2 py-1 h-6"
                             onClick={async () => {
                               try {
-                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${index}`, {
+                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${idx}`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   credentials: 'include',
