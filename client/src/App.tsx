@@ -12,6 +12,7 @@ import NotFound from "@/pages/not-found";
 
 // Import existing pages
 import Home from "@/pages/home";
+import Features from "@/pages/features";
 import CleanAuth from "@/pages/clean-auth";
 import CleanLogout from "@/pages/clean-logout";
 import Dashboard from "@/pages/dashboard";
@@ -65,6 +66,11 @@ function App() {
               {/* Home page with standalone layout */}
               <Route path="/">
                 <Home />
+              </Route>
+
+              {/* Features page with standalone layout */}
+              <Route path="/features">
+                <Features />
               </Route>
 
               {/* Main application routes with app layout */}

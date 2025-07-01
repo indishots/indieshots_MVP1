@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
-import { ArrowRight, FileText, Film, Code, CheckCircle2, Zap, Clock, Globe, Camera } from "lucide-react";
+import { ArrowRight, FileText, Film, Code, Camera } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
@@ -101,7 +101,11 @@ export default function Home() {
               Get Started for Free
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline">
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => setLocation("/features")}
+            >
               View Features
             </Button>
           </div>
@@ -162,51 +166,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Designed for Independent Filmmaking</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Experience the next generation of filmmaking tools, designed specifically for your vision.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-card p-8 rounded-xl">
-              <CheckCircle2 className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Intelligent Scene Breakdown</h3>
-              <p className="text-muted-foreground">
-                Our advanced analysis meticulously dissects your script, identifying scenes, characters, locations, and dialogue for meticulous shot planning.
-              </p>
-            </div>
-            
-            <div className="bg-card p-8 rounded-xl">
-              <Globe className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Comprehensive Shot Planning</h3>
-              <p className="text-muted-foreground">
-                Craft production-ready shot lists featuring essential fields, including detailed camera movements, lighting requirements, props, and technical specifications.
-              </p>
-            </div>
-            
-            <div className="bg-card p-8 rounded-xl">
-              <Clock className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Dynamic Visual Storyboards</h3>
-              <p className="text-muted-foreground">
-                Design captivating storyboards with customizable image creation. Refine and regenerate visuals with specific prompts to perfectly match your cinematic vision.
-              </p>
-            </div>
-            
-            <div className="bg-card p-8 rounded-xl">
-              <Zap className="h-8 w-8 text-primary mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Seamless Export</h3>
-              <p className="text-muted-foreground">
-                Effortlessly download production-ready shot lists and complete storyboard packages.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Pricing */}
       <section className="py-20 px-6 bg-card">
