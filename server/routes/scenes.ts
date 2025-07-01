@@ -612,9 +612,23 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
       basePrompt = createPrompt(shot);
     }
     
-    // Enhance with user modifications
-    const modifiedPrompt = `${basePrompt} ${modifications}`;
-    console.log(`Using prompt: ${modifiedPrompt}`);
+    // Apply content safety modifications for regeneration
+    let modifiedPrompt;
+    if (modifications === 'alternative safe prompt') {
+      // For content policy issues, create a much safer version of the prompt
+      const shotType = shot.shotType || 'medium shot';
+      const location = shot.location || 'indoor location';
+      const timeOfDay = shot.timeOfDay || 'day';
+      
+      const safePrompt = `Professional ${shotType.toLowerCase()} in ${location.toLowerCase()} during ${timeOfDay.toLowerCase()}, clean movie production scene, cinematic lighting, film still`;
+      modifiedPrompt = safePrompt;
+    } else if (modifications === 'retry generation') {
+      // For retry, just use a cleaned version of the base prompt
+      modifiedPrompt = basePrompt.replace(/blood|violent|death|murder|kill|weapon|gun|knife/gi, 'dramatic');
+    } else {
+      modifiedPrompt = `${basePrompt} ${modifications}`;
+    }
+    console.log(`Using regeneration prompt: ${modifiedPrompt}`);
 
     // Use the improved image generation function with retries
     const { generateImageData } = await import('../services/imageGenerator');

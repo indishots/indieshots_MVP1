@@ -99,53 +99,6 @@ function sanitizePromptForGeneration(prompt: string): string {
   return cleaned.trim();
 }
 
-/**
- * Generate a very safe fallback image when all other attempts fail
- */
-async function generateFallbackImage(originalPrompt: string): Promise<string | null> {
-  try {
-    console.log('Attempting fallback image generation with ultra-safe prompt');
-    
-    // Extract basic visual elements and create a very safe prompt
-    const safeFallbackPrompt = `Professional film production still of a movie scene, cinematic lighting, high quality cinematography, artistic composition, clean and safe for work content`;
-    
-    const response = await imageClient.images.generate({
-      model: "dall-e-3",
-      prompt: safeFallbackPrompt,
-      n: 1,
-      size: "1024x1024",
-      response_format: "url"
-    });
-
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) {
-      console.error('No fallback image URL returned');
-      return 'GENERATION_FAILED';
-    }
-
-    // Download the fallback image
-    const imageResponse = await fetch(imageUrl, { 
-      headers: {
-        'User-Agent': 'IndieShots-Server/1.0'
-      }
-    });
-
-    if (!imageResponse.ok) {
-      console.error(`Failed to download fallback image: ${imageResponse.statusText}`);
-      return 'GENERATION_FAILED';
-    }
-
-    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-    const base64Data = imageBuffer.toString('base64');
-    
-    console.log('Successfully generated fallback image');
-    return base64Data;
-  } catch (error) {
-    console.error('Fallback image generation failed:', error);
-    return 'GENERATION_FAILED';
-  }
-}
-
 export interface StoryboardFrame {
   shotNumber: number;
   imagePath?: string;
@@ -264,6 +217,53 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
   } catch (error) {
     console.error('[ERROR] Image generation failed:', error);
     return `[ERROR] Image generation failed: ${error}`;
+  }
+}
+
+/**
+ * Generate a very safe fallback image when all other attempts fail
+ */
+async function generateFallbackImage(originalPrompt: string): Promise<string | null> {
+  try {
+    console.log('Attempting fallback image generation with ultra-safe prompt');
+    
+    // Extract basic visual elements and create a very safe prompt
+    const safeFallbackPrompt = `Professional film production still of a movie scene, cinematic lighting, high quality cinematography, artistic composition, clean and safe for work content`;
+    
+    const response = await imageClient.images.generate({
+      model: "dall-e-3",
+      prompt: safeFallbackPrompt,
+      n: 1,
+      size: "1024x1024",
+      response_format: "url"
+    });
+
+    const imageUrl = response.data?.[0]?.url;
+    if (!imageUrl) {
+      console.error('No fallback image URL returned');
+      return 'GENERATION_FAILED';
+    }
+
+    // Download the fallback image
+    const imageResponse = await fetch(imageUrl, { 
+      headers: {
+        'User-Agent': 'IndieShots-Server/1.0'
+      }
+    });
+
+    if (!imageResponse.ok) {
+      console.error(`Failed to download fallback image: ${imageResponse.statusText}`);
+      return 'GENERATION_FAILED';
+    }
+
+    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+    const base64Data = imageBuffer.toString('base64');
+    
+    console.log('Successfully generated fallback image');
+    return base64Data;
+  } catch (error) {
+    console.error('Fallback image generation failed:', error);
+    return 'GENERATION_FAILED';
   }
 }
 

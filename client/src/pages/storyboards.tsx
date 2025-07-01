@@ -459,9 +459,17 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                                 });
                                 if (response.ok) {
                                   queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
-                                  toast({ title: "Retrying image generation..." });
+                                  toast({ 
+                                    title: "Retrying image generation...", 
+                                    description: "This may take a moment to process"
+                                  });
                                 } else {
-                                  toast({ title: "Retry failed", variant: "destructive" });
+                                  const error = await response.json().catch(() => ({}));
+                                  toast({ 
+                                    title: "Retry failed", 
+                                    description: error.details || "Please try again or contact support",
+                                    variant: "destructive" 
+                                  });
                                 }
                               } catch (error) {
                                 toast({ title: "Retry failed", variant: "destructive" });
