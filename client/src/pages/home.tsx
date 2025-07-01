@@ -114,7 +114,7 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Simple, Powerful Workflow</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              From screenplay to production-ready shot list in four simple steps.
+              Transform your screenplay into comprehensive shot lists and stunning storyboards, effortlessly.
             </p>
           </div>
           
