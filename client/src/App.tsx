@@ -13,7 +13,7 @@ import NotFound from "@/pages/not-found";
 // Import existing pages
 import Home from "@/pages/home";
 import Features from "@/pages/features";
-import CleanAuth from "@/pages/clean-auth";
+import SimpleAuth from "@/pages/simple-auth";
 import CleanLogout from "@/pages/clean-logout";
 import Dashboard from "@/pages/dashboard";
 import Upload from "@/pages/upload";
@@ -44,19 +44,19 @@ function App() {
               {/* Authentication routes with clean layout */}
               <Route path="/auth">
                 <AuthLayout>
-                  <CleanAuth />
+                  <SimpleAuth />
                 </AuthLayout>
               </Route>
 
               <Route path="/login">
                 <AuthLayout>
-                  <CleanAuth />
+                  <SimpleAuth />
                 </AuthLayout>
               </Route>
 
               <Route path="/signup">
                 <AuthLayout>
-                  <CleanAuth />
+                  <SimpleAuth />
                 </AuthLayout>
               </Route>
 
