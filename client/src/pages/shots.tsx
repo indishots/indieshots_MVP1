@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users, Video, Move, Palette, MapPin, Sun, Box, Lightbulb, MessageSquare, Heart, Volume2, FileText } from "lucide-react";
+import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users, Video, Move, Palette, MapPin, Sun, Box, Lightbulb, MessageSquare, Heart, Volume2, FileText, Download, FileSpreadsheet, Crown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/components/auth/UltimateAuthProvider";
 
 interface ShotsProps {
   jobId: string;
@@ -19,6 +20,10 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
+  const { user } = useAuth();
+  
+  // Check if user is premium/pro
+  const isPro = user?.tier === 'pro' || user?.tier === 'premium';
   
   // Fetch parse job to get the selected scene
   const { data: parseJob, isLoading: isLoadingJob } = useQuery({
@@ -107,21 +112,8 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   // Debug logging to see the shots data structure
   console.log('Shots data:', shots);
   
-  // CSV download function - exports ALL 19 fields automatically
-  const downloadCSV = () => {
-    if (!shots.length) {
-      toast({
-        title: "No shots to download",
-        description: "Generate shots first before downloading",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('First shot data keys:', shots[0] ? Object.keys(shots[0]) : 'No shots');
-    console.log('First shot sample:', shots[0]);
-
-    // Export ALL 19 comprehensive fields automatically
+  // Get export data for both CSV and Excel functions
+  const getExportData = () => {
     const allFields = [
       { header: 'Scene Number', field: 'sceneIndex', transform: (value: any) => (value || 0) + 1 },
       { header: 'Scene Heading', field: 'sceneHeading' },
@@ -143,38 +135,41 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
       { header: 'Sound Design', field: 'soundDesign' },
       { header: 'Color Temperature', field: 'colourTemp' }
     ];
-    
+
     const headers = allFields.map(field => field.header);
-    console.log(`Exporting ${headers.length} comprehensive fields:`, headers);
-    
-    const csvRows = [headers.join(',')];
-    
-    shots.forEach((shot: any, shotIndex: number) => {
-      const row = allFields.map(fieldDef => {
+    const data = shots.map((shot: any) => {
+      return allFields.map(fieldDef => {
         let value = shot[fieldDef.field];
         
-        // Apply transformation if specified
         if (fieldDef.transform) {
           value = fieldDef.transform(value);
         }
         
-        // Ensure we return a string value
-        const finalValue = value !== null && value !== undefined ? String(value).trim() : '';
-        
-        // Debug logging for first shot
-        if (shotIndex === 0) {
-          console.log(`${fieldDef.header} (${fieldDef.field}): "${finalValue}"`);
-        }
-        
-        return finalValue;
+        return value !== null && value !== undefined ? String(value).trim() : '';
       });
-      
-      // Clean and escape CSV data properly
+    });
+
+    return { headers, data, allFields };
+  };
+
+  // CSV export function
+  const downloadCSV = () => {
+    if (!shots.length) {
+      toast({
+        title: "No shots to download",
+        description: "Generate shots first before downloading",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { headers, data } = getExportData();
+    const csvRows = [headers.join(',')];
+    
+    data.forEach((row) => {
       const cleanRow = row.map((field: any) => {
         let str = String(field || '').trim();
-        // Remove any line breaks or extra spaces
         str = str.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
-        // Escape quotes and wrap in quotes if contains comma or quote
         if (str.includes(',') || str.includes('"')) {
           str = `"${str.replace(/"/g, '""')}"`;
         }
@@ -185,7 +180,6 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     });
     
     const csvContent = csvRows.join('\n');
-
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -196,12 +190,59 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     link.click();
     document.body.removeChild(link);
     
-    console.log('Final CSV content preview:');
-    console.log(csvContent.split('\n').slice(0, 3).join('\n'));
-    
     toast({
       title: "CSV downloaded",
       description: `Downloaded ${shots.length} shots with ${headers.length} comprehensive fields`,
+    });
+  };
+
+  // Excel export function (Pro feature)
+  const downloadExcel = () => {
+    if (!isPro) {
+      toast({
+        title: "Pro feature required",
+        description: "Excel export is available for Pro members only. Upgrade to Pro to access this feature.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!shots.length) {
+      toast({
+        title: "No shots to download",
+        description: "Generate shots first before downloading",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const { headers, data } = getExportData();
+    const csvRows = [headers.join('\t')]; // Use tabs for better Excel compatibility
+    
+    data.forEach((row) => {
+      const cleanRow = row.map((field: any) => {
+        let str = String(field || '').trim();
+        str = str.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
+        return str;
+      });
+      
+      csvRows.push(cleanRow.join('\t'));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `scene_${parseInt(sceneIndex) + 1}_shots.xls`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+      title: "Excel file downloaded",
+      description: `Downloaded ${shots.length} shots as Excel file with ${headers.length} comprehensive fields`,
     });
   };
   
@@ -448,13 +489,26 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>Generated Shots ({shots.length})</CardTitle>
-                    <Button 
-                      onClick={downloadCSV}
-                      disabled={shots.length === 0}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      Download Excel/CSV
-                    </Button>
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={downloadCSV}
+                        disabled={shots.length === 0}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Export as CSV
+                      </Button>
+                      <Button 
+                        onClick={downloadExcel}
+                        disabled={shots.length === 0 || !isPro}
+                        className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:hover:bg-gray-400"
+                        title={!isPro ? "Excel export is a Pro feature" : "Export as Excel file"}
+                      >
+                        {!isPro && <Crown className="mr-2 h-4 w-4" />}
+                        {isPro && <FileSpreadsheet className="mr-2 h-4 w-4" />}
+                        Export as Excel
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
