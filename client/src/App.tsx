@@ -32,6 +32,7 @@ import Contact from "@/pages/contact";
 import Admin from "@/pages/admin";
 import Help from "@/pages/help";
 import PublicFAQ from "@/pages/public-faq";
+import VerifyEmail from "@/pages/verify-email";
 
 function App() {
   return (
@@ -56,6 +57,12 @@ function App() {
               <Route path="/signup">
                 <AuthLayout>
                   <CleanAuth />
+                </AuthLayout>
+              </Route>
+
+              <Route path="/verify-email">
+                <AuthLayout>
+                  <VerifyEmail />
                 </AuthLayout>
               </Route>
 
