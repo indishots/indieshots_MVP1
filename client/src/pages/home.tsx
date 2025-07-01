@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
-import { ArrowRight, FileText, Film, Code, CheckCircle2, Zap, Clock, Globe } from "lucide-react";
+import { ArrowRight, FileText, Film, Code, CheckCircle2, Zap, Clock, Globe, Image } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export default function Home() {
@@ -114,18 +114,18 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Simple, Powerful Workflow</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              From screenplay to production-ready shot list in three simple steps.
+              From screenplay to production-ready shot list in four simple steps.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="bg-background p-8 rounded-xl shadow-sm border border-border">
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-6">
                 <FileText className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-3">1. Upload Your Script</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Upload your screenplay as PDF, DOCX, or TXT. Or simply paste your script text directly into our editor.
+                Instantly upload your PDF, DOCX, or TXT script. Our intelligent system analyzes and extracts key scenes and dialogue, setting the stage for your project.
               </p>
             </div>
             
@@ -133,9 +133,9 @@ export default function Home() {
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-6">
                 <Code className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">2. Customize Details</h3>
+              <h3 className="text-xl font-semibold mb-3">2. Define Your Scenes</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Select which elements to extract: scene numbers, locations, characters, props, camera angles, and more.
+                Precisely select the scenes you wish to transform into detailed shot breakdowns. Focus on what matters most for your vision.
               </p>
             </div>
             
@@ -143,9 +143,19 @@ export default function Home() {
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-6">
                 <Film className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">3. Export Shot List</h3>
+              <h3 className="text-xl font-semibold mb-3">3. Generate Detailed Shots</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Download your production-ready shot list in CSV format. Share with your crew and start shooting.
+                Develop comprehensive shot lists complete with camera angles, lighting cues, and essential technical specifications, tailored to each moment.
+              </p>
+            </div>
+            
+            <div className="bg-background p-8 rounded-xl shadow-sm border border-border">
+              <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-6">
+                <Image className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">4. Visualize Your Story</h3>
+              <p className="text-muted-foreground leading-relaxed">
+                Bring your narrative to life with dynamic visual storyboards. Craft compelling images for every shot, turning concepts into concrete visuals.
               </p>
             </div>
           </div>
