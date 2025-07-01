@@ -17,8 +17,21 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [otp, setOtp] = useState("");
-  const [email, setEmail] = useState(propEmail || "");
+  const [email, setEmail] = useState("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+
+  // Get email from URL parameters
+  useEffect(() => {
+    if (propEmail) {
+      setEmail(propEmail);
+    } else {
+      const urlParams = new URLSearchParams(window.location.search);
+      const emailParam = urlParams.get('email');
+      if (emailParam) {
+        setEmail(decodeURIComponent(emailParam));
+      }
+    }
+  }, [propEmail]);
 
   // Timer countdown
   useEffect(() => {
