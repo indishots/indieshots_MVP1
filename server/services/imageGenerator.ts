@@ -25,7 +25,7 @@ if (!fs.existsSync(IMAGE_OUTPUT_DIR)) {
 /**
  * Clean prompt to avoid OpenAI content policy violations
  */
-function sanitizePrompt(prompt: string): string {
+function sanitizePromptForGeneration(prompt: string): string {
   // Remove potentially problematic words that might trigger content policy
   const problematicWords = [
     'blood-soaked', 'bloody', 'gore', 'violent', 'death', 'murder', 'kill', 
@@ -242,13 +242,20 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       } else if (error?.name === 'AbortError') {
         console.log('Request timed out, retrying...');
         await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+      } else if (error?.message?.includes('content policy')) {
+        console.log('Content policy violation, attempting to clean prompt...');
+        // For content policy issues, return null immediately to mark as failed
+        if (attempt === retries) {
+          console.error(`Content policy violation - cannot generate image for this prompt`);
+          return 'CONTENT_POLICY_VIOLATION';
+        }
       } else if (attempt < retries) {
         await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
       }
       
       if (attempt === retries) {
         console.error(`Failed to generate image after ${retries} attempts`);
-        return null;
+        return 'GENERATION_FAILED';
       }
     }
   }
@@ -274,9 +281,15 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
 
     // Generate image and get base64 data instead of saving to file
     const imageData = await generateImageData(prompt);
-    if (!imageData) {
-      console.error(`Image generation failed for shot ${shotId}`);
-      return { shotId, status: 'image generation failed' };
+    if (!imageData || imageData === 'GENERATION_FAILED' || imageData === 'CONTENT_POLICY_VIOLATION') {
+      console.error(`Image generation failed for shot ${shotId}: ${imageData || 'unknown error'}`);
+      
+      // Store the failure status in the database so frontend knows this shot failed
+      const { storage } = await import('../storage');
+      const failureMarker = imageData === 'CONTENT_POLICY_VIOLATION' ? 'CONTENT_POLICY_ERROR' : 'GENERATION_ERROR';
+      await storage.updateShotImage(shot.id, failureMarker, prompt);
+      
+      return { shotId, status: `image generation failed: ${imageData || 'unknown error'}` };
     }
 
     // Store image data in the shot record

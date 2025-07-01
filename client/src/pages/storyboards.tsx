@@ -437,6 +437,74 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             });
                           }}
                         />
+                      ) : frame.imagePath === 'GENERATION_ERROR' ? (
+                        <div className="text-center text-red-500 space-y-2">
+                          <div className="h-8 w-8 mx-auto bg-red-100 rounded flex items-center justify-center">
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </div>
+                          <p className="text-xs">Generation failed</p>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs px-2 py-1 h-6"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${index}`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ modifications: 'retry generation' })
+                                });
+                                if (response.ok) {
+                                  queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
+                                  toast({ title: "Retrying image generation..." });
+                                } else {
+                                  toast({ title: "Retry failed", variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Retry failed", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Retry
+                          </Button>
+                        </div>
+                      ) : frame.imagePath === 'CONTENT_POLICY_ERROR' ? (
+                        <div className="text-center text-orange-500 space-y-2">
+                          <div className="h-8 w-8 mx-auto bg-orange-100 rounded flex items-center justify-center">
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                          </div>
+                          <p className="text-xs">Content policy</p>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs px-2 py-1 h-6"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${index}`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ modifications: 'alternative safe prompt' })
+                                });
+                                if (response.ok) {
+                                  queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
+                                  toast({ title: "Retrying with safer prompt..." });
+                                } else {
+                                  toast({ title: "Retry failed", variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Retry failed", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Retry
+                          </Button>
+                        </div>
                       ) : (
                         <div className="text-center text-muted-foreground">
                           <div className="h-8 w-8 mx-auto mb-2 bg-gray-300 rounded animate-pulse"></div>
