@@ -623,12 +623,31 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
       const safePrompt = `Professional ${shotType.toLowerCase()} in ${location.toLowerCase()} during ${timeOfDay.toLowerCase()}, clean movie production scene, cinematic lighting, film still`;
       modifiedPrompt = safePrompt;
     } else if (modifications === 'retry generation') {
-      // For retry, just use a cleaned version of the base prompt
-      modifiedPrompt = basePrompt.replace(/blood|violent|death|murder|kill|weapon|gun|knife/gi, 'dramatic');
+      // For retry, aggressively clean the prompt
+      modifiedPrompt = basePrompt
+        .replace(/blood[-\s]?soaked/gi, 'red-stained')
+        .replace(/blood/gi, 'dramatic red')
+        .replace(/police\s+tape/gi, 'yellow barrier')
+        .replace(/crime\s+scene/gi, 'investigation area')
+        .replace(/violent|death|murder|kill|weapon|gun|knife/gi, 'dramatic')
+        .replace(/gore|brutal|torture/gi, 'intense');
+      
+      // Add safety qualifiers
+      modifiedPrompt = `Professional cinematic scene: ${modifiedPrompt}, movie production still, artistic lighting`;
     } else {
       modifiedPrompt = `${basePrompt} ${modifications}`;
     }
     console.log(`Using regeneration prompt: ${modifiedPrompt}`);
+    
+    // Debug: Test the specific failing prompt
+    if (modifiedPrompt.includes('blood-soaked') || modifiedPrompt.includes('blood soaked')) {
+      console.log('WARNING: Detected blood-related content in prompt that may trigger content policy');
+      console.log('Original shot data:', {
+        shotDescription: shot.shotDescription,
+        location: shot.location,
+        shotType: shot.shotType
+      });
+    }
 
     // Use the improved image generation function with retries
     const { generateImageData } = await import('../services/imageGenerator');

@@ -57,8 +57,11 @@ function sanitizePromptForGeneration(prompt: string): string {
     'criminal': 'character',
     'victim': 'person',
     'suspect': 'character',
-    'police tape': 'yellow tape',
+    'police tape': 'yellow barrier tape',
     'evidence': 'clues',
+    'blood soaked': 'red-stained',
+    'bloodsoaked': 'red-stained',
+    'lane': 'street area',
     
     // General problematic terms
     'dead': 'still',
@@ -277,6 +280,8 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       
       // Clean the prompt to avoid content policy violations
       const cleanedPrompt = sanitizePromptForGeneration(prompt);
+      console.log(`Original prompt: ${prompt}`);
+      console.log(`Cleaned prompt: ${cleanedPrompt}`);
       
       const response = await imageClient.images.generate({
         model: "dall-e-3",
@@ -336,8 +341,8 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       }
       
       if (attempt === retries) {
-        console.error(`Failed to generate image after ${retries} attempts - attempting fallback generation`);
-        return await generateFallbackImage(prompt);
+        console.error(`Failed to generate image after ${retries} attempts`);
+        return 'GENERATION_FAILED';
       }
     }
   }
