@@ -75,11 +75,9 @@ export default function StoryboardLoadingAnimation() {
         <div className="w-16 h-16 rounded-full border-2 border-slate-700 border-t-primary animate-spin"></div>
         
         {/* Inner icon circle - smaller */}
-        <div className="absolute inset-2 bg-slate-800 rounded-full flex items-center justify-center overflow-visible">
+        <div className="absolute inset-2 bg-slate-800 rounded-full flex items-center justify-center">
           <div className={`${frame.color} ${frame.animation} transition-colors duration-500`}>
-            <div className="w-5 h-5">
-              {frame.icon}
-            </div>
+            {frame.icon}
           </div>
         </div>
       </div>
