@@ -96,6 +96,7 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **SETTINGS NAVIGATION BUG FIXED** - Resolved critical theme system conflict where custom 'themechange' event dispatch in settings page was causing dashboard buttons to become invisible; simplified theme change handling by removing problematic setTimeout and CustomEvent while preserving all theme functionality
 - July 1, 2025: **DASHBOARD QUICK ACTIONS REVERTED TO CLEAN DESIGN** - Restored Quick Actions buttons to previous clean shadcn/ui styling by removing inline style overrides and theme change handling code; buttons now use proper theme-aware design that adapts naturally to light/dark themes
 - July 1, 2025: **TOOLS SECTION REMOVED FROM NAVIGATION** - Cleaned up left navigation panel by removing Tools section (Analysis, Storyboards, AI Tools) for streamlined interface; removed unused icon imports and maintained core navigation functionality
 - July 1, 2025: **DASHBOARD COMPLETED JOBS SECTION REMOVED** - Cleaned up dashboard by removing the "Completed Jobs" card while preserving all other functionality including usage quota, scripts uploaded, and premium features sections
