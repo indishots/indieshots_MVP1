@@ -22,6 +22,48 @@ if (!fs.existsSync(IMAGE_OUTPUT_DIR)) {
   fs.mkdirSync(IMAGE_OUTPUT_DIR, { recursive: true });
 }
 
+/**
+ * Clean prompt to avoid OpenAI content policy violations
+ */
+function sanitizePrompt(prompt: string): string {
+  // Remove potentially problematic words that might trigger content policy
+  const problematicWords = [
+    'blood-soaked', 'bloody', 'gore', 'violent', 'death', 'murder', 'kill', 
+    'weapon', 'gun', 'knife', 'violence', 'brutal', 'torture'
+  ];
+  
+  let cleaned = prompt;
+  
+  // Replace problematic terms with milder alternatives
+  const replacements: { [key: string]: string } = {
+    'blood-soaked': 'stained',
+    'bloody': 'red-stained',
+    'gore': 'dramatic scene',
+    'violent': 'intense',
+    'death': 'dramatic moment',
+    'murder': 'crime scene',
+    'kill': 'confront',
+    'weapon': 'object',
+    'gun': 'device',
+    'knife': 'tool',
+    'violence': 'action',
+    'brutal': 'intense',
+    'torture': 'interrogation'
+  };
+  
+  for (const [problematic, replacement] of Object.entries(replacements)) {
+    const regex = new RegExp(problematic, 'gi');
+    cleaned = cleaned.replace(regex, replacement);
+  }
+  
+  // Ensure prompt is film-friendly and artistic
+  if (!cleaned.toLowerCase().includes('cinematic') && !cleaned.toLowerCase().includes('film')) {
+    cleaned = `Professional cinematic scene: ${cleaned}`;
+  }
+  
+  return cleaned.trim();
+}
+
 export interface StoryboardFrame {
   shotNumber: number;
   imagePath?: string;
@@ -151,9 +193,12 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
     try {
       console.log(`Generating image data (attempt ${attempt}/${retries}) with prompt: ${prompt.substring(0, 100)}...`);
       
+      // Clean the prompt to avoid content policy violations
+      const cleanedPrompt = sanitizePromptForGeneration(prompt);
+      
       const response = await imageClient.images.generate({
         model: "dall-e-3",
-        prompt: prompt,
+        prompt: cleanedPrompt,
         n: 1,
         size: "1024x1024",
         response_format: "url"
