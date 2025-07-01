@@ -656,7 +656,27 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     if (!imageData || imageData === 'GENERATION_FAILED' || imageData === 'CONTENT_POLICY_VIOLATION') {
       const errorType = imageData || 'unknown';
       console.error(`Regeneration failed: ${errorType}`);
-      throw new Error(`Failed to regenerate image: ${errorType}`);
+      console.error(`Failed prompt was: ${modifiedPrompt}`);
+      
+      // If this is a content policy issue, try one more time with an ultra-safe prompt
+      if (imageData === 'CONTENT_POLICY_VIOLATION' || modifiedPrompt.toLowerCase().includes('blood')) {
+        console.log('Attempting emergency ultra-safe regeneration...');
+        const emergencyPrompt = `Professional medium shot in indoor location during day, clean movie production scene, cinematic lighting, film still, safe for work content`;
+        const emergencyResult = await generateImageData(emergencyPrompt, 1);
+        
+        if (emergencyResult && emergencyResult !== 'GENERATION_FAILED' && emergencyResult !== 'CONTENT_POLICY_VIOLATION') {
+          console.log('Emergency regeneration successful');
+          await storage.updateShotImage(shot.id, emergencyResult, emergencyPrompt);
+          return res.json({ 
+            message: 'Image regenerated with simplified prompt',
+            shotId: shot.id,
+            newPrompt: emergencyPrompt,
+            fallback: true
+          });
+        }
+      }
+      
+      throw new Error(`Failed to regenerate image: ${errorType}. The content may be too sensitive for AI image generation.`);
     }
 
     // Update shot with new image data
