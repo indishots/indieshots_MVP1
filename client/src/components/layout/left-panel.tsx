@@ -8,10 +8,7 @@ import {
   Folder, 
   Settings, 
   HelpCircle,
-  BarChart,
   Clock,
-  Zap,
-  Video,
   LogOut,
   Crown
 } from "lucide-react";
@@ -168,41 +165,7 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
           </nav>
         </div>
         
-        {/* Tools Section */}
-        <div className="px-4 mb-4">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-3 mb-2">
-            Tools
-          </p>
-          <nav className="space-y-1.5">
-            <Link href="/analysis" className={cn(
-              "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
-              location === "/analysis" 
-                ? "bg-primary text-primary-foreground" 
-                : "text-foreground hover:bg-background/80"
-            )}>
-              <BarChart className="h-4 w-4 mr-3" />
-              Analysis
-            </Link>
-            
-            <Link href="/storyboards" className={cn(
-              "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
-              location === "/storyboards" 
-                ? "bg-primary text-primary-foreground" 
-                : "text-foreground hover:bg-background/80"
-            )}>
-              <Video className="h-4 w-4 mr-3" />
-              Storyboards
-            </Link>
-            
-            <Link href="/ai-tools" className={cn(
-              "group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors text-foreground hover:bg-background/80"
-            )}>
-              <Zap className="h-4 w-4 mr-3 text-yellow-500" />
-              AI Tools
-              <Badge className="ml-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-semibold">PRO</Badge>
-            </Link>
-          </nav>
-        </div>
+
           
         {/* Recent Projects */}
         {recentScripts.length > 0 && (
