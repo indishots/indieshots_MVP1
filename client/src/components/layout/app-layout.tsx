@@ -46,6 +46,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Pages that should show the sidebar
   const sidebarPages = ['/dashboard', '/projects', '/settings', '/upload', '/columns', '/parse', '/review', '/scene-selection', '/shots', '/storyboards', '/scriptHealth'];
   const shouldShowSidebar = isAuthenticated && (sidebarPages.some(page => location.startsWith(page)) || location === '/');
+  
+  // Pages that should show the right panel (exclude review pages)
+  const shouldShowRightPanel = isAuthenticated && !location.startsWith('/review');
 
   // Get user initials for avatar
   const getUserInitials = () => {
@@ -209,7 +212,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {/* Right Details Panel */}
-        <RightPanel collapsed={rightCollapsed} />
+        {shouldShowRightPanel && <RightPanel collapsed={rightCollapsed} />}
       </div>
 
       {/* Contact Support Button - Available on all pages */}
