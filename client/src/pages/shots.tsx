@@ -536,7 +536,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
               <Card className="mb-6">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Generated Shots ({shots.length})</CardTitle>
+                    <CardTitle>Generated Shots</CardTitle>
                     <div className="flex gap-3">
                       <Button 
                         onClick={downloadCSV}
