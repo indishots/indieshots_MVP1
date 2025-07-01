@@ -76,18 +76,12 @@ export async function firebaseLogin(req: Request, res: Response) {
     const isPremiumCoupon = couponCode && validCouponCodes.includes(couponCode.toUpperCase());
     const isDemoAccount = userData.email === 'premium@demo.com';
 
-    console.log('========== COUPON CODE PROCESSING ==========');
-    console.log('- Received couponCode:', couponCode);
-    console.log('- Type of couponCode:', typeof couponCode);
-    console.log('- Valid coupon codes:', validCouponCodes);
-    console.log('- couponCode.toUpperCase():', couponCode ? couponCode.toUpperCase() : 'undefined');
-    console.log('- includes check:', couponCode ? validCouponCodes.includes(couponCode.toUpperCase()) : 'false');
-    console.log('- isPremiumCoupon:', isPremiumCoupon);
-    console.log('- isDemoAccount:', isDemoAccount);
-
-    // Set user tier based on coupon code or demo account
+    // Set user tier based on coupon code or demo account  
     const userTier = (isPremiumCoupon || isDemoAccount) ? 'pro' : 'free';
-    console.log('- Final userTier:', userTier);
+    
+    if (isPremiumCoupon) {
+      console.log('✓ INDIE2025 coupon applied for user:', userData.email, '- Granting pro access');
+    }
 
     userData.tier = userTier;
     if (isDemoAccount || isPremiumCoupon) {
@@ -140,14 +134,7 @@ export async function firebaseLogin(req: Request, res: Response) {
       usedPages: userData.usedPages,
       totalPages: userData.totalPages,
       maxShotsPerScene: userData.maxShotsPerScene,
-      canGenerateStoryboards: userData.canGenerateStoryboards,
-      // Debug info (temporary)
-      debug: {
-        receivedCouponCode: couponCode,
-        isPremiumCoupon: isPremiumCoupon,
-        userTier: userTier,
-        isDemoAccount: isDemoAccount
-      }
+      canGenerateStoryboards: userData.canGenerateStoryboards
     });
 
   } catch (error) {

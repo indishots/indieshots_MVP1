@@ -68,12 +68,6 @@ export default function CleanAuthPage() {
 
     // Check if coupon code is valid for premium access
     const isPremiumCoupon = couponCode.toUpperCase() === 'INDIE2025';
-    
-    console.log('Signup attempt:', {
-      email,
-      couponCode,
-      isPremiumCoupon
-    });
 
     const result = await signUp(email, password, isPremiumCoupon);
     
