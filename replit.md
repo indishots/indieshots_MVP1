@@ -96,6 +96,9 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **ANIMATED STORYBOARD LOADING SYSTEM IMPLEMENTED** - Created beautiful animated loading screen for storyboard generation with 6 cycling animation frames featuring bouncing, floating, wiggling, spinning, pulsing, and scaling icons; compact design with IndieShots theme colors and aesthetic animations that pop out of spinning rings; enhances user experience during AI image generation wait times
+- July 1, 2025: **EXCEL EXPORT SECURITY WARNINGS ELIMINATED** - Implemented proper Excel XML format to eliminate security warnings when opening downloaded files; Excel export now opens seamlessly without conversion prompts or security dialogs
+- July 1, 2025: **SHOT COUNT DISPLAY REMOVED** - Cleaned up "Generated Shots" title by removing shot count numbers for cleaner interface appearance
 - July 1, 2025: **TIER-BASED EXPORT SYSTEM IMPLEMENTED** - Replaced single download button with separate "Export as CSV" and "Export as Excel" buttons; Excel export restricted to Pro users with visual indicators and upgrade prompts for free tier users; CSV export available to all users with comprehensive shot data
 - July 1, 2025: **COMPREHENSIVE PRODUCTION DETAILS PANEL IMPLEMENTED** - Added right-side production details panel to shot generation page displaying all 19 production fields organized in professional categories: Basic Information, Camera & Technical, Scene Context, Characters & Action, and Production Notes; enhances filmmaking workflow with clear visual breakdown of generated shot data
 - July 1, 2025: **STREAMLINED SHOT GENERATION WORKFLOW** - Modified scene selection to skip CSV export fields page and go directly to shot generation page (/shots/jobId/sceneIndex), eliminating unnecessary intermediate step and improving user experience

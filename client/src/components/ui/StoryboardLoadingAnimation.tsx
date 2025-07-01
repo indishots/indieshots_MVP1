@@ -72,7 +72,7 @@ export default function StoryboardLoadingAnimation() {
       {/* Animated Icon with Spinning Ring */}
       <div className="relative mb-6 flex items-center justify-center">
         {/* Outer spinning ring - smaller and thinner */}
-        <div className="w-16 h-16 rounded-full border-2 border-slate-700 border-t-purple-500 animate-spin"></div>
+        <div className="w-16 h-16 rounded-full border-2 border-slate-700 border-t-primary animate-spin"></div>
         
         {/* Inner icon circle - smaller */}
         <div className="absolute inset-2 bg-slate-800 rounded-full flex items-center justify-center overflow-visible">
