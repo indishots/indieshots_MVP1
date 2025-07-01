@@ -5,6 +5,7 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import { generateToken, invalidateToken } from '../auth/jwt';
 import sgMail from '@sendgrid/mail';
+import { generateOTP, sendOTPEmail, storeOTP, verifyOTP, resendOTP as resendOTPService } from '../emailService';
 
 // Set SendGrid API key if available
 if (process.env.SENDGRID_API_KEY) {
@@ -40,7 +41,7 @@ const emailSchema = z.object({
 });
 
 /**
- * Register a new user with email and password
+ * Register a new user with email and password - sends OTP for verification
  */
 export async function register(req: Request, res: Response) {
   try {
@@ -58,46 +59,133 @@ export async function register(req: Request, res: Response) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(validatedData.password, salt);
     
-    // Generate verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    
     // Check coupon code for premium upgrade
-    const validCouponCodes = ['DEMO2024', 'PREMIUM', 'LAUNCH'];
+    const validCouponCodes = ['DEMO2024', 'PREMIUM', 'LAUNCH', 'INDIE2025'];
     const isPremiumCoupon = validatedData.couponCode && validCouponCodes.includes(validatedData.couponCode.toUpperCase());
     
-    // Create user with appropriate tier based on coupon
-    const user = await storage.createUser({
+    // Prepare user data (don't create user yet - wait for email verification)
+    const userData = {
       email: validatedData.email.toLowerCase(),
       firstName: validatedData.firstName,
       lastName: validatedData.lastName,
       password: hashedPassword,
       provider: 'local',
-      verificationToken,
       tier: isPremiumCoupon ? 'premium' : 'free',
-      totalPages: isPremiumCoupon ? 1000 : 20, // Premium gets 1000 pages, free gets 20
+      totalPages: isPremiumCoupon ? 1000 : 20,
       usedPages: 0,
+      couponCode: validatedData.couponCode
+    };
+    
+    // Generate OTP
+    const otp = generateOTP();
+    
+    // Send OTP email
+    const emailSent = await sendOTPEmail(userData.email, otp, userData.firstName);
+    
+    if (!emailSent) {
+      return res.status(500).json({ message: 'Failed to send verification email. Please try again.' });
+    }
+    
+    // Store OTP and user data temporarily
+    storeOTP(userData.email, otp, userData);
+    
+    res.status(200).json({ 
+      message: 'Verification email sent. Please check your email and enter the OTP code.',
+      email: userData.email,
+      requiresVerification: true
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ message: error.errors[0].message });
+    }
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+/**
+ * Verify email with OTP code and create user account
+ */
+export async function verifyEmail(req: Request, res: Response) {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+    
+    // Verify OTP
+    const verification = verifyOTP(email, otp);
+    
+    if (!verification.valid) {
+      return res.status(400).json({ message: 'Invalid or expired OTP code' });
+    }
+    
+    // Create user account with verified email
+    const userData = verification.userData;
+    const user = await storage.createUser({
+      ...userData,
+      verificationToken: null, // Email is verified
       createdAt: new Date(),
       updatedAt: new Date()
     });
     
-    // Send verification email if SendGrid is configured
-    if (process.env.SENDGRID_API_KEY) {
-      const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${verificationToken}`;
-      
-      await sgMail.send({
-        to: user.email,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@indieshots.com',
-        subject: 'Verify your IndieShots account',
-        html: `
-          <h1>Welcome to IndieShots!</h1>
-          <p>Please verify your email address by clicking the link below:</p>
-          <p><a href="${verificationUrl}">Verify Email</a></p>
-          <p>This link will expire in 24 hours.</p>
-        `
-      });
+    // Generate JWT token
+    const token = generateToken(user.id);
+    
+    // Set HTTP-only cookie
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+    
+    // Remove password from response
+    const { password, ...userResponse } = user;
+    
+    res.status(201).json({
+      message: 'Email verified successfully! Account created.',
+      user: userResponse,
+      token
+    });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+/**
+ * Resend OTP for email verification
+ */
+export async function resendOTP(req: Request, res: Response) {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
     }
     
-    // Generate JWT token
+    // Check if user already exists
+    const existingUser = await storage.getUserByEmail(email.toLowerCase());
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already registered' });
+    }
+    
+    // Resend OTP
+    const success = await resendOTPService(email.toLowerCase());
+    
+    if (!success) {
+      return res.status(400).json({ message: 'No pending verification found for this email or failed to send email' });
+    }
+    
+    res.status(200).json({ 
+      message: 'Verification code resent successfully' 
+    });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
     const token = generateToken(user);
     
     // Set secure HTTP-only cookie with the token

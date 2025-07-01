@@ -23,6 +23,8 @@ const router = Router();
 
 // User authentication routes - CSRF protection disabled for development
 router.post('/signup', authController.register);
+router.post('/verify-email', authController.verifyEmail);
+router.post('/resend-otp', authController.resendOTP);
 router.post('/signin', authController.login);
 router.post('/magic-link', authController.sendMagicLink);
 router.get('/magic-link/verify', authController.verifyMagicLink);
