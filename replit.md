@@ -96,6 +96,7 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **COMPREHENSIVE FAQ SYSTEM IMPLEMENTED** - Created full FAQ system with 15 detailed questions across 16 categories; implemented authenticated help center (/help) with search and filtering for signed-in users; added public FAQ page (/public-faq) accessible from landing page footer; integrated Help Center link in left sidebar navigation; provides seamless user support workflow from public to authenticated access
 - July 1, 2025: **ANIMATED STORYBOARD LOADING SYSTEM IMPLEMENTED** - Created beautiful animated loading screen for storyboard generation with 6 cycling animation frames featuring bouncing, floating, wiggling, spinning, pulsing, and scaling icons; compact design with IndieShots theme colors and aesthetic animations that pop out of spinning rings; enhances user experience during AI image generation wait times
 - July 1, 2025: **EXCEL EXPORT SECURITY WARNINGS ELIMINATED** - Implemented proper Excel XML format to eliminate security warnings when opening downloaded files; Excel export now opens seamlessly without conversion prompts or security dialogs
 - July 1, 2025: **SHOT COUNT DISPLAY REMOVED** - Cleaned up "Generated Shots" title by removing shot count numbers for cleaner interface appearance
