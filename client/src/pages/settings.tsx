@@ -327,6 +327,12 @@ export default function Settings() {
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
     setAppTheme(newTheme);
+    
+    // Force a re-render after theme change to ensure CSS variables are properly applied
+    setTimeout(() => {
+      // This ensures other components re-evaluate their CSS variables
+      window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: newTheme } }));
+    }, 100);
   };
 
   useEffect(() => {
