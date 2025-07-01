@@ -232,15 +232,18 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
             Settings
           </Link>
           
-          <a 
-            href="https://help.example.com" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-background/80 transition-colors mt-1.5"
+          <Link 
+            href="/help" 
+            className={cn(
+              "flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mt-1.5",
+              location === "/help" 
+                ? "bg-primary text-primary-foreground" 
+                : "text-foreground hover:bg-background/80"
+            )}
           >
             <HelpCircle className="h-4 w-4 mr-3 text-muted-foreground" />
             Help Center
-          </a>
+          </Link>
           
           <Link
             href="/logout"

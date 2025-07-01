@@ -338,6 +338,12 @@ export default function Home() {
           </div>
           
           <div className="flex space-x-6">
+            <button 
+              onClick={() => setLocation("/public-faq")} 
+              className="text-muted-foreground hover:text-foreground transition"
+            >
+              FAQ
+            </button>
             <a href="#" className="text-muted-foreground hover:text-foreground transition">
               Terms
             </a>

@@ -30,6 +30,7 @@ import PayUCheckout from "@/pages/payu-checkout";
 import Contact from "@/pages/contact";
 import Admin from "@/pages/admin";
 import Help from "@/pages/help";
+import PublicFAQ from "@/pages/public-faq";
 
 function App() {
   return (
@@ -217,6 +218,10 @@ function App() {
                     <Help />
                   </AppLayout>
                 )} />
+              </Route>
+
+              <Route path="/public-faq">
+                <PublicFAQ />
               </Route>
 
               {/* 404 route */}

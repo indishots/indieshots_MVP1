@@ -44,7 +44,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const isProUser = userTier === 'pro';
 
   // Pages that should show the sidebar
-  const sidebarPages = ['/dashboard', '/projects', '/settings', '/upload', '/columns', '/parse', '/review', '/scene-selection', '/shots', '/storyboards', '/scriptHealth'];
+  const sidebarPages = ['/dashboard', '/projects', '/settings', '/upload', '/columns', '/parse', '/review', '/scene-selection', '/shots', '/storyboards', '/scriptHealth', '/help'];
   const shouldShowSidebar = isAuthenticated && (sidebarPages.some(page => location.startsWith(page)) || location === '/');
   
   // Pages that should show the right panel (exclude review pages)
