@@ -72,20 +72,22 @@
     @apply border-border;
   }
 
+  * {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
   body {
     @apply antialiased bg-background text-foreground;
     font-family: var(--font-sans);
     font-feature-settings: "rlig" 1, "calt" 1;
-    color: hsl(var(--foreground));
-    background-color: hsl(var(--background));
   }
 
   h1, h2, h3, h4, h5, h6 {
+    @apply text-foreground;
     font-family: var(--font-heading);
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.2;
-    color: hsl(var(--foreground));
   }
 
   h1 {
@@ -106,22 +108,22 @@
   }
 
   p {
+    @apply text-foreground;
     line-height: 1.6;
-    color: hsl(var(--foreground));
   }
 
   code, pre {
     font-family: var(--font-mono);
   }
 
-  /* Ensure proper text colors for common elements */
-  span, div, label, button {
-    color: inherit;
+  /* Ensure all text elements use proper theme colors */
+  span, div, label, button, input, textarea {
+    @apply text-foreground;
   }
 
-  /* Fix for dynamic theme switching */
-  .theme-transition * {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  /* Override any conflicting styles */
+  .dark *, .light * {
+    color: inherit !important;
   }
 }
 
