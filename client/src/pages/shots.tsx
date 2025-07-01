@@ -218,34 +218,71 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
 
     const { headers, data } = getExportData();
     
-    // Create enhanced CSV with UTF-8 BOM for proper Excel compatibility
-    const csvRows = [headers.join(',')];
-    
-    data.forEach((row: string[]) => {
-      const cleanRow = row.map((field: any) => {
-        let str = String(field || '').trim();
-        str = str.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
-        // Proper CSV escaping for Excel
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          str = `"${str.replace(/"/g, '""')}"`;
-        }
-        return str;
-      });
-      
-      csvRows.push(cleanRow.join(','));
+    // Create a proper Excel XML format that Excel recognizes
+    let xmlContent = `<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Title>Shot List - Scene ${parseInt(sceneIndex) + 1}</Title>
+ </DocumentProperties>
+ <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+  <WindowHeight>12000</WindowHeight>
+  <WindowWidth>16000</WindowWidth>
+ </ExcelWorkbook>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Bottom"/>
+  </Style>
+  <Style ss:ID="s62">
+   <Font ss:FontName="Calibri" x:Family="Swiss" ss:Size="11" ss:Bold="1"/>
+   <Interior ss:Color="#D9D9D9" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Shot List">
+  <Table ss:ExpandedColumnCount="${headers.length}" ss:ExpandedRowCount="${data.length + 1}" x:FullColumns="1" x:FullRows="1">`;
+
+    // Add header row
+    xmlContent += `\n   <Row ss:StyleID="s62">`;
+    headers.forEach(header => {
+      xmlContent += `\n    <Cell><Data ss:Type="String">${header.replace(/[<>&"]/g, (match) => ({
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;'
+      }[match] || match))}</Data></Cell>`;
     });
-    
-    const csvContent = csvRows.join('\n');
-    
-    // Add UTF-8 BOM for proper Excel recognition
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { 
-      type: 'text/csv;charset=utf-8;' 
+    xmlContent += `\n   </Row>`;
+
+    // Add data rows
+    data.forEach((row: string[]) => {
+      xmlContent += `\n   <Row>`;
+      row.forEach(cell => {
+        const cleanCell = String(cell || '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
+        const escapedCell = cleanCell.replace(/[<>&"]/g, (match) => ({
+          '<': '&lt;',
+          '>': '&gt;',
+          '&': '&amp;',
+          '"': '&quot;'
+        }[match] || match));
+        xmlContent += `\n    <Cell><Data ss:Type="String">${escapedCell}</Data></Cell>`;
+      });
+      xmlContent += `\n   </Row>`;
+    });
+
+    xmlContent += `\n  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xmlContent], { 
+      type: 'application/vnd.ms-excel' 
     });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `scene_${parseInt(sceneIndex) + 1}_shots_excel.csv`);
+    link.setAttribute('download', `scene_${parseInt(sceneIndex) + 1}_shots.xls`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
