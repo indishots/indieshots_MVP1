@@ -365,7 +365,7 @@ export default function Upgrade() {
           Need help choosing the right plan? We're here to help.
         </p>
         <Button variant="outline" onClick={() => window.location.href = 'mailto:indieshots@theindierise.com'}>
-          Contact Support
+          Get help
         </Button>
       </div>
     </div>
