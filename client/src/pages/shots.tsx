@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users } from "lucide-react";
+import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users, Video, Move, Palette, MapPin, Sun, Box, Lightbulb, MessageSquare, Heart, Volume2, FileText } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ShotsProps {
@@ -205,166 +205,318 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     });
   };
   
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold mb-1">Shot Generation</h2>
-        <p className="text-muted-foreground">
-          Generate detailed shots for "{selectedScene.sceneHeading || `Scene ${parseInt(sceneIndex) + 1}`}"
+  // Production Details Component
+  const ProductionDetailsPanel = () => (
+    <div className="w-80 bg-card border-l border-border p-6 space-y-6 overflow-y-auto">
+      <div className="flex items-center gap-2 mb-4">
+        <Film className="h-5 w-5 text-primary" />
+        <h3 className="text-lg font-semibold">Production Details</h3>
+      </div>
+
+      {/* Comprehensive Shot List Generation */}
+      <div className="space-y-4">
+        <h4 className="font-semibold text-sm">Comprehensive Shot List Generation</h4>
+        <p className="text-xs text-muted-foreground">
+          Every shot generated includes comprehensive production details organized into these categories:
         </p>
       </div>
-      
-      {/* Scene Overview */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center">
-              <Film className="h-5 w-5 mr-2" />
-              Scene {selectedScene.sceneNumber || parseInt(sceneIndex) + 1}
-            </CardTitle>
-            <Badge variant="outline">
-              {selectedScene.location || "Location not specified"}
-            </Badge>
+
+      {/* Basic Information */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Video className="h-4 w-4" />
+          <h4 className="font-medium text-sm">Basic Information</h4>
+        </div>
+        <div className="space-y-2">
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Scene Number</div>
+            <div className="text-xs text-muted-foreground">Sequential numbering of scenes</div>
           </div>
-          <CardDescription>
-            {selectedScene.sceneHeading}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium mb-2">Characters</h4>
-              <div className="flex flex-wrap gap-1">
-                {selectedScene.characters?.map((character: string, idx: number) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
-                    {character}
-                  </Badge>
-                )) || <span className="text-muted-foreground text-sm">No characters specified</span>}
-              </div>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Props</h4>
-              <div className="flex flex-wrap gap-1">
-                {selectedScene.props?.map((prop: string, idx: number) => (
-                  <Badge key={idx} variant="outline" className="text-xs">
-                    {prop}
-                  </Badge>
-                )) || <span className="text-muted-foreground text-sm">No props specified</span>}
-              </div>
-            </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Scene Heading</div>
+            <div className="text-xs text-muted-foreground">INT/EXT and location descriptions</div>
           </div>
-          {selectedScene.action && (
-            <div className="mt-4">
-              <h4 className="font-medium mb-2">Action</h4>
-              <p className="text-sm text-muted-foreground">{selectedScene.action}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      
-      {/* Generate Shots Section */}
-      {shots.length === 0 ? (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Generate Shots</CardTitle>
-            <CardDescription>
-              Create a detailed shot breakdown for this scene using AI analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button 
-              onClick={() => generateShotsMutation.mutate()}
-              disabled={isGenerating}
-              className="w-full md:w-auto"
-            >
-              {isGenerating ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Generating Shots...
-                </>
-              ) : (
-                <>
-                  <Camera className="mr-2 h-4 w-4" />
-                  Generate Shots
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {/* Shots Table */}
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Shot Number</div>
+            <div className="text-xs text-muted-foreground">Sequential shot numbering</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Shot Description</div>
+            <div className="text-xs text-muted-foreground">Detailed description of the shot</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Camera & Technical */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Camera className="h-4 w-4" />
+          <h4 className="font-medium text-sm">Camera & Technical</h4>
+        </div>
+        <div className="space-y-2">
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Shot Type</div>
+            <div className="text-xs text-muted-foreground">Wide, Medium, Close-up, etc.</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Lens</div>
+            <div className="text-xs text-muted-foreground">Recommended lens focal length</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Camera Movement</div>
+            <div className="text-xs text-muted-foreground">Suggested camera directions</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Color Temperature</div>
+            <div className="text-xs text-muted-foreground">Lighting color recommendations</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scene Context */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4" />
+          <h4 className="font-medium text-sm">Scene Context</h4>
+        </div>
+        <div className="space-y-2">
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Location</div>
+            <div className="text-xs text-muted-foreground">Specific shooting location details</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Time of Day</div>
+            <div className="text-xs text-muted-foreground">Narrative time and lighting needs</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Props</div>
+            <div className="text-xs text-muted-foreground">Required props and set pieces</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Lighting</div>
+            <div className="text-xs text-muted-foreground">Lighting setup requirements</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Characters & Action */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          <h4 className="font-medium text-sm">Characters & Action</h4>
+        </div>
+        <div className="space-y-2">
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Characters</div>
+            <div className="text-xs text-muted-foreground">Characters in the shot</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Action</div>
+            <div className="text-xs text-muted-foreground">Physical actions and movements</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Dialogue</div>
+            <div className="text-xs text-muted-foreground">Spoken lines and voiceover</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Production Notes */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          <h4 className="font-medium text-sm">Production Notes</h4>
+        </div>
+        <div className="space-y-2">
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Tone</div>
+            <div className="text-xs text-muted-foreground">Emotional tone and atmosphere</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Mood & Ambience</div>
+            <div className="text-xs text-muted-foreground">Overall mood and environmental feel</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Sound Design</div>
+            <div className="text-xs text-muted-foreground">Audio requirements and notes</div>
+          </div>
+          <div className="bg-muted/50 p-3 rounded-md">
+            <div className="font-medium text-sm">Notes</div>
+            <div className="text-xs text-muted-foreground">Additional production notes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <div className="max-w-5xl mx-auto p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-semibold mb-1">Shot Generation</h2>
+            <p className="text-muted-foreground">
+              Generate detailed shots for "{selectedScene?.sceneHeading || `Scene ${parseInt(sceneIndex) + 1}`}"
+            </p>
+          </div>
+          
+          {/* Scene Overview */}
           <Card className="mb-6">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Generated Shots ({shots.length})</CardTitle>
-                <Button 
-                  onClick={downloadCSV}
-                  disabled={shots.length === 0}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Download Excel/CSV
-                </Button>
+                <CardTitle className="flex items-center">
+                  <Film className="h-5 w-5 mr-2" />
+                  Scene {selectedScene?.sceneNumber || parseInt(sceneIndex) + 1}
+                </CardTitle>
+                <Badge variant="outline">
+                  {selectedScene?.location || "Location not specified"}
+                </Badge>
               </div>
+              <CardDescription>
+                {selectedScene?.sceneHeading}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Shot</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Camera</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Duration</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shots.map((shot: any, idx: number) => (
-                    <TableRow key={idx}>
-                      <TableCell className="font-medium">
-                        {shot.shotNumberInScene || shot.shotNumber || idx + 1}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{shot.shotType || 'N/A'}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {shot.lens || 'N/A'}
-                        {shot.movement && (
-                          <div className="text-muted-foreground">{shot.movement}</div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm max-w-md">
-                        {shot.shotDescription || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center text-sm">
-                          <Clock className="h-3 w-3 mr-1" />
-                          3s
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium mb-2">Characters</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedScene?.characters?.map((character: string, idx: number) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {character}
+                      </Badge>
+                    )) || <span className="text-muted-foreground text-sm">No characters specified</span>}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-medium mb-2">Props</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedScene?.props?.map((prop: string, idx: number) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {prop}
+                      </Badge>
+                    )) || <span className="text-muted-foreground text-sm">No props specified</span>}
+                  </div>
+                </div>
+              </div>
+              {selectedScene?.action && (
+                <div className="mt-4">
+                  <h4 className="font-medium mb-2">Action</h4>
+                  <p className="text-sm text-muted-foreground">{selectedScene.action}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
-        </>
-      )}
-      
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button variant="outline" onClick={goBack}>
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Back to Scene Selection
-        </Button>
-        
-        {shots.length > 0 && (
-          <Button onClick={goToStoryboards}>
-            Generate Storyboards
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        )}
+          
+          {/* Generate Shots Section */}
+          {shots.length === 0 ? (
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Generate Shots</CardTitle>
+                <CardDescription>
+                  Create a detailed shot breakdown for this scene using AI analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => generateShotsMutation.mutate()}
+                  disabled={isGenerating}
+                  className="w-full md:w-auto"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Generating Shots...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="mr-2 h-4 w-4" />
+                      Generate Shots
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Shots Table */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Generated Shots ({shots.length})</CardTitle>
+                    <Button 
+                      onClick={downloadCSV}
+                      disabled={shots.length === 0}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Download Excel/CSV
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Shot</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Camera</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Duration</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shots.map((shot: any, idx: number) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">
+                            {shot.shotNumberInScene || shot.shotNumber || idx + 1}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{shot.shotType || 'N/A'}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {shot.lens || 'N/A'}
+                            {shot.movement && (
+                              <div className="text-muted-foreground">{shot.movement}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm max-w-md">
+                            {shot.shotDescription || 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center text-sm">
+                              <Clock className="h-3 w-3 mr-1" />
+                              3s
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </>
+          )}
+          
+          {/* Navigation */}
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={goBack}>
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              Back to Scene Selection
+            </Button>
+            
+            {shots.length > 0 && (
+              <Button onClick={goToStoryboards}>
+                Generate Storyboards
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* Production Details Right Panel */}
+      <ProductionDetailsPanel />
     </div>
   );
 }
