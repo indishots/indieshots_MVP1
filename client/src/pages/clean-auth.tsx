@@ -66,12 +66,20 @@ export default function CleanAuthPage() {
 
     setIsLoading(true);
 
-    const result = await signUp(email, password);
+    // Check if coupon code is valid for premium access
+    const isPremiumCoupon = couponCode.toUpperCase() === 'INDIE2025';
+
+    const result = await signUp(email, password, isPremiumCoupon);
     
     if (!result.success) {
       setError(result.error || "Sign up failed");
       setIsLoading(false);
     } else {
+      // Show success message if premium coupon was used
+      if (isPremiumCoupon) {
+        setError(""); // Clear any errors
+        // You could add a success message here if needed
+      }
       // Directly navigate to dashboard on successful signup
       window.location.href = '/dashboard';
     }

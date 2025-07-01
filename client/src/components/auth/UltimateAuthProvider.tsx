@@ -7,7 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   authState: AuthState;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, isPremiumCoupon?: boolean) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<{ success: boolean }>;
   enableAuth: () => void;
   refreshUserData: () => Promise<void>;
@@ -75,8 +75,8 @@ export const UltimateAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return result.success ? { success: true } : { success: false, error: result.error };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    const result = await authManager.signUpWithEmail(email, password);
+  const signUp = useCallback(async (email: string, password: string, isPremiumCoupon?: boolean) => {
+    const result = await authManager.signUpWithEmail(email, password, isPremiumCoupon);
     return result.success ? { success: true } : { success: false, error: result.error };
   }, []);
 

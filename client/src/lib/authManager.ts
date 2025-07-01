@@ -154,6 +154,57 @@ class AuthManager {
     this.notifyListeners();
   }
 
+  private async createBackendSessionWithCoupon(firebaseUser: FirebaseUser, couponCode: string) {
+    try {
+      const idToken = await firebaseUser.getIdToken(true);
+      const provider = firebaseUser.providerData[0]?.providerId || 'password';
+      
+      const authData = {
+        idToken,
+        provider: provider === 'google.com' ? 'google.com' : 'password',
+        providerUserId: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+        photoURL: firebaseUser.photoURL,
+        couponCode: couponCode
+      };
+
+      const response = await fetch('/api/auth/firebase-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(authData),
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        this.user = {
+          id: userData.id,
+          email: userData.email,
+          displayName: userData.displayName || userData.email?.split('@')[0] || 'User',
+          provider: userData.provider || 'password',
+          tier: userData.tier,
+          usedPages: userData.usedPages,
+          totalPages: userData.totalPages,
+          maxShotsPerScene: userData.maxShotsPerScene,
+          canGenerateStoryboards: userData.canGenerateStoryboards
+        };
+        this.authState = 'authenticated';
+        console.log('Backend session created with coupon for:', this.user.email, 'tier:', userData.tier);
+      } else {
+        console.error('Backend session creation with coupon failed');
+        this.authState = 'unauthenticated';
+        this.user = null;
+      }
+    } catch (error) {
+      console.error('Backend session with coupon error:', error);
+      this.authState = 'unauthenticated';
+      this.user = null;
+    }
+    
+    this.notifyListeners();
+  }
+
   private lastNotifiedState: { state: AuthState; user: AuthUser | null } | null = null;
   
   private notifyListeners() {
@@ -192,9 +243,15 @@ class AuthManager {
     }
   }
 
-  async signUpWithEmail(email: string, password: string) {
+  async signUpWithEmail(email: string, password: string, isPremiumCoupon?: boolean) {
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // If premium coupon is used, create backend session with premium flag
+      if (isPremiumCoupon) {
+        await this.createBackendSessionWithCoupon(result.user, 'INDIE2025');
+      }
+      
       return { success: true, user: result.user };
     } catch (error) {
       const authError = error as AuthError;
