@@ -234,26 +234,26 @@ export default function Dashboard() {
       <div>
         <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
         <div className="grid md:grid-cols-3 gap-4">
-          <div className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md h-auto py-4 transition-colors">
-            <Link href="/upload" className="flex flex-col items-center text-center w-full">
+          <Button variant="outline" className="h-auto py-4" asChild>
+            <Link href="/upload" className="flex flex-col items-center">
               <Upload className="h-6 w-6 mb-2" />
               <span>Upload Script</span>
             </Link>
-          </div>
+          </Button>
           
-          <div className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md h-auto py-4 transition-colors">
-            <Link href="/projects" className="flex flex-col items-center text-center w-full">
+          <Button variant="outline" className="h-auto py-4" asChild>
+            <Link href="/projects" className="flex flex-col items-center">
               <Eye className="h-6 w-6 mb-2" />
               <span>View Projects</span>
             </Link>
-          </div>
+          </Button>
           
-          <div className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md h-auto py-4 transition-colors">
-            <Link href="/contact" className="flex flex-col items-center text-center w-full">
+          <Button variant="outline" className="h-auto py-4" asChild>
+            <Link href="/contact" className="flex flex-col items-center">
               <MessageSquare className="h-6 w-6 mb-2" />
               <span>Get help</span>
             </Link>
-          </div>
+          </Button>
         </div>
       </div>
     </div>

@@ -96,6 +96,7 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 1, 2025: **DASHBOARD QUICK ACTIONS BUTTONS REVERTED** - Restored Quick Actions buttons to clean shadcn/ui Button components with proper theme-aware styling, removing custom Tailwind overrides; buttons now use variant="outline" with automatic light/dark theme adaptation
 - July 1, 2025: **DEDICATED FEATURES PAGE CREATED** - Moved all features content from homepage to dedicated /features page accessible via "View Features" button; cleaned up homepage design by removing features section while maintaining professional feature showcase on separate page with standalone layout and navigation
 - July 1, 2025: **HOME PAGE WORKFLOW SECTION UPDATED** - Enhanced landing page with revised 4-step workflow content emphasizing professional filmmaking process: Upload Your Script (intelligent analysis), Define Your Scenes (precise selection), Generate Detailed Shots (comprehensive technical specs), Visualize Your Story (dynamic storyboards); maintained original card dimensions with 2x2 grid layout
 - July 1, 2025: **INDIE2025 PREMIUM COUPON SYSTEM FULLY OPERATIONAL** - Complete implementation verified and working; users entering "INDIE2025" during signup receive instant Pro Tier access ($29/month value) including unlimited pages, unlimited shots per scene, AI storyboard generation, and priority support without payment; backend confirmed processing coupon correctly and granting all premium features; perfect for professional filmmakers and production teams
