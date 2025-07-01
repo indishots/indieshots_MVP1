@@ -485,38 +485,7 @@ export async function resetPassword(req: Request, res: Response) {
   }
 }
 
-/**
- * Verify email with token
- */
-export async function verifyEmail(req: Request, res: Response) {
-  try {
-    const { token } = req.query;
-    
-    if (!token || typeof token !== 'string') {
-      return res.status(400).json({ message: 'Invalid token' });
-    }
-    
-    // Find user by verification token
-    const user = await storage.getUserByVerificationToken(token);
-    
-    if (!user) {
-      return res.redirect('/auth?error=invalid-verification');
-    }
-    
-    // Mark email as verified and clear token
-    await storage.updateUser(user.id, {
-      emailVerified: true,
-      verificationToken: null,
-      updatedAt: new Date()
-    });
-    
-    // Redirect to login page with success message
-    res.redirect('/auth?verified=true');
-  } catch (error) {
-    console.error('Email verification error:', error);
-    res.redirect('/auth?error=verification-failed');
-  }
-}
+
 
 /**
  * Log out the user
@@ -593,6 +562,9 @@ export async function logout(req: Request, res: Response) {
  */
 export async function getProfile(req: Request, res: Response) {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const userId = req.user.id;
     const user = await storage.getUser(userId);
     
@@ -625,6 +597,9 @@ export async function getProfile(req: Request, res: Response) {
  */
 export async function updateProfile(req: Request, res: Response) {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     const userId = req.user.id;
     const { firstName, lastName, profileImageUrl } = req.body;
     
@@ -657,6 +632,9 @@ export async function updateProfile(req: Request, res: Response) {
  */
 export async function changePassword(req: Request, res: Response) {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
     // Validate request data
     const { currentPassword, newPassword } = passwordChangeSchema.parse(req.body);
     
