@@ -208,7 +208,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         if (pendingToast) {
           toast({
             title: "Storyboard generation complete",
-            description: "All storyboard images have been generated successfully",
+            description: "Storyboard images have been generated successfully",
           });
           delete (window as any).pendingSuccessToast;
         }
@@ -240,20 +240,14 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       return await response.json();
     },
     onSuccess: (data) => {
-      const generatedCount = data.generatedCount || data.storyboards?.length || 0;
-      const totalShots = data.totalShots || (shotsData as any)?.shots?.length || 0;
-      
       // Complete generation and show loading state for images
       setIsGenerating(false);
       setIsLoadingImages(true);
       
       queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
       
-      // Store success data for later display
-      (window as any).pendingSuccessToast = {
-        generatedCount,
-        totalShots
-      };
+      // Mark that success toast should be shown
+      (window as any).pendingSuccessToast = true;
     },
     onError: (error: Error) => {
       toast({
@@ -363,7 +357,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
           {/* Storyboard Grid */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Generated Storyboards ({storyboardFrames.length})</h3>
+              <h3 className="text-lg font-semibold">Generated Storyboards</h3>
               <div className="flex gap-2">
                 <Button 
                   variant="outline" 
