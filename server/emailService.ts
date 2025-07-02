@@ -122,13 +122,13 @@ export const sendOTPEmail = async (email: string, otp: string, name?: string): P
 const otpStore = new Map<string, { otp: string; expires: number; userData: any }>();
 
 export const storeOTP = (email: string, otp: string, userData: any): void => {
-  const expires = Date.now() + (10 * 60 * 1000); // 10 minutes
+  const expires = Date.now() + (5 * 60 * 1000); // 5 minutes
   otpStore.set(email, { otp, expires, userData });
   
   // Clean up expired OTPs
   setTimeout(() => {
     otpStore.delete(email);
-  }, 10 * 60 * 1000);
+  }, 5 * 60 * 1000);
 };
 
 export const verifyOTP = (email: string, otp: string): { valid: boolean; userData?: any } => {

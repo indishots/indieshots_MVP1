@@ -87,7 +87,7 @@ export async function registerWithOTP(req: Request, res: Response) {
     console.log(`📧 Email: ${userData.email}`);
     console.log(`👤 Name: ${userData.firstName} ${userData.lastName}`);
     console.log(`🔑 OTP Code: ${otp}`);
-    console.log(`⏰ Expires in 10 minutes`);
+    console.log(`⏰ Expires in 5 minutes`);
     console.log(`===============================\n`);
     
     res.status(200).json({
@@ -204,14 +204,14 @@ export async function resendOTP(req: Request, res: Response) {
     
     // Update stored data
     stored.otp = newOTP;
-    stored.expires = Date.now() + (10 * 60 * 1000);
+    stored.expires = Date.now() + (5 * 60 * 1000);
     stored.attempts = 0;
     
     // Log new OTP
     console.log(`\n🔄 RESENT EMAIL VERIFICATION OTP`);
     console.log(`📧 Email: ${email}`);
     console.log(`🔑 New OTP Code: ${newOTP}`);
-    console.log(`⏰ Expires in 10 minutes`);
+    console.log(`⏰ Expires in 5 minutes`);
     console.log(`===============================\n`);
     
     res.status(200).json({
