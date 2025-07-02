@@ -19,16 +19,21 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [isHybridMode, setIsHybridMode] = useState(false);
 
-  // Get email from URL parameters
+  // Get email and mode from URL parameters
   useEffect(() => {
     if (propEmail) {
       setEmail(propEmail);
     } else {
       const urlParams = new URLSearchParams(window.location.search);
       const emailParam = urlParams.get('email');
+      const modeParam = urlParams.get('mode');
       if (emailParam) {
         setEmail(decodeURIComponent(emailParam));
+      }
+      if (modeParam === 'hybrid') {
+        setIsHybridMode(true);
       }
     }
   }, [propEmail]);
@@ -51,7 +56,8 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
   // Verify email mutation
   const verifyMutation = useMutation({
     mutationFn: async (data: { email: string; otp: string }) => {
-      const response = await apiRequest('POST', '/api/auth/verify-email', data);
+      const endpoint = isHybridMode ? '/api/auth/hybrid-verify-otp' : '/api/auth/verify-email';
+      const response = await apiRequest('POST', endpoint, data);
       return response.json();
     },
     onSuccess: (data) => {
@@ -59,6 +65,12 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
         title: "Email Verified!",
         description: "Your account has been created successfully.",
       });
+      
+      // Store token if provided (hybrid mode)
+      if (data.token) {
+        localStorage.setItem('authToken', data.token);
+      }
+      
       setLocation('/dashboard');
     },
     onError: (error: any) => {
@@ -73,7 +85,8 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
   // Resend OTP mutation
   const resendMutation = useMutation({
     mutationFn: async (email: string) => {
-      const response = await apiRequest('POST', '/api/auth/resend-otp', { email });
+      const endpoint = isHybridMode ? '/api/auth/hybrid-resend-otp' : '/api/auth/resend-otp';
+      const response = await apiRequest('POST', endpoint, { email });
       return response.json();
     },
     onSuccess: () => {

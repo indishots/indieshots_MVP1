@@ -33,12 +33,28 @@ export default function SimpleAuth() {
     setIsLoading(true);
 
     try {
-      const result = await signIn(email, password);
-      if (!result.success) {
-        setError(result.error || "Sign in failed");
-      } else {
-        setLocation('/dashboard');
+      const response = await fetch('/api/auth/hybrid-signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (data.code === 'USER_NOT_FOUND') {
+          setError("This email is not registered. Please sign up first.");
+          setActiveTab("signup");
+          return;
+        }
+        setError(data.message || "Sign in failed");
+        return;
       }
+
+      // Store the token and redirect
+      localStorage.setItem('authToken', data.token);
+      setLocation('/dashboard');
+      
     } catch (error: any) {
       setError(error.message || "Sign in failed");
     } finally {
@@ -58,8 +74,8 @@ export default function SimpleAuth() {
     }
 
     try {
-      // Send OTP first
-      const otpResponse = await fetch('/api/auth/send-otp', {
+      // Use hybrid signup endpoint
+      const response = await fetch('/api/auth/hybrid-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -69,19 +85,24 @@ export default function SimpleAuth() {
         })
       });
 
-      const data = await otpResponse.json();
+      const data = await response.json();
       
-      if (!otpResponse.ok) {
+      if (!response.ok) {
+        if (data.code === 'USER_EXISTS') {
+          setError("This email is already registered. Please sign in instead.");
+          setActiveTab("signin");
+          return;
+        }
         setError(data.message || "Failed to send verification code");
-        setIsLoading(false);
         return;
       }
 
-      // Navigate to verification page
-      setLocation(`/verify-email?email=${encodeURIComponent(email)}`);
+      // Navigate to verification page with hybrid mode
+      setLocation(`/verify-email?email=${encodeURIComponent(email)}&mode=hybrid`);
       
     } catch (error: any) {
       setError(error.message || "Sign up failed");
+    } finally {
       setIsLoading(false);
     }
   };
