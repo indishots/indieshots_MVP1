@@ -3,6 +3,7 @@ import passport from 'passport';
 import { authMiddleware } from '../auth/jwt';
 import * as authController from '../controllers/authController';
 import * as otpController from '../controllers/otpController';
+import * as hybridAuthController from '../controllers/firebaseHybridAuthController';
 import { firebaseLogin } from '../controllers/firebaseAuthController';
 import { firebaseSync } from '../controllers/firebaseSyncController';
 
@@ -22,7 +23,13 @@ const router = Router();
 //   (req, res) => res.redirect('/')
 // );
 
-// User authentication routes - CSRF protection disabled for development  
+// Firebase-first hybrid authentication routes
+router.post('/hybrid-signup', hybridAuthController.hybridSignup);
+router.post('/hybrid-signin', hybridAuthController.hybridSignin);  
+router.post('/hybrid-verify-otp', hybridAuthController.hybridVerifyOTP);
+router.post('/hybrid-resend-otp', hybridAuthController.hybridResendOTP);
+
+// Legacy authentication routes - CSRF protection disabled for development  
 router.post('/signup', otpController.registerWithOTP);
 router.post('/send-otp', otpController.registerWithOTP); // Alias for signup
 router.post('/verify-email', otpController.verifyOTP);

@@ -8,6 +8,16 @@ export const generateOTP = (): string => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
+// Log OTP to console for development
+export const logOTPToConsole = (email: string, name: string, otp: string): void => {
+  console.log(`\n🔐 EMAIL VERIFICATION OTP`);
+  console.log(`📧 Email: ${email}`);
+  console.log(`👤 Name: ${name || 'User'}`);
+  console.log(`🔑 OTP Code: ${otp}`);
+  console.log(`⏰ Expires in 10 minutes`);
+  console.log(`===============================\n`);
+};
+
 // Send OTP email - For demo, we'll log the OTP to console
 export const sendOTPEmail = async (email: string, otp: string, name?: string): Promise<boolean> => {
   try {
