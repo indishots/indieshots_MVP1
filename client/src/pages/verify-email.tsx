@@ -18,7 +18,7 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
   const { toast } = useToast();
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const [isHybridMode, setIsHybridMode] = useState(false);
 
   // Get email and mode from URL parameters
@@ -111,7 +111,7 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
         title: "Code Resent",
         description: "A new verification code has been sent to your email.",
       });
-      setTimeLeft(600); // Reset timer
+      setTimeLeft(300); // Reset timer
       setOtp(""); // Clear current OTP
     },
     onError: (error: any) => {
@@ -212,7 +212,7 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
               variant="outline"
               size="sm"
               onClick={handleResend}
-              disabled={resendMutation.isPending || timeLeft > 540} // Allow resend after 1 minute
+              disabled={resendMutation.isPending || timeLeft > 270} // Allow resend after 30 seconds
               className="text-sm"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
