@@ -57,8 +57,24 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
   const verifyMutation = useMutation({
     mutationFn: async (data: { email: string; otp: string }) => {
       const endpoint = isHybridMode ? '/api/auth/hybrid-verify-otp' : '/api/auth/verify-email';
-      const response = await apiRequest('POST', endpoint, data);
-      return response.json();
+      
+      try {
+        const response = await apiRequest('POST', endpoint, data);
+        return response.json();
+      } catch (error: any) {
+        // Parse the error response to get structured error data
+        if (error.message && error.message.includes(':')) {
+          try {
+            const errorText = error.message.split(': ')[1];
+            const errorData = JSON.parse(errorText);
+            throw { response: { status: parseInt(error.message.split(':')[0]), data: errorData } };
+          } catch (parseError) {
+            // If JSON parsing fails, throw original error
+            throw error;
+          }
+        }
+        throw error;
+      }
     },
     onSuccess: async (data) => {
       toast({
@@ -91,9 +107,39 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
       setLocation('/dashboard');
     },
     onError: (error: any) => {
+      let errorMessage = "Invalid or expired verification code";
+      let errorTitle = "Verification Failed";
+      
+      // Parse server error response
+      if (error?.response?.status === 400) {
+        const errorData = error.response.data;
+        if (errorData?.code === 'OTP_EXPIRED') {
+          errorTitle = "Code Expired";
+          errorMessage = "Your verification code has expired. Please request a new code.";
+        } else if (errorData?.code === 'INVALID_OTP') {
+          errorTitle = "Invalid Code";
+          errorMessage = errorData.attemptsLeft 
+            ? `The verification code is incorrect. You have ${errorData.attemptsLeft} attempts remaining.`
+            : "The verification code you entered is incorrect. Please try again.";
+        } else if (errorData?.code === 'TOO_MANY_ATTEMPTS') {
+          errorTitle = "Too Many Attempts";
+          errorMessage = "Too many failed attempts. Please request a new verification code.";
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        }
+      } else if (error?.message?.includes('OTP expired')) {
+        errorTitle = "Code Expired";
+        errorMessage = "Your verification code has expired. Please request a new code.";
+      } else if (error?.message?.includes('Invalid OTP')) {
+        errorTitle = "Invalid Code";
+        errorMessage = "The verification code you entered is incorrect. Please try again.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Verification Failed",
-        description: error.message || "Invalid or expired OTP code",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -103,8 +149,24 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
   const resendMutation = useMutation({
     mutationFn: async (email: string) => {
       const endpoint = isHybridMode ? '/api/auth/hybrid-resend-otp' : '/api/auth/resend-otp';
-      const response = await apiRequest('POST', endpoint, { email });
-      return response.json();
+      
+      try {
+        const response = await apiRequest('POST', endpoint, { email });
+        return response.json();
+      } catch (error: any) {
+        // Parse the error response to get structured error data
+        if (error.message && error.message.includes(':')) {
+          try {
+            const errorText = error.message.split(': ')[1];
+            const errorData = JSON.parse(errorText);
+            throw { response: { status: parseInt(error.message.split(':')[0]), data: errorData } };
+          } catch (parseError) {
+            // If JSON parsing fails, throw original error
+            throw error;
+          }
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -115,9 +177,28 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
       setOtp(""); // Clear current OTP
     },
     onError: (error: any) => {
+      let errorMessage = "Failed to resend verification code";
+      let errorTitle = "Resend Failed";
+      
+      // Parse server error response
+      if (error?.response?.status === 400) {
+        const errorData = error.response.data;
+        if (errorData?.code === 'EMAIL_NOT_FOUND') {
+          errorTitle = "Email Not Found";
+          errorMessage = "No pending verification found for this email. Please sign up again.";
+        } else if (errorData?.code === 'RATE_LIMITED') {
+          errorTitle = "Too Many Requests";
+          errorMessage = "Please wait before requesting another code.";
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        }
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Resend Failed",
-        description: error.message || "Failed to resend verification code",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     }
