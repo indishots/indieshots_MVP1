@@ -96,6 +96,7 @@ JWT_SECRET=jwt_secret_key
 ## Changelog
 
 Recent Changes:
+- July 2, 2025: **FIREBASE-FIRST HYBRID AUTHENTICATION SYSTEM COMPLETED** - Implemented complete Firebase-as-single-source-of-truth architecture with custom OTP email verification maintaining full template control; new hybrid endpoints (/api/auth/hybrid-*) handle signup→OTP→Firebase user creation and signin→authenticate existing workflows; frontend updated to intelligently route between legacy and hybrid systems; INDIE2025 coupon integration preserved for instant Pro tier access; mock Firebase implementation enables development without service account credentials
 - July 1, 2025: **EMAIL OTP VERIFICATION SYSTEM IMPLEMENTED** - Added comprehensive email verification with 6-digit OTP codes during signup to prevent fake email registrations; OTP codes logged to server console for development, expires in 10 minutes with brute force protection; includes dedicated verification page, resend functionality, and seamless integration with existing coupon system including INDIE2025 premium access
 - July 1, 2025: **HELP CENTER VISIBILITY FIXED** - Resolved missing Help Center link in left navigation by correcting authentication provider import from @/hooks/useAuth to @/components/auth/UltimateAuthProvider for proper authentication state detection
 - July 1, 2025: **THEME MODULE EXPORTS COMPLETED** - Added missing initializeTheme, setTheme, and setupSystemThemeListener functions to theme.ts to resolve module export errors in settings page
