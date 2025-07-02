@@ -33,6 +33,7 @@ export default function SimpleAuth() {
     setIsLoading(true);
 
     try {
+      // First check if user exists in Firebase
       const response = await fetch('/api/auth/hybrid-signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,9 +52,22 @@ export default function SimpleAuth() {
         return;
       }
 
-      // Store the token and redirect
-      localStorage.setItem('authToken', data.token);
-      setLocation('/dashboard');
+      // User exists, now authenticate with Firebase client SDK
+      if (data.action === 'firebase_auth') {
+        try {
+          const result = await signIn(email, password);
+          if (!result.success) {
+            setError(result.error || "Invalid password");
+            return;
+          }
+          // Authentication successful, redirect
+          setLocation('/dashboard');
+        } catch (firebaseError: any) {
+          setError(firebaseError.message || "Authentication failed");
+        }
+      } else {
+        setError("Unexpected response from server");
+      }
       
     } catch (error: any) {
       setError(error.message || "Sign in failed");

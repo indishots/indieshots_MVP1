@@ -137,25 +137,18 @@ export async function hybridSignin(req: Request, res: Response) {
       });
     }
     
-    // User exists, verify password using Firebase Auth
+    // For Firebase-first approach, we need to use client-side Firebase Auth
+    // Return user exists confirmation, client will handle Firebase authentication
     try {
-      // Note: Firebase doesn't have direct password verification API
-      // We'll need to use Firebase SDK signInWithEmailAndPassword on client
-      // For now, return success to indicate user exists
-      
       const firebaseUser = await firebaseAdmin.getUserByEmail(email);
       
-      // Create custom token for client authentication
-      const customToken = await firebaseAdmin.createCustomToken(firebaseUser.uid);
-      
       return res.status(200).json({
-        message: 'User verified, proceed with Firebase authentication',
-        customToken,
+        message: 'User found, use client-side Firebase authentication',
+        action: 'firebase_auth',
         user: {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          customClaims: firebaseUser.customClaims
+          displayName: firebaseUser.displayName
         }
       });
       
@@ -253,7 +246,7 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
           displayName: firebaseUser.displayName,
           tier: userData.tier
         },
-        customToken,
+        token: customToken,
         verified: true
       });
       
