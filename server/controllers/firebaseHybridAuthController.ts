@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { auth as firebaseAdmin } from '../firebase/admin';
 import { z } from 'zod';
 import crypto from 'crypto';
-import { generateOTP, logOTPToConsole } from '../emailService';
+import { generateOTP, logOTPToConsole, sendOTPEmail } from '../emailService';
 
 // Simple in-memory OTP storage (in production, use Redis or database)
 const otpStore = new Map<string, { 
@@ -92,8 +92,13 @@ export async function hybridSignup(req: Request, res: Response) {
       attempts: 0
     });
     
-    // Log OTP to console for development
-    logOTPToConsole(email, userData.firstName + ' ' + userData.lastName, otp);
+    // Send OTP email
+    const emailSent = await sendOTPEmail(email, otp, userData.firstName + ' ' + userData.lastName);
+    
+    if (!emailSent) {
+      console.log('📧 Email sending failed, falling back to console logging');
+      logOTPToConsole(email, userData.firstName + ' ' + userData.lastName, otp);
+    }
     
     // Auto-cleanup OTP after expiration
     setTimeout(() => {
@@ -101,10 +106,10 @@ export async function hybridSignup(req: Request, res: Response) {
     }, 10 * 60 * 1000);
     
     return res.status(200).json({
-      message: 'Verification code sent! Check the server console for your OTP.',
+      message: 'Verification code sent to your email address!',
       email,
       requiresVerification: true,
-      devNote: 'For development: Check server console for OTP code'
+      devNote: 'Check your email inbox for the OTP code'
     });
     
   } catch (error: any) {
@@ -303,12 +308,17 @@ export async function hybridResendOTP(req: Request, res: Response) {
     storedData.expires = Date.now() + 10 * 60 * 1000;
     storedData.attempts = 0;
     
-    // Log new OTP to console
+    // Send new OTP email
     const userData = storedData.userData;
-    logOTPToConsole(normalizedEmail, userData.firstName + ' ' + userData.lastName, newOTP);
+    const emailSent = await sendOTPEmail(normalizedEmail, newOTP, userData.firstName + ' ' + userData.lastName);
+    
+    if (!emailSent) {
+      console.log('📧 Email sending failed, falling back to console logging');
+      logOTPToConsole(normalizedEmail, userData.firstName + ' ' + userData.lastName, newOTP);
+    }
     
     return res.status(200).json({
-      message: 'New verification code sent! Check the server console for your OTP.',
+      message: 'New verification code sent to your email address!',
       email: normalizedEmail
     });
     
