@@ -284,21 +284,25 @@ export async function hybridResendOTP(req: Request, res: Response) {
     }
     
     const normalizedEmail = email.toLowerCase();
-    const storedData = otpStore.get(normalizedEmail);
+    let storedData = otpStore.get(normalizedEmail);
     
+    // If no stored data found, this means the user is trying to resend after expiration
+    // Check if there's any recent signup attempt data we can recover
     if (!storedData) {
+      // For expired OTP cases, we need the user to start the signup process again
+      // as we don't persist signup data beyond OTP expiration
       return res.status(400).json({ 
-        message: 'No pending verification found. Please start signup again.',
-        code: 'NO_PENDING_VERIFICATION'
+        message: 'Your verification session has expired. Please sign up again to receive a new code.',
+        code: 'SESSION_EXPIRED'
       });
     }
     
     // Generate new OTP
     const newOTP = generateOTP();
     
-    // Update stored data
+    // Update stored data with new 5-minute expiration
     storedData.otp = newOTP;
-    storedData.expires = Date.now() + 10 * 60 * 1000;
+    storedData.expires = Date.now() + 5 * 60 * 1000; // 5 minutes
     storedData.attempts = 0;
     
     // Send new OTP email

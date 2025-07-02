@@ -186,6 +186,16 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
         if (errorData?.code === 'EMAIL_NOT_FOUND') {
           errorTitle = "Email Not Found";
           errorMessage = "No pending verification found for this email. Please sign up again.";
+        } else if (errorData?.code === 'SESSION_EXPIRED') {
+          errorTitle = "Session Expired";
+          errorMessage = "Your verification session has expired. Please sign up again to receive a new code.";
+          // Automatically redirect to signup after showing error
+          setTimeout(() => navigate('/auth'), 3000);
+        } else if (errorData?.code === 'NO_PENDING_VERIFICATION') {
+          errorTitle = "Session Expired";
+          errorMessage = "Your verification session has expired. Please sign up again to receive a new code.";
+          // Automatically redirect to signup after showing error
+          setTimeout(() => navigate('/auth'), 3000);
         } else if (errorData?.code === 'RATE_LIMITED') {
           errorTitle = "Too Many Requests";
           errorMessage = "Please wait before requesting another code.";
