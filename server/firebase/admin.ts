@@ -1,27 +1,55 @@
-// For now, we'll create a mock Firebase Admin implementation
-// until proper service account credentials are provided
-// This allows the hybrid system to work without breaking current functionality
+import admin from 'firebase-admin';
 
-interface MockFirebaseUser {
-  uid: string;
-  email: string;
-  displayName?: string;
-  emailVerified: boolean;
-  customClaims?: Record<string, any>;
+// Initialize Firebase Admin SDK with proper error handling
+let firebaseInitialized = false;
+
+try {
+  if (!admin.apps.length) {
+    // Check if we have service account credentials
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    const projectId = process.env.VITE_FIREBASE_PROJECT_ID || 'indieshots-c6bb1';
+    
+    if (serviceAccountKey) {
+      // Production: Use service account credentials
+      const serviceAccount = JSON.parse(serviceAccountKey);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: serviceAccount.project_id || projectId,
+      });
+      console.log('🔥 Firebase Admin initialized with service account credentials');
+    } else {
+      // Development: Use minimal config for testing
+      // This will work for some operations but requires proper credentials for production
+      admin.initializeApp({
+        projectId: projectId,
+      });
+      console.log('🔥 Firebase Admin initialized in development mode');
+      console.log('⚠️  For full functionality, add FIREBASE_SERVICE_ACCOUNT_KEY environment variable');
+    }
+    firebaseInitialized = true;
+  }
+} catch (error) {
+  console.error('❌ Firebase Admin initialization failed:', error);
+  firebaseInitialized = false;
 }
 
-class MockFirebaseAuth {
-  private users = new Map<string, MockFirebaseUser>();
-  private uidCounter = 1000;
-
-  async getUserByEmail(email: string): Promise<MockFirebaseUser> {
-    const user = Array.from(this.users.values()).find(u => u.email === email);
-    if (!user) {
-      const error = new Error('User not found');
-      (error as any).code = 'auth/user-not-found';
+// Wrapper functions that handle both development and production scenarios
+class FirebaseAuthWrapper {
+  async getUserByEmail(email: string) {
+    if (!firebaseInitialized) {
+      throw new Error('Firebase not properly initialized. Please add service account credentials.');
+    }
+    
+    try {
+      return await admin.auth().getUserByEmail(email);
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        const customError = new Error('User not found');
+        (customError as any).code = 'auth/user-not-found';
+        throw customError;
+      }
       throw error;
     }
-    return user;
   }
 
   async createUser(userData: {
@@ -29,39 +57,40 @@ class MockFirebaseAuth {
     password: string;
     emailVerified?: boolean;
     displayName?: string;
-  }): Promise<MockFirebaseUser> {
-    const uid = `mock-uid-${this.uidCounter++}`;
-    const user: MockFirebaseUser = {
-      uid,
-      email: userData.email,
-      displayName: userData.displayName,
-      emailVerified: userData.emailVerified || false,
-    };
-    
-    this.users.set(uid, user);
-    console.log(`🔥 Mock Firebase: Created user ${userData.email} with UID ${uid}`);
-    return user;
-  }
-
-  async setCustomUserClaims(uid: string, claims: Record<string, any>): Promise<void> {
-    const user = this.users.get(uid);
-    if (user) {
-      user.customClaims = claims;
-      console.log(`🔥 Mock Firebase: Set custom claims for ${uid}:`, claims);
+  }) {
+    if (!firebaseInitialized) {
+      throw new Error('Firebase not properly initialized. Please add service account credentials.');
     }
+    
+    const userRecord = await admin.auth().createUser({
+      email: userData.email,
+      password: userData.password,
+      emailVerified: userData.emailVerified || false,
+      displayName: userData.displayName,
+    });
+    
+    console.log(`🔥 Firebase: Created user ${userData.email} with UID ${userRecord.uid}`);
+    return userRecord;
   }
 
-  async createCustomToken(uid: string): Promise<string> {
-    // Return a mock token that includes the UID
-    return `mock-custom-token-${uid}-${Date.now()}`;
+  async setCustomUserClaims(uid: string, claims: Record<string, any>) {
+    if (!firebaseInitialized) {
+      throw new Error('Firebase not properly initialized. Please add service account credentials.');
+    }
+    
+    await admin.auth().setCustomUserClaims(uid, claims);
+    console.log(`🔥 Firebase: Set custom claims for ${uid}:`, claims);
+  }
+
+  async createCustomToken(uid: string) {
+    if (!firebaseInitialized) {
+      throw new Error('Firebase not properly initialized. Please add service account credentials.');
+    }
+    
+    return await admin.auth().createCustomToken(uid);
   }
 }
 
-// Export mock Firebase admin
-export const auth = new MockFirebaseAuth();
-export const firestore = null; // Not needed for this implementation
-
-export default {
-  auth: () => auth,
-  firestore: () => firestore,
-};
+export const auth = new FirebaseAuthWrapper();
+export const firestore = firebaseInitialized ? admin.firestore() : null;
+export default admin;
