@@ -25,23 +25,8 @@ export async function firebaseSync(req: Request, res: Response) {
       emailVerified: firebaseUser.emailVerified
     });
     
-    // Check if user exists by Firebase UID or email
+    // Check if user exists by Firebase UID only (Firebase is single source of truth)
     let user = await storage.getUserByProviderId(provider, firebaseUser.uid);
-    
-    if (!user && firebaseUser.email) {
-      // Also check by email for existing accounts
-      user = await storage.getUserByEmail(firebaseUser.email);
-      
-      // If user exists with different provider, update provider info
-      if (user && user.providerId !== firebaseUser.uid) {
-        console.log('Updating existing user with Firebase provider info');
-        user = await storage.updateUser(user.id, {
-          provider,
-          providerId: firebaseUser.uid,
-          emailVerified: firebaseUser.emailVerified
-        });
-      }
-    }
     
     if (!user) {
       // Create new user from Firebase data
