@@ -14,7 +14,7 @@ export const logOTPToConsole = (email: string, name: string, otp: string): void 
   console.log(`📧 Email: ${email}`);
   console.log(`👤 Name: ${name || 'User'}`);
   console.log(`🔑 OTP Code: ${otp}`);
-  console.log(`⏰ Expires in 10 minutes`);
+  console.log(`⏰ Expires in 5 minutes`);
   console.log(`===============================\n`);
 };
 
@@ -82,7 +82,7 @@ export const sendOTPEmail = async (email: string, otp: string, name?: string): P
             <div class="code">${otp}</div>
           </div>
           
-          <p>This code will expire in <strong>10 minutes</strong>.</p>
+          <p>This code will expire in <strong>5 minutes</strong>.</p>
           <p>If you didn't request this verification, please ignore this email.</p>
           
           <div class="footer">
@@ -99,7 +99,7 @@ export const sendOTPEmail = async (email: string, otp: string, name?: string): P
       to: email,
       subject: `Your IndieShots verification code: ${otp}`,
       html: htmlContent,
-      text: `Hello ${name || 'there'}!\n\nYour IndieShots verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nBest regards,\nThe IndieShots Team`
+      text: `Hello ${name || 'there'}!\n\nYour IndieShots verification code is: ${otp}\n\nThis code expires in 5 minutes.\n\nBest regards,\nThe IndieShots Team`
     };
     
     await transporter.sendMail(mailOptions);

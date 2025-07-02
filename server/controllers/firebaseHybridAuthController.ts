@@ -87,7 +87,7 @@ export async function hybridSignup(req: Request, res: Response) {
     // Store OTP with user data
     otpStore.set(email, {
       otp,
-      expires: Date.now() + 10 * 60 * 1000, // 10 minutes
+      expires: Date.now() + 5 * 60 * 1000, // 5 minutes
       userData,
       attempts: 0
     });

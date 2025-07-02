@@ -20,7 +20,7 @@ export const generateOTP = (): string => {
 
 // Store OTP with user data
 export const storeOTP = (email: string, otp: string, userData: any): void => {
-  const expires = Date.now() + (10 * 60 * 1000); // 10 minutes
+  const expires = Date.now() + (5 * 60 * 1000); // 5 minutes
   otpStore.set(email.toLowerCase(), { 
     otp, 
     expires, 
