@@ -60,14 +60,31 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
       const response = await apiRequest('POST', endpoint, data);
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       toast({
         title: "Email Verified!",
         description: "Your account has been created successfully.",
       });
       
-      // Store token if provided (hybrid mode)
-      if (data.token) {
+      // Use custom token to authenticate with Firebase (hybrid mode)
+      if (data.token && isHybridMode) {
+        try {
+          // Import authManager to use signInWithToken
+          const { authManager } = await import('@/lib/authManager');
+          const result = await authManager.signInWithToken(data.token);
+          
+          if (!result.success) {
+            console.error('Custom token authentication failed:', result.error);
+            // Fallback to storing token
+            localStorage.setItem('authToken', data.token);
+          }
+        } catch (error) {
+          console.error('Error during custom token signin:', error);
+          // Fallback to storing token
+          localStorage.setItem('authToken', data.token);
+        }
+      } else if (data.token) {
+        // Legacy mode - store token
         localStorage.setItem('authToken', data.token);
       }
       

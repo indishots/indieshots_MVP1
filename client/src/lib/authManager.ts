@@ -2,6 +2,7 @@
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
+  signInWithCustomToken,
   signOut,
   onAuthStateChanged,
   setPersistence,
@@ -210,6 +211,18 @@ class AuthManager {
       return { success: true, user: result.user };
     } catch (error) {
       const authError = error as AuthError;
+      return { success: false, error: this.getErrorMessage(authError) };
+    }
+  }
+
+  async signInWithToken(customToken: string) {
+    try {
+      console.log('Signing in with custom token from OTP verification');
+      const result = await signInWithCustomToken(auth, customToken);
+      return { success: true, user: result.user };
+    } catch (error) {
+      const authError = error as AuthError;
+      console.error('Custom token signin error:', authError);
       return { success: false, error: this.getErrorMessage(authError) };
     }
   }
