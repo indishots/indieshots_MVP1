@@ -120,16 +120,16 @@ export interface StoryboardFrame {
  * Build prompt from shot data using the working Python format
  */
 function buildPrompt(shot: any): string {
-  // Match the exact format from the working Python version
+  // Match the exact format from the working Python version using correct database column names
   let prompt = 
-    `Scene Type: ${shot.shotType || ''}, Lens: ${shot.lens || ''}, Movement: ${shot.movement || ''}\n` +
-    `Location: ${shot.location || ''} (${shot.timeOfDay || ''}), Mood: ${shot.moodAndAmbience || ''}, Tone: ${shot.tone || ''}\n` +
-    `Lighting: ${shot.lighting || ''}, Props: ${shot.props || ''}, Notes: ${shot.notes || ''}, Sound: ${shot.soundDesign || ''}\n\n` +
+    `Scene Type: ${shot.shot_type || shot.shotType || ''}, Lens: ${shot.lens || ''}, Movement: ${shot.movement || ''}\n` +
+    `Location: ${shot.location || ''} (${shot.time_of_day || shot.timeOfDay || ''}), Mood: ${shot.mood_and_ambience || shot.moodAndAmbience || ''}, Tone: ${shot.tone || ''}\n` +
+    `Lighting: ${shot.lighting || ''}, Props: ${shot.props || ''}, Notes: ${shot.notes || ''}, Sound: ${shot.sound_design || shot.soundDesign || ''}\n\n` +
     `Describe this scene in a cinematic, stylized animated graphic novel format. ` +
     `Use moody lighting, animated art direction, and visual storytelling tone.\n\n` +
-    `Action: ${shot.shotDescription || ''}`;
+    `Action: ${shot.shot_description || shot.shotDescription || ''}`;
   
-  // Add characters if they exist in the shot data
+  // Add characters if they exist in the shot data (use database column name)
   if (shot.characters && shot.characters !== 'None' && shot.characters.trim()) {
     prompt += `\n\nCharacters: ${shot.characters}`;
   }
@@ -370,8 +370,11 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
   
   try {
     console.log(`Processing shot ${shotId} (ID: ${shot.id})`);
+    console.log(`Shot object keys:`, Object.keys(shot));
+    console.log(`Shot characters field:`, shot.characters);
     
     const userMessage = buildPrompt(shot);
+    console.log(`Built prompt:`, userMessage.substring(0, 200) + '...');
     
     const prompt = await generatePrompt(userMessage);
     if (!prompt) {

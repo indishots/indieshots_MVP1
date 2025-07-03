@@ -179,7 +179,12 @@ export class CharacterMemoryService {
       let characters: string[] = [];
       
       // First, try to extract characters from the Characters: field if it exists
+      console.log('[CharacterMemory] Analyzing prompt for characters...');
+      console.log('[CharacterMemory] Prompt content:', basePrompt.substring(0, 300) + '...');
+      
       const charactersMatch = basePrompt.match(/Characters:\s*([^\n]+)/);
+      console.log('[CharacterMemory] Characters regex match:', charactersMatch);
+      
       if (charactersMatch && charactersMatch[1].trim() !== 'None') {
         characters = charactersMatch[1]
           .split(',')
@@ -187,6 +192,7 @@ export class CharacterMemoryService {
           .filter(char => char.length > 0);
         console.log('[CharacterMemory] Found characters in prompt:', characters);
       } else {
+        console.log('[CharacterMemory] No characters field found, trying GPT-4 extraction...');
         // Fallback to GPT-4 extraction from the full prompt
         characters = await this.extractCharacters(basePrompt);
       }
