@@ -43,7 +43,7 @@ export function generateToken(user: any): string {
 /**
  * Verify a JWT token and check blacklist
  */
-export function verifyToken(token: string): any {
+export async function verifyToken(token: string): Promise<any> {
   try {
     // Check if token is blacklisted
     if (blacklistedTokens.has(token)) {
@@ -67,7 +67,7 @@ export function verifyToken(token: string): any {
       };
       
       // Check if user is permanently banned
-      const { tokenBlacklist } = require('./tokenBlacklist');
+      const { tokenBlacklist } = await import('./tokenBlacklist');
       if (tokenBlacklist.isUserBanned(normalizedToken.id) || 
           tokenBlacklist.isEmailBanned(normalizedToken.email)) {
         console.log('User is permanently banned:', normalizedToken.email);
@@ -118,7 +118,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       return res.status(401).json({ message: 'Unauthorized' });
     }
     
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     if (!decoded) {
       console.log('Auth middleware - token verification failed');
       console.log('Auth middleware - token preview:', token.substring(0, 20) + '...');
@@ -184,7 +184,7 @@ export async function attachUserMiddleware(req: Request, res: Response, next: Ne
     
     if (token) {
       try {
-        const decoded = verifyToken(token);
+        const decoded = await verifyToken(token);
         if (decoded && decoded.id) {
           try {
             const user = await storage.getUser(decoded.id);
