@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import passport from 'passport';
 import { authMiddleware } from '../auth/jwt';
 import * as authController from '../controllers/authController';
@@ -41,6 +41,37 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.post('/logout', authController.logout);
 router.get('/logout', authController.logout);
+
+// Test endpoint to verify server is processing changes  
+router.get('/test', (req: Request, res: Response) => {
+  console.log('🧪 Test endpoint called - server is processing changes');
+  return res.json({ message: 'Test endpoint working', timestamp: new Date().toISOString() });
+});
+
+// Get current user endpoint (with authentication)
+router.get('/user', authMiddleware, (req: Request, res: Response) => {
+  try {
+    console.log('🔐 /api/auth/user endpoint called');
+    const user = (req as any).user;
+    if (!user) {
+      console.log('🔐 No user attached to request');
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    
+    console.log('🔐 User found:', user.email);
+    return res.json({
+      id: user.id || user.uid,
+      uid: user.uid || user.id,
+      email: user.email,
+      tier: user.tier || 'free',
+      displayName: user.displayName,
+      provider: user.provider || 'firebase'
+    });
+  } catch (error) {
+    console.error('Error getting user:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 // Firebase authentication - no CSRF needed (uses Firebase idToken)
 router.post('/firebase-login', firebaseLogin);

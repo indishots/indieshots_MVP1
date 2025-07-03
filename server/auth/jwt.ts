@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { storage } from '../storage';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-development-secret-key-2025';
+const JWT_SECRET = process.env.JWT_SECRET || '8e31b97e70a9066721c835527a4111a7';
 const JWT_EXPIRES_IN = '30d'; // Extended for persistent login
 
 // In-memory token blacklist (in production, use Redis or database)
@@ -43,7 +43,7 @@ export function generateToken(user: any): string {
 /**
  * Verify a JWT token and check blacklist
  */
-export async function verifyToken(token: string): Promise<any> {
+export function verifyToken(token: string): any {
   try {
     // Check if token is blacklisted
     if (blacklistedTokens.has(token)) {
@@ -65,14 +65,6 @@ export async function verifyToken(token: string): Promise<any> {
         // Preserve any other fields
         ...(decoded as any)
       };
-      
-      // Check if user is permanently banned
-      const { tokenBlacklist } = await import('./tokenBlacklist');
-      if (tokenBlacklist.isUserBanned(normalizedToken.id) || 
-          tokenBlacklist.isEmailBanned(normalizedToken.email)) {
-        console.log('User is permanently banned:', normalizedToken.email);
-        return null;
-      }
       
       return normalizedToken;
     }
@@ -98,6 +90,8 @@ export function invalidateToken(token: string): void {
  */
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
+    console.log('🔐 Auth middleware called for:', req.method, req.path);
+    
     // Check for token in cookies first (for browser clients)
     let token = req.cookies?.auth_token;
     
@@ -107,6 +101,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     // If no cookie, check Authorization header (for API clients)
     if (!token && req.headers.authorization) {
       const authHeader = req.headers.authorization;
+      console.log('Auth middleware - checking Authorization header:', authHeader?.substring(0, 20) + '...');
       if (authHeader.startsWith('Bearer ')) {
         token = authHeader.substring(7);
         console.log('Auth middleware - found token in Authorization header');
@@ -118,31 +113,33 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       return res.status(401).json({ message: 'Unauthorized' });
     }
     
-    const decoded = await verifyToken(token);
+    const decoded = verifyToken(token);
     if (!decoded) {
       console.log('Auth middleware - token verification failed');
       console.log('Auth middleware - token preview:', token.substring(0, 20) + '...');
       return res.status(401).json({ message: 'Invalid token' });
     }
     
-    // Check if user still exists in database (not permanently deleted)
+    // Check if user still exists in database (optional for Firebase users)
     try {
       const { storage } = await import('../storage');
       const user = await storage.getUserByProviderId('firebase', decoded.id);
       
-      if (!user) {
-        console.log('Auth middleware - user not found in database, account may be deleted:', decoded.email);
-        return res.status(401).json({ message: 'Account not found or has been deleted' });
+      if (user) {
+        console.log('Auth middleware - token verified for existing PostgreSQL user:', decoded.email);
+        // Attach full user data if available in PostgreSQL
+        req.user = { ...decoded, ...user };
+      } else {
+        console.log('Auth middleware - token verified for Firebase-only user:', decoded.email);
+        // Firebase user not synced to PostgreSQL yet, but token is valid
+        req.user = decoded;
       }
-      
-      console.log('Auth middleware - token verified for existing user:', decoded.email);
     } catch (error) {
-      console.log('Auth middleware - error checking user existence:', error);
-      return res.status(401).json({ message: 'Authentication verification failed' });
+      console.log('Auth middleware - error checking user existence, but token is valid:', error);
+      // Even if database check fails, allow authentication if token is valid
+      req.user = decoded;
     }
     
-    // Attach the decoded user info to the request
-    req.user = decoded;
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
@@ -171,6 +168,8 @@ export function isPremiumMiddleware(req: Request, res: Response, next: NextFunct
  */
 export async function attachUserMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
+    console.log('📎 AttachUserMiddleware called for:', req.method, req.path);
+    
     // Check for token in cookies first (for browser clients)
     let token = req.cookies?.auth_token;
     
@@ -179,26 +178,36 @@ export async function attachUserMiddleware(req: Request, res: Response, next: Ne
       const authHeader = req.headers.authorization;
       if (authHeader.startsWith('Bearer ')) {
         token = authHeader.substring(7);
+        console.log('📎 AttachUserMiddleware - found token in Authorization header');
       }
     }
     
     if (token) {
+      console.log('📎 AttachUserMiddleware - token found, attempting verification');
       try {
-        const decoded = await verifyToken(token);
+        const decoded = verifyToken(token);
+        console.log('📎 AttachUserMiddleware - token verification result:', !!decoded);
         if (decoded && decoded.id) {
           try {
             const user = await storage.getUser(decoded.id);
             if (user) {
               (req as any).user = user;
+              console.log('📎 AttachUserMiddleware - user attached:', user.email);
+            } else {
+              console.log('📎 AttachUserMiddleware - no user found in database for decoded token');
             }
           } catch (userError) {
-            console.log('User lookup failed in attach middleware, continuing without user');
+            console.log('📎 AttachUserMiddleware - user lookup failed, continuing without user:', userError.message);
           }
+        } else {
+          console.log('📎 AttachUserMiddleware - decoded token invalid or missing id');
         }
       } catch (tokenError) {
         // Token is invalid, but don't fail the request - just continue without user
-        console.log('Invalid token in attach user middleware, continuing without user');
+        console.log('📎 AttachUserMiddleware - invalid token, continuing without user:', tokenError.message);
       }
+    } else {
+      console.log('📎 AttachUserMiddleware - no token found');
     }
     
     next();
