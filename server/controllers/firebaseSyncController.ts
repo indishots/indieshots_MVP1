@@ -25,6 +25,26 @@ export async function firebaseSync(req: Request, res: Response) {
       emailVerified: firebaseUser.emailVerified
     });
     
+    // Get Firebase custom claims to extract tier information
+    let firebaseCustomClaims = {};
+    let tierFromFirebase = 'free';
+    try {
+      const admin = await import('firebase-admin');
+      const firebaseAdmin = admin.default;
+      
+      if (firebaseAdmin.apps.length) {
+        const firebaseUserRecord = await firebaseAdmin.auth().getUser(firebaseUser.uid);
+        firebaseCustomClaims = firebaseUserRecord.customClaims || {};
+        tierFromFirebase = (firebaseCustomClaims as any).tier || 'free';
+        console.log('Firebase custom claims:', firebaseCustomClaims);
+        console.log(`Using tier from Firebase: ${tierFromFirebase}`);
+      } else {
+        console.log('Firebase not initialized, defaulting to free tier');
+      }
+    } catch (error) {
+      console.log('Could not fetch Firebase custom claims:', error);
+    }
+    
     // Check if user exists by Firebase UID only (Firebase is single source of truth)
     let user = await storage.getUserByProviderId(provider, firebaseUser.uid);
     
@@ -49,9 +69,11 @@ export async function firebaseSync(req: Request, res: Response) {
         provider,
         providerId: firebaseUser.uid,
         emailVerified: firebaseUser.emailVerified || false,
-        tier: 'free',
-        totalPages: 20, // Default pages for new users
+        tier: tierFromFirebase, // Use Firebase custom claims as single source of truth
+        totalPages: tierFromFirebase === 'pro' ? -1 : 20, // Pro tier gets unlimited pages
         usedPages: 0,
+        maxShotsPerScene: tierFromFirebase === 'pro' ? -1 : 5, // Pro tier gets unlimited shots
+        canGenerateStoryboards: tierFromFirebase === 'pro', // Pro tier can generate storyboards
       });
       
       console.log('New Firebase user created:', user.email);
@@ -82,6 +104,15 @@ export async function firebaseSync(req: Request, res: Response) {
         const nameParts = firebaseUser.displayName.split(' ');
         if (!user.firstName) updates.firstName = nameParts[0] || user.firstName;
         if (!user.lastName) updates.lastName = nameParts.slice(1).join(' ') || user.lastName;
+      }
+      
+      // Sync tier information from Firebase custom claims (critical for promo code users)
+      if (tierFromFirebase !== user.tier) {
+        updates.tier = tierFromFirebase;
+        updates.totalPages = tierFromFirebase === 'pro' ? -1 : 20;
+        updates.maxShotsPerScene = tierFromFirebase === 'pro' ? -1 : 5;
+        updates.canGenerateStoryboards = tierFromFirebase === 'pro';
+        console.log(`Syncing tier from Firebase: ${user.tier} → ${tierFromFirebase}`);
       }
       
       if (Object.keys(updates).length > 0) {

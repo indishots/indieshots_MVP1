@@ -254,28 +254,7 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         displayName: `${userData.firstName} ${userData.lastName}`.trim(),
       });
 
-      // Create/update user in PostgreSQL with correct tier FIRST
-      const { storage } = await import('../storage');
-      
-      // Check if user already exists to preserve usage data
-      const existingUser = await storage.getUserByEmail(userData.email);
-      const preserveUsedPages = existingUser ? existingUser.usedPages : 0;
-      
-      const userRecord = await storage.upsertUser({
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        tier: userData.tier,
-        provider: userData.provider,
-        emailVerified: true,
-        // Set tier-specific limits
-        maxShotsPerScene: userData.tier === 'pro' ? -1 : 5,
-        canGenerateStoryboards: userData.tier === 'pro',
-        totalPages: userData.tier === 'pro' ? -1 : 5,
-        usedPages: preserveUsedPages // Preserve existing usage for returning users
-      });
-
-      // Apply promo code if valid (this will record usage but user already has correct tier)
+      // Apply promo code if valid (record usage in promo_code_usage table)
       if (userData.promoCodeValid && userData.couponCode) {
         const promoCodeService = new PromoCodeService();
         const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
@@ -296,7 +275,7 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         }
       }
 
-      // Set custom claims for tier and other metadata
+      // Set Firebase custom claims as single source of truth
       await firebaseAdmin.setCustomUserClaims(firebaseUser.uid, {
         tier: userData.tier,
         couponCode: userData.couponCode,
@@ -304,12 +283,8 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         createdAt: new Date().toISOString()
       });
 
-      // Update quota manager with correct tier (important for promo code users)
-      if (userData.tier === 'pro') {
-        const { productionQuotaManager } = await import('../lib/productionQuotaManager');
-        await productionQuotaManager.upgradeToPro(firebaseUser.uid);
-        console.log(`✓ Quota manager updated to pro tier for user: ${userData.email}`);
-      }
+      console.log(`✓ Firebase user created with tier: ${userData.tier} for ${userData.email}`);
+      console.log(`✓ PostgreSQL sync will happen when user signs in`)
 
       // Clean up OTP
       otpStore.delete(email);
