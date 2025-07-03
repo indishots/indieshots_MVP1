@@ -53,28 +53,22 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Verify email mutation
+  // Verify email mutation - Always use hybrid Firebase-first approach
   const verifyMutation = useMutation({
     mutationFn: async (data: { email: string; otp: string }) => {
-      const endpoint = isHybridMode ? '/api/auth/hybrid-verify-otp' : '/api/auth/verify-email';
+      const response = await fetch('/api/auth/hybrid-verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
       
-      try {
-        const response = await apiRequest('POST', endpoint, data);
-        return response.json();
-      } catch (error: any) {
-        // Parse the error response to get structured error data
-        if (error.message && error.message.includes(':')) {
-          try {
-            const errorText = error.message.split(': ')[1];
-            const errorData = JSON.parse(errorText);
-            throw { response: { status: parseInt(error.message.split(':')[0]), data: errorData } };
-          } catch (parseError) {
-            // If JSON parsing fails, throw original error
-            throw error;
-          }
-        }
-        throw error;
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw { response: { status: response.status, data: result } };
       }
+      
+      return result;
     },
     onSuccess: async (data) => {
       toast({
@@ -82,39 +76,68 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
         description: "Your account has been created successfully.",
       });
       
-      // Use custom token to authenticate with Firebase (hybrid mode)
-      if (data.token && isHybridMode) {
+      // Firebase-first approach: use custom token to authenticate
+      if (data.token) {
         try {
-          // Import authManager to use signInWithToken
-          const { authManager } = await import('@/lib/authManager');
-          const result = await authManager.signInWithToken(data.token);
+          // Import Firebase auth for client-side authentication
+          const { signInWithCustomToken } = await import('firebase/auth');
+          const { auth } = await import('@/lib/firebase');
           
-          if (result.success) {
-            // Force refresh user data to get updated tier information (important for promo code users)
-            await authManager.refreshFromDatabase();
+          console.log('Signing in with Firebase custom token...');
+          const userCredential = await signInWithCustomToken(auth, data.token);
+          
+          if (userCredential.user) {
+            console.log('✓ Firebase authentication successful');
             
-            // Invalidate React Query cache to force fresh data from API
-            const { queryClient } = await import('@/lib/queryClient');
-            await queryClient.invalidateQueries({ queryKey: ['/api/upgrade/status'] });
-            await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+            // Get Firebase ID token and sync with backend
+            const idToken = await userCredential.user.getIdToken();
             
-            console.log('✓ User data refreshed after promo code verification');
-          } else {
-            console.error('Custom token authentication failed:', result.error);
-            // Fallback to storing token
-            localStorage.setItem('authToken', data.token);
+            // Sync user data with backend (this will create PostgreSQL record)
+            const syncResponse = await fetch('/api/auth/firebase-sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                firebaseUser: {
+                  uid: userCredential.user.uid,
+                  email: userCredential.user.email,
+                  displayName: userCredential.user.displayName,
+                  photoURL: userCredential.user.photoURL,
+                  emailVerified: userCredential.user.emailVerified
+                },
+                idToken,
+                provider: 'firebase'
+              })
+            });
+            
+            if (syncResponse.ok) {
+              console.log('✓ Backend sync successful');
+              
+              // Invalidate React Query cache to force fresh data
+              const { queryClient } = await import('@/lib/queryClient');
+              await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+              await queryClient.invalidateQueries({ queryKey: ['/api/upgrade/status'] });
+              
+              navigate('/dashboard');
+            } else {
+              console.error('Backend sync failed');
+              // Still navigate to dashboard as Firebase auth succeeded
+              navigate('/dashboard');
+            }
           }
         } catch (error) {
-          console.error('Error during custom token signin:', error);
-          // Fallback to storing token
-          localStorage.setItem('authToken', data.token);
+          console.error('Error during Firebase authentication:', error);
+          toast({
+            title: "Authentication Warning",
+            description: "Account created but authentication failed. Please try signing in manually.",
+            variant: "destructive"
+          });
+          navigate('/auth');
         }
-      } else if (data.token) {
-        // Legacy mode - store token
-        localStorage.setItem('authToken', data.token);
+      } else {
+        console.error('No custom token received');
+        navigate('/auth');
       }
-      
-      navigate('/dashboard');
     },
     onError: (error: any) => {
       let errorMessage = "Invalid or expired verification code";
@@ -155,28 +178,22 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
     }
   });
 
-  // Resend OTP mutation
+  // Resend OTP mutation - Always use hybrid Firebase-first approach
   const resendMutation = useMutation({
     mutationFn: async (email: string) => {
-      const endpoint = isHybridMode ? '/api/auth/hybrid-resend-otp' : '/api/auth/resend-otp';
+      const response = await fetch('/api/auth/hybrid-resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
       
-      try {
-        const response = await apiRequest('POST', endpoint, { email });
-        return response.json();
-      } catch (error: any) {
-        // Parse the error response to get structured error data
-        if (error.message && error.message.includes(':')) {
-          try {
-            const errorText = error.message.split(': ')[1];
-            const errorData = JSON.parse(errorText);
-            throw { response: { status: parseInt(error.message.split(':')[0]), data: errorData } };
-          } catch (parseError) {
-            // If JSON parsing fails, throw original error
-            throw error;
-          }
-        }
-        throw error;
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw { response: { status: response.status, data: result } };
       }
+      
+      return result;
     },
     onSuccess: () => {
       toast({

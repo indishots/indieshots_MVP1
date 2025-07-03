@@ -71,8 +71,35 @@ export const UltimateAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Memoize auth functions to prevent recreating on every render
   const signIn = useCallback(async (email: string, password: string) => {
     authManager.enableAuth();
-    const result = await authManager.signInWithEmail(email, password);
-    return result.success ? { success: true } : { success: false, error: result.error };
+    
+    try {
+      // First check if user exists in Firebase using hybrid signin
+      const response = await fetch('/api/auth/hybrid-signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (data.code === 'USER_NOT_FOUND') {
+          return { success: false, error: "This email is not registered. Please sign up first." };
+        }
+        return { success: false, error: data.message || "Sign in failed" };
+      }
+
+      // User exists in Firebase, now authenticate with Firebase client SDK
+      if (data.action === 'firebase_auth') {
+        const result = await authManager.signInWithEmail(email, password);
+        return result.success ? { success: true } : { success: false, error: result.error };
+      } else {
+        return { success: false, error: "Unexpected response from server" };
+      }
+      
+    } catch (error: any) {
+      return { success: false, error: error.message || "Sign in failed" };
+    }
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, isPremiumCoupon?: boolean) => {

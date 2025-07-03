@@ -212,13 +212,13 @@ export async function attachUserMiddleware(req: Request, res: Response, next: Ne
             } else {
               console.log('📎 AttachUserMiddleware - no user found in database for decoded token');
             }
-          } catch (userError) {
+          } catch (userError: any) {
             console.log('📎 AttachUserMiddleware - user lookup failed, continuing without user:', userError.message);
           }
         } else {
           console.log('📎 AttachUserMiddleware - decoded token invalid or missing id');
         }
-      } catch (tokenError) {
+      } catch (tokenError: any) {
         // Token is invalid, but don't fail the request - just continue without user
         console.log('📎 AttachUserMiddleware - invalid token, continuing without user:', tokenError.message);
       }
