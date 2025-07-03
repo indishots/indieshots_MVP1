@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { promoCodes, promoCodeUsage } from '../../shared/schema';
+import { promoCodes, promoCodeUsage, users } from '../../shared/schema';
 import { eq, and, gte, desc, count } from 'drizzle-orm';
 import type { PromoCode, PromoCodeUsage, InsertPromoCodeUsage } from '../../shared/schema';
 
@@ -201,6 +201,14 @@ export class PromoCodeService {
       
       await db.insert(promoCodeUsage).values(usageData);
       
+      // Update user's tier in users table
+      await db.update(users)
+        .set({ 
+          tier: validation.tier,
+          updatedAt: new Date()
+        })
+        .where(eq(users.email, userEmail.toLowerCase()));
+      
       // Update promo code usage count
       await db.update(promoCodes)
         .set({ 
@@ -209,7 +217,7 @@ export class PromoCodeService {
         })
         .where(eq(promoCodes.id, validation.promoCodeId));
       
-      console.log(`✓ Promo code ${code} applied for user ${userEmail}`);
+      console.log(`✓ Promo code ${code} applied for user ${userEmail}, tier upgraded to ${validation.tier}`);
       return true;
       
     } catch (error) {
