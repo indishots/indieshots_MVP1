@@ -162,15 +162,7 @@ export class FirebaseTierManager {
   }
 
   async checkStoryboardAccess(firebaseUid: string): Promise<{ allowed: boolean; reason?: string }> {
-    const userTier = await this.getUserTier(firebaseUid);
-    
-    if (!userTier.canGenerateStoryboards) {
-      return {
-        allowed: false,
-        reason: 'Storyboard generation is a Pro feature. Upgrade to Pro to generate visual storyboards.'
-      };
-    }
-
+    // All users can now generate storyboards
     return { allowed: true };
   }
 }

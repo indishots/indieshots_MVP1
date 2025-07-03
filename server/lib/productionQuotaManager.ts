@@ -18,7 +18,7 @@ export const TIER_LIMITS = {
   free: {
     totalPages: 5,
     maxShotsPerScene: 5,
-    canGenerateStoryboards: false,
+    canGenerateStoryboards: true,
   },
   pro: {
     totalPages: -1, // Unlimited
@@ -141,15 +141,7 @@ export class ProductionQuotaManager {
   }
 
   async checkStoryboardAccess(userId: string, userTier: string = 'free'): Promise<{ allowed: boolean; reason?: string }> {
-    const quota = await this.getUserQuota(userId, userTier);
-
-    if (!quota.canGenerateStoryboards) {
-      return {
-        allowed: false,
-        reason: 'Storyboard generation is a Pro feature. Upgrade to Pro to generate visual storyboards.'
-      };
-    }
-
+    // All users can now generate storyboards
     return { allowed: true };
   }
 
