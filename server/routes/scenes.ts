@@ -5,6 +5,7 @@ import { storage } from '../storage';
 import { extractScenesFromText } from '../services/sceneProcessor';
 import { generateShotsFromScene } from '../services/shotGenerator';
 import { generateStoryboards } from '../services/imageGenerator';
+import { characterMemoryService } from '../services/characterMemoryService';
 import { productionQuotaManager } from '../lib/productionQuotaManager';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -343,8 +344,21 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     }
 
     // Generate fresh storyboards and wait for ALL to complete
-    console.log(`Starting generation of ${shots.length} storyboard images...`);
+    console.log(`Starting generation of ${shots.length} storyboard images with character memory integration...`);
+    
+    // Log character memory stats before generation
+    const memoryStatsBefore = characterMemoryService.getMemoryStats();
+    console.log(`Character memory before generation: ${memoryStatsBefore.characterCount} characters known - [${memoryStatsBefore.characters.join(', ')}]`);
+    
     const { results, frames } = await generateStoryboards(shots);
+    
+    // Log character memory stats after generation
+    const memoryStatsAfter = characterMemoryService.getMemoryStats();
+    console.log(`Character memory after generation: ${memoryStatsAfter.characterCount} characters known - [${memoryStatsAfter.characters.join(', ')}]`);
+    if (memoryStatsAfter.characterCount > memoryStatsBefore.characterCount) {
+      const newCharacters = memoryStatsAfter.characters.filter(char => !memoryStatsBefore.characters.includes(char));
+      console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
+    }
     
     // Validate all shots have images - retry any missing ones
     const updatedShots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
@@ -727,6 +741,24 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
   } catch (error) {
     console.error('Error regenerating image:', error);
     res.status(500).json({ error: 'Failed to regenerate image', details: (error as Error).message });
+  }
+});
+
+/**
+ * GET /api/character-memory/debug
+ * Debug endpoint to monitor character memory (for development)
+ */
+router.get('/character-memory/debug', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const memoryStats = characterMemoryService.getMemoryStats();
+    res.json({
+      message: 'Character memory statistics',
+      ...memoryStats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error getting character memory stats:', error);
+    res.status(500).json({ error: 'Failed to get character memory stats' });
   }
 });
 

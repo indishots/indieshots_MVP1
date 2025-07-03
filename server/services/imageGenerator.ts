@@ -2,6 +2,7 @@ import { OpenAI } from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
 import fetch from 'node-fetch';
+import { characterMemoryService } from './characterMemoryService';
 
 const promptClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -12,8 +13,11 @@ const imageClient = new OpenAI({
 });
 
 const SYSTEM_PROMPT = `You are a professional film director and AI visual artist. 
-Your task is to take each shot from a shot division table and turn it into a vivid, single-sentence prompt for an image generation AI. 
-Your prompt should visually describe the entire scene in cinematic terms. Be descriptive and use visual language.`;
+Your task is to take each shot from a shot division table and turn it into a vivid, detailed prompt for an image generation AI. 
+Your prompt should visually describe the entire scene in cinematic terms with emphasis on character consistency. 
+When character descriptions are provided, use them exactly as specified to maintain visual continuity across scenes.
+Focus on cinematic composition, lighting, mood, and visual storytelling. Be descriptive and use visual language.
+Format the response as a single detailed paragraph suitable for DALL-E 3 generation.`;
 
 const IMAGE_OUTPUT_DIR = path.join(process.cwd(), 'generated_images');
 
@@ -133,26 +137,29 @@ function buildPrompt(shot: any): string {
 }
 
 /**
- * Generate visual prompt using GPT-4 with retry mechanism
+ * Generate visual prompt using GPT-4 with character memory integration
  */
 async function generatePrompt(userMessage: string, retries: number = 2): Promise<string | null> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Generating prompt (attempt ${attempt}/${retries})`);
       
+      // First, enhance the prompt with character consistency
+      const enhancedMessage = await characterMemoryService.buildEnhancedPrompt(userMessage);
+      
       const response = await promptClient.chat.completions.create({
         model: 'gpt-4',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMessage }
+          { role: 'user', content: enhancedMessage }
         ],
-        max_tokens: 300,
+        max_tokens: 400, // Increased to accommodate character descriptions
         temperature: 0.7
       });
       
       const prompt = response.choices[0].message.content?.trim();
       if (prompt && prompt.length > 10) {
-        console.log(`Generated prompt: ${prompt.substring(0, 100)}...`);
+        console.log(`Generated character-enhanced prompt: ${prompt.substring(0, 100)}...`);
         return prompt;
       } else {
         console.log(`Generated prompt too short or empty (attempt ${attempt})`);
@@ -237,7 +244,7 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
       model: "dall-e-3",
       prompt: safeFallbackPrompt,
       n: 1,
-      size: "1024x1024",
+      size: "1792x1024", // Wider cinematic format
       response_format: "url"
     });
 
@@ -287,7 +294,7 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         model: "dall-e-3",
         prompt: cleanedPrompt,
         n: 1,
-        size: "1024x1024",
+        size: "1792x1024", // Wider cinematic format
         response_format: "url"
       });
 
