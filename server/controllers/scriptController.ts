@@ -11,8 +11,8 @@ import { productionQuotaManager } from '../lib/productionQuotaManager';
  */
 export async function uploadScript(req: Request, res: Response) {
   try {
-    // Get authenticated user ID from request
-    const userId = (req as any).user?.id;
+    // Get authenticated user ID from request (Firebase UID)
+    const userId = (req as any).user?.uid || (req as any).user?.id;
     
     if (!userId) {
       return res.status(401).json({ message: 'Authentication required' });

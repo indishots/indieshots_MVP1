@@ -265,7 +265,6 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
       // Create/update user in PostgreSQL with correct tier
       const { storage } = await import('../storage');
       const userRecord = await storage.upsertUser({
-        id: firebaseUser.uid,
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,

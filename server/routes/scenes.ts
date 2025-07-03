@@ -23,7 +23,7 @@ const storyboardsStorage = new Map<string, any[]>();
 router.get('/jobs/:jobId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
 
     // Get the parse job
     const parseJob = await storage.getParseJob(parseInt(jobId));
@@ -68,7 +68,7 @@ router.get('/jobs/:jobId', authMiddleware, async (req: Request, res: Response) =
 router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId, sceneIndex } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
 
     console.log(`Shot generation - jobId: ${jobId}, userId: ${userId}`);
     
@@ -179,7 +179,7 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, async (req: Re
 router.get('/shots/:jobId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
 
     console.log(`GET all shots - jobId: ${jobId}, userId: ${userId}`);
     
@@ -233,7 +233,7 @@ router.get('/shots/:jobId', authMiddleware, async (req: Request, res: Response) 
 router.get('/shots/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId, sceneIndex } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
 
     console.log(`GET shots - jobId: ${jobId}, userId: ${userId}`);
     
@@ -266,7 +266,7 @@ router.get('/shots/:jobId/:sceneIndex', authMiddleware, async (req: Request, res
 router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId, sceneIndex } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
     const user = (req as any).user;
     const userTier = user?.tier || 'free';
 
@@ -379,7 +379,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
 router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId, sceneIndex } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
 
     // Verify user owns the job
     const parseJob = await storage.getParseJob(parseInt(jobId));
@@ -423,7 +423,7 @@ router.get('/storyboards/:jobId/:sceneIndex/download', authMiddleware, async (re
   try {
     const { jobId, sceneIndex } = req.params;
     const { format = 'zip' } = req.query;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
 
     // Verify user owns the job
     const parseJob = await storage.getParseJob(parseInt(jobId));
@@ -485,7 +485,7 @@ router.get('/storyboards/:jobId/:sceneIndex/download', authMiddleware, async (re
 router.get('/storyboards/:jobId/:sceneIndex/image/:imageIndex', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId, sceneIndex, imageIndex } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
 
     // Verify user owns the job
     const parseJob = await storage.getParseJob(parseInt(jobId));
@@ -527,7 +527,7 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
   try {
     const { jobId, sceneIndex, shotId } = req.params;
     const { modifications } = req.body;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
     const user = (req as any).user;
     const userTier = user?.tier || 'free';
 
