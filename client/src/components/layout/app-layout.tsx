@@ -30,6 +30,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const isAuthenticated = authState === 'authenticated';
   const [leftCollapsed, toggleLeftCollapsed] = useToggle(false);
   const [rightCollapsed, toggleRightCollapsed] = useToggle(false);
+  
+  // Initialize automatic tier validation
+  useTierValidation();
 
   // Query for upgrade status to get accurate tier info
   const { data: upgradeStatus } = useQuery({

@@ -4,6 +4,8 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import { generateOTP, logOTPToConsole, sendOTPEmail } from '../emailService';
 import { PromoCodeService } from '../services/promoCodeService';
+import { storage } from '../storage';
+import { generateToken } from '../auth/jwt';
 
 // Simple in-memory OTP storage (in production, use Redis or database)
 const otpStore = new Map<string, { 
@@ -288,6 +290,42 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
 
       // Clean up OTP
       otpStore.delete(email);
+
+      // Immediately sync to PostgreSQL to ensure tier is available
+      try {
+        const pgUser = await storage.upsertUser({
+          email: userData.email,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          providerId: firebaseUser.uid,
+          provider: 'firebase',
+          tier: userData.tier,
+          totalPages: userData.tier === 'pro' ? -1 : 5,
+          maxShotsPerScene: userData.tier === 'pro' ? -1 : 5,
+          canGenerateStoryboards: userData.tier === 'pro'
+        });
+        
+        console.log(`✓ PostgreSQL user created with tier: ${pgUser.tier} for ${userData.email}`);
+        
+        // Generate JWT token with correct tier
+        const jwtToken = generateToken(pgUser);
+        
+        // Set authentication cookie
+        const cookieOptions = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax' as const,
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          path: '/',
+        };
+        
+        res.cookie('auth_token', jwtToken, cookieOptions);
+        
+        console.log(`✓ JWT token generated with tier: ${pgUser.tier} for ${userData.email}`);
+      } catch (syncError) {
+        console.error('PostgreSQL sync failed:', syncError);
+        // Continue with Firebase token even if PostgreSQL sync fails
+      }
 
       // Create custom token for immediate signin
       const customToken = await firebaseAdmin.createCustomToken(firebaseUser.uid);
