@@ -88,7 +88,12 @@ export default function CleanAuthPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Sign up failed");
+        // Provide more specific error messages
+        let errorMessage = data.message || "Sign up failed";
+        if (data.code === 'USER_EXISTS') {
+          errorMessage = "This email is already registered. Please sign in instead.";
+        }
+        setError(errorMessage);
         setIsLoading(false);
         return;
       }
