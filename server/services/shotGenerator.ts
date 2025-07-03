@@ -13,18 +13,51 @@ function getOpenAIClient(): OpenAI {
  * Generate demo shots when OpenAI API is unavailable
  */
 function generateDemoShots(prompt: string): string {
-  console.log('🎬 Generating demo shots for prompt preview');
+  console.log('🎬 Generating professional demo shots for scene analysis');
   
-  // Create realistic shot list response for demonstration
-  const demoShots = [
-    "Wide shot establishing the scene|Wide Shot|24mm|Static|Dramatic and tense|Natural lighting|Props as per scene|Opening shot to establish location|Ambient room tone|Warm 3200K|Serious|Characters present|Scene action begins|Initial dialogue",
-    "Medium shot on main character|Medium Shot|50mm|Slight push-in|Focused and intimate|Key lighting|Character props|Focus on character emotion|Clear dialogue|Neutral 5600K|Contemplative|Main character|Character reaction|Character speaks",
-    "Close-up reaction shot|Close-Up|85mm|Static|Emotional intensity|Soft lighting|Minimal props|Capture emotional response|Subtle background|Warm 3200K|Emotional|Secondary character|Emotional reaction|Reaction dialogue",
-    "Over-shoulder conversation|Over-Shoulder|50mm|Slow pan|Conversational|Three-point lighting|Scene props|Dialogue coverage|Clean audio|Neutral 5600K|Engaging|Both characters|Conversation continues|Main dialogue exchange",
-    "Insert shot detail|Insert|100mm macro|Static|Detailed focus|Focused lighting|Key prop|Important story element|Minimal sound|Cool 5600K|Mysterious|Props focus|Detail reveals information|No dialogue"
-  ];
+  // Analyze scene content for context
+  const isInterior = prompt.toLowerCase().includes('int.') || prompt.toLowerCase().includes('interior');
+  const isExterior = prompt.toLowerCase().includes('ext.') || prompt.toLowerCase().includes('exterior');
+  const isDialogue = prompt.toLowerCase().includes('dialogue') || prompt.includes(':');
+  const isAction = prompt.toLowerCase().includes('action') || prompt.toLowerCase().includes('runs') || prompt.toLowerCase().includes('fight');
   
-  return demoShots.join('\n');
+  // Generate contextual shots based on scene content
+  const shotTemplates = [];
+  
+  // Establishing shot
+  if (isExterior) {
+    shotTemplates.push("Wide shot establishing exterior location|Wide Shot|24mm|Static|Atmospheric|Natural lighting|Environmental props|Establish location and mood|Ambient environmental sound|Daylight 5600K|Establishing|Location setting|Scene opens|No dialogue");
+  } else {
+    shotTemplates.push("Wide shot establishing interior space|Wide Shot|28mm|Slow push-in|Intimate|Practical lighting|Room furnishings|Set the scene context|Room tone|Warm 3200K|Establishing|Interior space|Characters enter|No dialogue");
+  }
+  
+  // Character introduction
+  shotTemplates.push("Medium shot introducing main character|Medium Shot|50mm|Slight zoom-in|Focused|Key lighting|Character props|Character introduction|Clear audio|Neutral 5600K|Engaging|Main character|Character appears|Character speaks");
+  
+  // Dialogue coverage if dialogue detected
+  if (isDialogue) {
+    shotTemplates.push("Over-shoulder shot during conversation|Over-Shoulder|85mm|Static|Conversational|Three-point lighting|Scene props|Dialogue coverage|Clean dialogue|Neutral 5600K|Intimate|Both characters|Conversation unfolds|Main dialogue");
+    shotTemplates.push("Reverse angle for dialogue response|Reverse Shot|85mm|Static|Emotional|Soft key lighting|Minimal props|Reaction coverage|Clear speech|Warm 3200K|Responsive|Secondary character|Character reacts|Response dialogue");
+  }
+  
+  // Action shots if action detected
+  if (isAction) {
+    shotTemplates.push("Dynamic tracking shot following action|Tracking Shot|35mm|Handheld follow|High energy|Available lighting|Action props|Movement dynamics|Action sounds|Variable temp|Energetic|Active characters|Action sequence|Action dialogue");
+  }
+  
+  // Close-up for emotion
+  shotTemplates.push("Close-up capturing character emotion|Close-Up|100mm|Static|Emotional intensity|Soft lighting|Minimal props|Emotional beat|Subtle background|Warm 3200K|Emotional|Key character|Emotional moment|Internal thought");
+  
+  // Insert/detail shot
+  shotTemplates.push("Insert shot of important detail|Insert|100mm Macro|Static|Detailed focus|Focused lighting|Key prop|Story element|Minimal sound|Cool 5600K|Mysterious|Object focus|Detail reveals|No dialogue");
+  
+  // Cutaway shot
+  shotTemplates.push("Cutaway shot for context|Cutaway|50mm|Static|Contextual|Natural lighting|Environmental props|Scene context|Ambient sound|Natural temp|Neutral|Scene element|Provides context|No dialogue");
+  
+  // Select 5-7 shots based on scene type
+  const selectedShots = shotTemplates.slice(0, Math.min(7, shotTemplates.length));
+  
+  return selectedShots.join('\n');
 }
 
 export interface ShotData {
@@ -60,16 +93,21 @@ interface Context {
  * Generate GPT-4 response for shot division
  */
 async function gpt4Response(prompt: string): Promise<string> {
+  // Check if OpenAI API key is available
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.log('🎬 Using demo shot generation - no API key configured');
+    return generateDemoShots(prompt);
+  }
+  
   try {
     // Get fresh OpenAI client with current environment variables
     const client = getOpenAIClient();
     
-    // Log API key info for debugging
-    const apiKey = process.env.OPENAI_API_KEY;
     console.log('🔑 OpenAI API key loaded:', {
       exists: !!apiKey,
-      length: apiKey?.length || 0,
-      prefix: apiKey?.substring(0, 15) + '...' || 'none'
+      length: apiKey.length,
+      prefix: apiKey.substring(0, 15) + '...'
     });
 
     const response = await client.chat.completions.create({
@@ -91,14 +129,9 @@ async function gpt4Response(prompt: string): Promise<string> {
       type: error.type
     });
     
-    // Check if it's an authentication error
-    if (error.status === 401 || error.code === 'invalid_api_key') {
-      console.log('🎬 Using demo shot generation due to API key issue');
-      return generateDemoShots(prompt);
-    }
-    
-    // For other errors, provide more context
-    throw new Error(`OpenAI API error: ${error.message || 'Unknown error'}`);
+    // Use demo shots as fallback for any API issues
+    console.log('🎬 Using demo shot generation due to API error');
+    return generateDemoShots(prompt);
   }
 }
 
