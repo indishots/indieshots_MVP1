@@ -254,7 +254,28 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         displayName: `${userData.firstName} ${userData.lastName}`.trim(),
       });
 
-      // Apply promo code if valid
+      // Create/update user in PostgreSQL with correct tier FIRST
+      const { storage } = await import('../storage');
+      
+      // Check if user already exists to preserve usage data
+      const existingUser = await storage.getUserByEmail(userData.email);
+      const preserveUsedPages = existingUser ? existingUser.usedPages : 0;
+      
+      const userRecord = await storage.upsertUser({
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        tier: userData.tier,
+        provider: userData.provider,
+        emailVerified: true,
+        // Set tier-specific limits
+        maxShotsPerScene: userData.tier === 'pro' ? -1 : 5,
+        canGenerateStoryboards: userData.tier === 'pro',
+        totalPages: userData.tier === 'pro' ? -1 : 5,
+        usedPages: preserveUsedPages // Preserve existing usage for returning users
+      });
+
+      // Apply promo code if valid (this will record usage but user already has correct tier)
       if (userData.promoCodeValid && userData.couponCode) {
         const promoCodeService = new PromoCodeService();
         const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
@@ -274,22 +295,6 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
           console.log(`✗ Failed to apply promo code ${userData.couponCode} for user: ${userData.email}`);
         }
       }
-
-      // Create/update user in PostgreSQL with correct tier
-      const { storage } = await import('../storage');
-      const userRecord = await storage.upsertUser({
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        tier: userData.tier,
-        provider: userData.provider,
-        emailVerified: true,
-        // Set tier-specific limits
-        maxShotsPerScene: userData.tier === 'pro' ? -1 : 5,
-        canGenerateStoryboards: userData.tier === 'pro',
-        totalPages: userData.tier === 'pro' ? -1 : 5,
-        usedPages: 0
-      });
 
       // Set custom claims for tier and other metadata
       await firebaseAdmin.setCustomUserClaims(firebaseUser.uid, {

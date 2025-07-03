@@ -201,13 +201,24 @@ export class PromoCodeService {
       
       await db.insert(promoCodeUsage).values(usageData);
       
-      // Update user's tier in users table
-      await db.update(users)
-        .set({ 
-          tier: validation.tier,
-          updatedAt: new Date()
-        })
-        .where(eq(users.email, userEmail.toLowerCase()));
+      // Check if user's tier needs updating (avoid unnecessary updates)
+      const existingUser = await db.select({ tier: users.tier })
+        .from(users)
+        .where(eq(users.email, userEmail.toLowerCase()))
+        .limit(1);
+      
+      if (existingUser.length > 0 && existingUser[0].tier !== validation.tier) {
+        // Update user's tier in users table only if different
+        await db.update(users)
+          .set({ 
+            tier: validation.tier,
+            updatedAt: new Date()
+          })
+          .where(eq(users.email, userEmail.toLowerCase()));
+        console.log(`✓ User tier updated from ${existingUser[0].tier} to ${validation.tier}`);
+      } else {
+        console.log(`✓ User already has correct tier: ${validation.tier}`);
+      }
       
       // Update promo code usage count
       await db.update(promoCodes)
