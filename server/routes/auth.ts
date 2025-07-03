@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import passport from 'passport';
-import { authMiddleware } from '../auth/jwt';
+import { authMiddleware, generateToken } from '../auth/jwt';
+import { storage } from '../storage';
 import * as authController from '../controllers/authController';
 import * as otpController from '../controllers/otpController';
 import * as hybridAuthController from '../controllers/firebaseHybridAuthController';
@@ -41,6 +42,125 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 router.post('/logout', authController.logout);
 router.get('/logout', authController.logout);
+
+// Get current authenticated user with fresh tier information
+router.get('/user', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const jwtUser = (req as any).user;
+    
+    if (!jwtUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Get fresh user data from database to ensure tier is up to date
+    let user;
+    
+    // Try to get user by Firebase UID first (for promo code users)
+    if (jwtUser.uid) {
+      const users = await storage.getUserByProviderId('firebase', jwtUser.uid);
+      user = users;
+    }
+    
+    // Fallback to email lookup
+    if (!user && jwtUser.email) {
+      user = await storage.getUserByEmail(jwtUser.email);
+    }
+    
+    // Fallback to ID lookup
+    if (!user && jwtUser.id) {
+      user = await storage.getUser(jwtUser.id);
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return user data with fresh tier information
+    const userData = {
+      id: user.id,
+      uid: user.providerId || jwtUser.uid,
+      email: user.email,
+      displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || jwtUser.displayName,
+      tier: user.tier || 'free',
+      totalPages: user.tier === 'pro' ? -1 : 5,
+      usedPages: user.usedPages || 0,
+      maxShotsPerScene: user.tier === 'pro' ? -1 : 5,
+      canGenerateStoryboards: user.tier === 'pro'
+    };
+
+    console.log(`[AUTH] User ${user.email} tier check: ${user.tier}`);
+    res.json(userData);
+  } catch (error) {
+    console.error('Error getting user data:', error);
+    res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
+// Refresh user session with updated tier information
+router.post('/refresh-session', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const jwtUser = (req as any).user;
+    
+    if (!jwtUser) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Get fresh user data from database
+    let user;
+    
+    // Try to get user by Firebase UID first (for promo code users)
+    if (jwtUser.uid) {
+      user = await storage.getUserByProviderId('firebase', jwtUser.uid);
+    }
+    
+    // Fallback to email lookup
+    if (!user && jwtUser.email) {
+      user = await storage.getUserByEmail(jwtUser.email);
+    }
+    
+    // Fallback to ID lookup
+    if (!user && jwtUser.id) {
+      user = await storage.getUser(jwtUser.id);
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Generate new JWT token with fresh tier information
+    const userData = {
+      id: user.id,
+      uid: user.firebaseUid || jwtUser.uid,
+      email: user.email,
+      displayName: user.displayName || jwtUser.displayName,
+      tier: user.tier || 'free',
+      totalPages: user.tier === 'pro' ? -1 : 5,
+      usedPages: user.usedPages || 0,
+      maxShotsPerScene: user.tier === 'pro' ? -1 : 5,
+      canGenerateStoryboards: user.tier === 'pro'
+    };
+
+    const newToken = generateToken(userData);
+
+    // Set new auth cookie
+    res.cookie('auth_token', newToken, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/',
+    });
+
+    console.log(`[AUTH] Session refreshed for ${user.email} with tier: ${user.tier}`);
+    res.json({
+      message: 'Session refreshed successfully',
+      user: userData
+    });
+  } catch (error) {
+    console.error('Error refreshing session:', error);
+    res.status(500).json({ error: 'Failed to refresh session' });
+  }
+});
 
 // Test endpoint to verify server is processing changes  
 router.get('/test', (req: Request, res: Response) => {
