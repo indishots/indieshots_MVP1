@@ -71,8 +71,8 @@ export default function CleanAuthPage() {
     setIsLoading(true);
 
     try {
-      // Call new OTP-based signup endpoint
-      const response = await fetch('/api/auth/signup', {
+      // Call hybrid OTP-based signup endpoint
+      const response = await fetch('/api/auth/hybrid-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

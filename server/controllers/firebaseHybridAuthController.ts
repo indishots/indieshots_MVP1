@@ -37,12 +37,17 @@ const verifyOTPSchema = z.object({
  */
 async function checkFirebaseUserExists(email: string): Promise<boolean> {
   try {
-    await firebaseAdmin.getUserByEmail(email);
+    console.log(`🔍 Checking if Firebase user exists for email: ${email}`);
+    const user = await firebaseAdmin.getUserByEmail(email);
+    console.log(`✓ Firebase user found: ${user.uid}`);
     return true;
   } catch (error: any) {
+    console.log(`Firebase user check error for ${email}:`, error.code);
     if (error.code === 'auth/user-not-found') {
+      console.log(`✓ Firebase user not found for ${email} - proceeding with signup`);
       return false;
     }
+    console.error(`❌ Unexpected Firebase error for ${email}:`, error);
     throw error;
   }
 }
