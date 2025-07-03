@@ -48,6 +48,49 @@ router.get('/test', (req: Request, res: Response) => {
   return res.json({ message: 'Test endpoint working', timestamp: new Date().toISOString() });
 });
 
+// Test OpenAI API key endpoint
+router.get('/test-openai', async (req: Request, res: Response) => {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({ error: 'OpenAI API key not found' });
+    }
+    
+    // Test the API key with a simple request
+    const response = await fetch('https://api.openai.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      res.json({ 
+        success: true, 
+        message: 'OpenAI API key is valid',
+        keyLength: apiKey.length,
+        keyPrefix: apiKey.substring(0, 10) + '...'
+      });
+    } else {
+      const error = await response.json();
+      res.status(response.status).json({ 
+        success: false, 
+        error: error.error?.message || 'API key validation failed',
+        keyLength: apiKey.length,
+        keyPrefix: apiKey.substring(0, 10) + '...'
+      });
+    }
+    
+  } catch (error: any) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      keyExists: !!process.env.OPENAI_API_KEY
+    });
+  }
+});
+
 // Test Firebase connectivity
 router.get('/test-firebase', async (req: Request, res: Response) => {
   try {
