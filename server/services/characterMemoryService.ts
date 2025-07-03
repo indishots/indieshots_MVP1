@@ -176,8 +176,20 @@ export class CharacterMemoryService {
    */
   async buildEnhancedPrompt(basePrompt: string): Promise<string> {
     try {
-      // Extract characters from the base prompt
-      const characters = await this.extractCharacters(basePrompt);
+      let characters: string[] = [];
+      
+      // First, try to extract characters from the Characters: field if it exists
+      const charactersMatch = basePrompt.match(/Characters:\s*([^\n]+)/);
+      if (charactersMatch && charactersMatch[1].trim() !== 'None') {
+        characters = charactersMatch[1]
+          .split(',')
+          .map(char => char.trim())
+          .filter(char => char.length > 0);
+        console.log('[CharacterMemory] Found characters in prompt:', characters);
+      } else {
+        // Fallback to GPT-4 extraction from the full prompt
+        characters = await this.extractCharacters(basePrompt);
+      }
       
       if (characters.length === 0) {
         console.log('[CharacterMemory] No characters found, using base prompt');

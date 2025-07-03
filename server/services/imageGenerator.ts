@@ -117,23 +117,29 @@ export interface StoryboardFrame {
 }
 
 /**
- * Build prompt from shot data
+ * Build prompt from shot data using the working Python format
  */
 function buildPrompt(shot: any): string {
-  const parts = [
-    `Shot Description: ${shot.shotDescription || ''}`,
-    `Shot Type: ${shot.shotType || ''}`,
-    `Location: ${shot.location || ''}`,
-    `Time of Day: ${shot.timeOfDay || ''}`,
-    `Lens: ${shot.lens || ''}`,
-    `Camera Movement: ${shot.movement || ''}`,
-    `Mood and Ambience: ${shot.moodAndAmbience || ''}`,
-    `Lighting: ${shot.lighting || ''}`,
-    `Props: ${shot.props || ''}`,
-    `Notes: ${shot.notes || ''}`,
-    `Colour Temp: ${shot.colourTemp || ''}`,
-  ];
-  return parts.join('\n');
+  // Match the exact format from the working Python version
+  let prompt = 
+    `Scene Type: ${shot.shotType || ''}, Lens: ${shot.lens || ''}, Movement: ${shot.movement || ''}\n` +
+    `Location: ${shot.location || ''} (${shot.timeOfDay || ''}), Mood: ${shot.moodAndAmbience || ''}, Tone: ${shot.tone || ''}\n` +
+    `Lighting: ${shot.lighting || ''}, Props: ${shot.props || ''}, Notes: ${shot.notes || ''}, Sound: ${shot.soundDesign || ''}\n\n` +
+    `Describe this scene in a cinematic, stylized animated graphic novel format. ` +
+    `Use moody lighting, animated art direction, and visual storytelling tone.\n\n` +
+    `Action: ${shot.shotDescription || ''}`;
+  
+  // Add characters if they exist in the shot data
+  if (shot.characters && shot.characters !== 'None' && shot.characters.trim()) {
+    prompt += `\n\nCharacters: ${shot.characters}`;
+  }
+  
+  // Add dialogue if it exists
+  if (shot.dialogue && shot.dialogue !== 'None' && shot.dialogue.trim()) {
+    prompt += `\n\nDialogue: ${shot.dialogue}`;
+  }
+  
+  return prompt;
 }
 
 /**
@@ -202,7 +208,7 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
     const response = await imageClient.images.generate({
       model: 'dall-e-3',
       prompt,
-      size: '1024x1024',
+      size: '1792x1024',
       quality: 'standard',
       n: 1
     });
