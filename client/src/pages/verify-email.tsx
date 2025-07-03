@@ -89,7 +89,17 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
           const { authManager } = await import('@/lib/authManager');
           const result = await authManager.signInWithToken(data.token);
           
-          if (!result.success) {
+          if (result.success) {
+            // Force refresh user data to get updated tier information (important for promo code users)
+            await authManager.refreshFromDatabase();
+            
+            // Invalidate React Query cache to force fresh data from API
+            const { queryClient } = await import('@/lib/queryClient');
+            await queryClient.invalidateQueries({ queryKey: ['/api/upgrade/status'] });
+            await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+            
+            console.log('✓ User data refreshed after promo code verification');
+          } else {
             console.error('Custom token authentication failed:', result.error);
             // Fallback to storing token
             localStorage.setItem('authToken', data.token);

@@ -3,6 +3,7 @@ import { auth as firebaseAdmin } from '../firebase/admin';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { generateOTP, logOTPToConsole, sendOTPEmail } from '../emailService';
+import { PromoCodeService } from '../services/promoCodeService';
 
 // Simple in-memory OTP storage (in production, use Redis or database)
 const otpStore = new Map<string, { 
@@ -68,10 +69,25 @@ export async function hybridSignup(req: Request, res: Response) {
     // User doesn't exist, send OTP
     const otp = generateOTP();
     
-    // Check coupon code
-    const validCoupons = ['DEMO2024', 'PREMIUM', 'LAUNCH', 'INDIE2025'];
-    const isPremium = validatedData.couponCode && 
-      validCoupons.includes(validatedData.couponCode.toUpperCase());
+    // Check promo code using PromoCodeService
+    const promoCodeService = new PromoCodeService();
+    let userTier = 'free';
+    let promoCodeValid = false;
+    
+    if (validatedData.couponCode) {
+      const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+      console.log(`Validating promo code: ${validatedData.couponCode} for user: ${email}`);
+      
+      const validation = await promoCodeService.validatePromoCode(validatedData.couponCode, email, clientIP);
+      
+      if (validation.isValid && validation.tier) {
+        userTier = validation.tier;
+        promoCodeValid = true;
+        console.log(`✓ Promo code ${validatedData.couponCode} is valid for user: ${email} - Tier: ${userTier}`);
+      } else {
+        console.log(`✗ Invalid promo code ${validatedData.couponCode} for user: ${email} - ${validation.errorMessage}`);
+      }
+    }
     
     // Store user data with OTP
     const userData = {
@@ -79,8 +95,9 @@ export async function hybridSignup(req: Request, res: Response) {
       password: validatedData.password, // We'll hash this after OTP verification
       firstName: validatedData.firstName || '',
       lastName: validatedData.lastName || '',
-      tier: isPremium ? 'premium' : 'free',
+      tier: userTier,
       couponCode: validatedData.couponCode,
+      promoCodeValid,
       provider: 'email'
     };
     
@@ -222,6 +239,44 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         password: userData.password,
         emailVerified: true,
         displayName: `${userData.firstName} ${userData.lastName}`.trim(),
+      });
+      
+      // Apply promo code if valid
+      if (userData.promoCodeValid && userData.couponCode) {
+        const promoCodeService = new PromoCodeService();
+        const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+        const userAgent = req.get('User-Agent') || 'Unknown';
+        
+        const applied = await promoCodeService.applyPromoCode(
+          userData.couponCode,
+          userData.email,
+          firebaseUser.uid,
+          clientIP,
+          userAgent
+        );
+        
+        if (applied) {
+          console.log(`✓ Promo code ${userData.couponCode} applied successfully for user: ${userData.email}`);
+        } else {
+          console.log(`✗ Failed to apply promo code ${userData.couponCode} for user: ${userData.email}`);
+        }
+      }
+      
+      // Create/update user in PostgreSQL with correct tier
+      const { storage } = await import('../storage');
+      const userRecord = await storage.upsertUser({
+        id: firebaseUser.uid,
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        tier: userData.tier,
+        provider: userData.provider,
+        emailVerified: true,
+        // Set tier-specific limits
+        maxShotsPerScene: userData.tier === 'pro' ? -1 : 5,
+        canGenerateStoryboards: userData.tier === 'pro',
+        totalPages: userData.tier === 'pro' ? -1 : 5,
+        usedPages: 0
       });
       
       // Set custom claims for tier and other metadata
