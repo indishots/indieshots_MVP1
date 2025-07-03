@@ -122,6 +122,17 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, async (req: Re
       });
     }
 
+    // Validate that shots were actually generated
+    if (!shots || shots.length === 0) {
+      console.error('No shots were generated - likely due to API failure');
+      return res.status(503).json({
+        error: 'Shot generation service temporarily unavailable',
+        errorType: 'generation_failed',
+        userMessage: 'Unable to generate shots at this time. Please try again later.',
+        details: 'No shots were generated from the scene content.'
+      });
+    }
+
     // Check shot limit for free tier users
     const user = (req as any).user;
     const userTier = user?.tier || 'free';

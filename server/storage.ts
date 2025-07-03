@@ -307,6 +307,12 @@ export class DatabaseStorage implements IStorage {
     console.log(`Storage: Attempting to insert ${shotsData.length} shots`);
     console.log(`Storage: First shot data:`, shotsData[0]);
     
+    // Validate input data
+    if (!shotsData || shotsData.length === 0) {
+      console.error('Storage: Cannot insert empty shots array');
+      throw new Error('Cannot create shots: No shot data provided');
+    }
+    
     try {
       const result = await db.insert(shots).values(shotsData).returning();
       console.log(`Storage: Successfully inserted ${result.length} shots`);
