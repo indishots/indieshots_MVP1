@@ -48,6 +48,28 @@ router.get('/test', (req: Request, res: Response) => {
   return res.json({ message: 'Test endpoint working', timestamp: new Date().toISOString() });
 });
 
+// Test Firebase connectivity
+router.get('/test-firebase', async (req: Request, res: Response) => {
+  try {
+    console.log('🧪 Testing Firebase Admin connectivity...');
+    const { auth as firebaseAdmin } = await import('../firebase/admin');
+    
+    // Try to check if a dummy user exists (should return user-not-found)
+    try {
+      await firebaseAdmin.getUserByEmail('test-nonexistent@example.com');
+      return res.json({ firebase: 'working', message: 'Firebase Admin SDK is working' });
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        return res.json({ firebase: 'working', message: 'Firebase Admin SDK is working' });
+      }
+      throw error;
+    }
+  } catch (error: any) {
+    console.error('Firebase test error:', error);
+    return res.status(500).json({ firebase: 'error', message: error.message });
+  }
+});
+
 // REMOVED: Duplicate endpoint - using the correct one below
 
 // Firebase authentication - no CSRF needed (uses Firebase idToken)

@@ -82,6 +82,7 @@ export async function hybridSignup(req: Request, res: Response) {
       const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
       console.log(`Validating promo code: ${validatedData.couponCode} for user: ${email}`);
 
+      const promoCodeService = new PromoCodeService();
       const validation = await promoCodeService.validatePromoCode(validatedData.couponCode, email, clientIP);
 
       if (validation.isValid && validation.tier) {
@@ -137,6 +138,12 @@ export async function hybridSignup(req: Request, res: Response) {
 
   } catch (error: any) {
     console.error('Hybrid signup error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      name: error.name
+    });
     return res.status(500).json({ message: 'Signup failed' });
   }
 }
