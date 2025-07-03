@@ -287,6 +287,13 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         createdAt: new Date().toISOString()
       });
       
+      // Update quota manager with correct tier (important for promo code users)
+      if (userData.tier === 'pro') {
+        const { productionQuotaManager } = await import('../lib/productionQuotaManager');
+        await productionQuotaManager.upgradeToPro(firebaseUser.uid);
+        console.log(`✓ Quota manager updated to pro tier for user: ${userData.email}`);
+      }
+      
       // Clean up OTP
       otpStore.delete(email);
       

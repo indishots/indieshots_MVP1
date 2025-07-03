@@ -48,30 +48,7 @@ router.get('/test', (req: Request, res: Response) => {
   return res.json({ message: 'Test endpoint working', timestamp: new Date().toISOString() });
 });
 
-// Get current user endpoint (with authentication)
-router.get('/user', authMiddleware, (req: Request, res: Response) => {
-  try {
-    console.log('🔐 /api/auth/user endpoint called');
-    const user = (req as any).user;
-    if (!user) {
-      console.log('🔐 No user attached to request');
-      return res.status(401).json({ message: 'Not authenticated' });
-    }
-    
-    console.log('🔐 User found:', user.email);
-    return res.json({
-      id: user.id || user.uid,
-      uid: user.uid || user.id,
-      email: user.email,
-      tier: user.tier || 'free',
-      displayName: user.displayName,
-      provider: user.provider || 'firebase'
-    });
-  } catch (error) {
-    console.error('Error getting user:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-});
+// REMOVED: Duplicate endpoint - using the correct one below
 
 // Firebase authentication - no CSRF needed (uses Firebase idToken)
 router.post('/firebase-login', firebaseLogin);

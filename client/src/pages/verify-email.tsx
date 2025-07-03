@@ -14,7 +14,7 @@ interface VerifyEmailProps {
 }
 
 export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
@@ -114,7 +114,7 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
         localStorage.setItem('authToken', data.token);
       }
       
-      setLocation('/dashboard');
+      navigate('/dashboard');
     },
     onError: (error: any) => {
       let errorMessage = "Invalid or expired verification code";
@@ -325,7 +325,7 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocation('/auth')}
+              onClick={() => navigate('/auth')}
               className="text-sm"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
