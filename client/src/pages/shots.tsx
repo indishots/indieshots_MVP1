@@ -505,30 +505,8 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium mb-2">Characters</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedScene?.characters?.map((character: string, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {character}
-                      </Badge>
-                    )) || <span className="text-muted-foreground text-sm">No characters specified</span>}
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Props</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedScene?.props?.map((prop: string, idx: number) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {prop}
-                      </Badge>
-                    )) || <span className="text-muted-foreground text-sm">No props specified</span>}
-                  </div>
-                </div>
-              </div>
               {selectedScene?.action && (
-                <div className="mt-4">
+                <div>
                   <h4 className="font-medium mb-2">Action</h4>
                   <p className="text-sm text-muted-foreground">{selectedScene.action}</p>
                 </div>
