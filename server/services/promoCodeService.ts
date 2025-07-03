@@ -219,6 +219,16 @@ export class PromoCodeService {
             updatedAt: new Date()
           })
           .where(eq(users.email, userEmail.toLowerCase()));
+
+        // Also update user_quotas table for comprehensive tier synchronization
+        try {
+          const { productionQuotaManager } = await import('../lib/productionQuotaManager');
+          await productionQuotaManager.updateUserTier(userId, validation.tier);
+          console.log(`✓ Updated user_quotas table for ${userEmail} to tier: ${validation.tier}`);
+        } catch (error) {
+          console.log(`⚠️ Could not update user_quotas table:`, error);
+        }
+
         console.log(`✓ Updated existing user ${userEmail} to tier: ${validation.tier}`);
       } else {
         console.log(`✓ New user - tier will be set via Firebase custom claims on first signin`);
