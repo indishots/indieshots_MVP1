@@ -194,14 +194,6 @@ export function FileUpload({
               <Upload className="h-5 w-5 mr-2" />
               Browse Files
             </Button>
-
-            <div className="text-xs text-muted-foreground">
-              {userTier === 'pro' ? (
-                'Pro tier: Unlimited pages'
-              ) : (
-                `Free tier: ${totalPages} pages per month (${pageCount} pages remaining)`
-              )}
-            </div>
           </>
         )}
       </div>
