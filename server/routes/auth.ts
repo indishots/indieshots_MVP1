@@ -302,15 +302,28 @@ router.delete('/delete-account-permanent', authMiddleware, async (req, res) => {
       console.log('No session records found for user:', user.email);
     }
     
-    // Blacklist the user from signing back in
+    // Delete user from Firebase first
+    try {
+      const { auth: firebaseAdmin } = require('../firebase/admin');
+      await firebaseAdmin.deleteUser(user.id);
+      console.log('User deleted from Firebase:', user.email);
+    } catch (error: any) {
+      console.error('Error deleting user from Firebase:', error);
+      // If Firebase deletion fails, we still want to delete from our database
+      // but we should log this as an error for manual cleanup
+      if (error.code === 'auth/user-not-found') {
+        console.log('User not found in Firebase (already deleted):', user.email);
+      } else {
+        console.error('Firebase deletion failed but continuing with database deletion:', error.message);
+      }
+    }
+    
+    // Blacklist the user from signing back in (backup protection)
     const { tokenBlacklist } = await import('../auth/tokenBlacklist');
     
     // Add user ID to permanent blacklist to prevent any future sign-ins
     tokenBlacklist.addPermanentUserBan(user.id, user.email);
     console.log('User permanently banned from signing in:', user.email);
-    
-    // Note: Firebase Admin deletion requires service account credentials
-    // For now, we prevent re-authentication through our blacklist system
     
     // Finally delete the user account from database
     await storage.deleteUser(user.id);

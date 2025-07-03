@@ -73,7 +73,21 @@ export async function cleanupScheduledDeletions() {
           console.log('No session records found for user:', user.email);
         }
         
-        // Finally delete the user account
+        // Delete user from Firebase
+        try {
+          const { auth: firebaseAdmin } = require('../firebase/admin');
+          await firebaseAdmin.deleteUser(user.providerId || user.id.toString());
+          console.log('User deleted from Firebase:', user.email);
+        } catch (error: any) {
+          console.error('Error deleting user from Firebase:', error);
+          if (error.code === 'auth/user-not-found') {
+            console.log('User not found in Firebase (already deleted):', user.email);
+          } else {
+            console.error('Firebase deletion failed but continuing with database deletion:', error.message);
+          }
+        }
+        
+        // Finally delete the user account from database
         await storage.deleteUser(user.providerId || user.id.toString());
         
         console.log(`Successfully deleted account: ${user.email}`);
