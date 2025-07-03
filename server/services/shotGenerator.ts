@@ -49,9 +49,36 @@ async function gpt4Response(prompt: string): Promise<string> {
     });
 
     return response.choices[0].message.content?.trim() || '';
-  } catch (error) {
+  } catch (error: any) {
     console.error('GPT-4 API error:', error);
-    throw new Error('Failed to generate shots with AI');
+    
+    // Check for specific OpenAI API errors
+    if (error.code === 'invalid_api_key') {
+      throw new Error('OpenAI API key is invalid or expired. Please check your API key configuration.');
+    } else if (error.code === 'insufficient_quota') {
+      throw new Error('OpenAI API quota exceeded. Please check your billing and usage limits.');
+    } else if (error.code === 'model_not_found') {
+      console.log('GPT-4 not available, trying GPT-3.5-turbo...');
+      
+      // Fallback to GPT-3.5-turbo
+      try {
+        const fallbackResponse = await client.chat.completions.create({
+          model: 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: 'You are a professional cinematographer and shot list expert. Always follow formatting instructions precisely.' },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: 2000,
+          temperature: 0.3
+        });
+        return fallbackResponse.choices[0].message.content?.trim() || '';
+      } catch (fallbackError) {
+        console.error('GPT-3.5-turbo fallback also failed:', fallbackError);
+        throw new Error('Both GPT-4 and GPT-3.5-turbo are unavailable. Please check your OpenAI API key and billing status.');
+      }
+    }
+    
+    throw new Error(`OpenAI API Error: ${error.message || 'Failed to generate shots with AI'}`);
   }
 }
 

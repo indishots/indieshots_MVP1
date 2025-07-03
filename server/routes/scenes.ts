@@ -168,7 +168,22 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, async (req: Re
     res.json(response);
   } catch (error) {
     console.error('Error generating shots:', error);
-    res.status(500).json({ error: 'Failed to generate shots' });
+    
+    // Provide more specific error messages based on the error
+    let errorMessage = 'Failed to generate shots';
+    
+    if (error.message && error.message.includes('OpenAI API key')) {
+      errorMessage = 'OpenAI API key issue: ' + error.message;
+    } else if (error.message && error.message.includes('quota')) {
+      errorMessage = 'OpenAI quota issue: ' + error.message;
+    } else if (error.message && error.message.includes('OpenAI')) {
+      errorMessage = error.message;
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      details: error.message || 'Unknown error occurred'
+    });
   }
 });
 
