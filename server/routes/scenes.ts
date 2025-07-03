@@ -93,11 +93,34 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, async (req: Re
     }
 
     // Generate shots using your shot_generator logic
-    const shots = await generateShotsFromScene(
-      scene.sceneText || scene.rawTextContent || '',
-      scene.sceneHeading || '',
-      scene.sceneNumber || parseInt(sceneIndex) + 1
-    );
+    let shots;
+    try {
+      shots = await generateShotsFromScene(
+        scene.sceneText || scene.rawTextContent || '',
+        scene.sceneHeading || '',
+        scene.sceneNumber || parseInt(sceneIndex) + 1
+      );
+    } catch (error: any) {
+      console.error('🚨 Shot generation failed:', error.message);
+      
+      // Check if it's an OpenAI API key issue
+      if (error.message.includes('Invalid OpenAI API key') || error.message.includes('API key') || error.message.includes('Incorrect API key')) {
+        return res.status(503).json({ 
+          error: 'OpenAI service temporarily unavailable',
+          errorType: 'api_key_invalid',
+          details: 'The AI shot generation service is currently experiencing configuration issues. Please try again later or contact support.',
+          userMessage: 'AI shot generation is temporarily unavailable. Please try again in a few minutes.'
+        });
+      }
+      
+      // For other API errors
+      return res.status(503).json({ 
+        error: 'Shot generation service temporarily unavailable',
+        errorType: 'service_unavailable',
+        details: error.message,
+        userMessage: 'Shot generation service is temporarily down. Please try again later.'
+      });
+    }
 
     // Check shot limit for free tier users
     const user = (req as any).user;

@@ -1,8 +1,13 @@
 import { OpenAI } from 'openai';
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Create OpenAI client dynamically to pick up fresh environment variables
+function getOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OpenAI API key not found in environment variables');
+  }
+  return new OpenAI({ apiKey });
+}
 
 export interface ShotData {
   shotNumber: number;
@@ -38,6 +43,17 @@ interface Context {
  */
 async function gpt4Response(prompt: string): Promise<string> {
   try {
+    // Get fresh OpenAI client with current environment variables
+    const client = getOpenAIClient();
+    
+    // Log API key info for debugging
+    const apiKey = process.env.OPENAI_API_KEY;
+    console.log('🔑 OpenAI API key loaded:', {
+      exists: !!apiKey,
+      length: apiKey?.length || 0,
+      prefix: apiKey?.substring(0, 15) + '...' || 'none'
+    });
+
     const response = await client.chat.completions.create({
       model: 'gpt-4',
       messages: [
@@ -49,9 +65,21 @@ async function gpt4Response(prompt: string): Promise<string> {
     });
 
     return response.choices[0].message.content?.trim() || '';
-  } catch (error) {
-    console.error('GPT-4 API error:', error);
-    throw new Error('Failed to generate shots with AI');
+  } catch (error: any) {
+    console.error('🚨 OpenAI API error details:', {
+      message: error.message,
+      status: error.status,
+      code: error.code,
+      type: error.type
+    });
+    
+    // Check if it's an authentication error
+    if (error.status === 401 || error.code === 'invalid_api_key') {
+      throw new Error('Invalid OpenAI API key. Please check your API key configuration.');
+    }
+    
+    // For other errors, provide more context
+    throw new Error(`OpenAI API error: ${error.message || 'Unknown error'}`);
   }
 }
 

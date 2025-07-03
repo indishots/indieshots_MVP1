@@ -68,10 +68,36 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
       queryClient.invalidateQueries({ queryKey: [`/api/shots/${jobId}/${sceneIndex}`] });
       setIsGenerating(false);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error('Shot generation error:', error);
+      
+      // Parse error response to get better error messages
+      let errorMessage = error.message;
+      let errorTitle = "Shot generation failed";
+      
+      try {
+        // Try to parse JSON error response
+        const errorData = JSON.parse(error.message);
+        if (errorData.userMessage) {
+          errorMessage = errorData.userMessage;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+        
+        // Customize title based on error type
+        if (errorData.errorType === 'api_key_invalid') {
+          errorTitle = "AI Service Unavailable";
+        } else if (errorData.errorType === 'service_unavailable') {
+          errorTitle = "Service Temporarily Down";
+        }
+      } catch (parseError) {
+        // Use original error message if parsing fails
+        console.log('Using original error message:', errorMessage);
+      }
+      
       toast({
-        title: "Shot generation failed",
-        description: error.message,
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
       setIsGenerating(false);
