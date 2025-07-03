@@ -68,6 +68,19 @@ export class CharacterMemoryService {
     try {
       console.log('[CharacterMemory] Extracting characters from prompt...');
       
+      // First, check if there's explicit character information in the prompt
+      const characterMatch = prompt.match(/Characters:\s*(.+)/i);
+      if (characterMatch) {
+        const charactersText = characterMatch[1].trim();
+        // Split by commas and clean up
+        const explicitCharacters = charactersText.split(',').map(name => name.trim()).filter(name => name.length > 0);
+        if (explicitCharacters.length > 0) {
+          console.log(`[CharacterMemory] Found explicit characters: ${explicitCharacters.join(', ')}`);
+          return explicitCharacters;
+        }
+      }
+      
+      // Fallback to GPT-4 extraction if no explicit characters found
       const response = await characterClient.chat.completions.create({
         model: 'gpt-4',
         messages: [
