@@ -228,7 +228,48 @@ export const contactSubmissions = pgTable("contact_submissions", {
 export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 
+// Promo codes configuration table
+export const promoCodes = pgTable("promo_codes", {
+  id: serial("id").primaryKey(),
+  code: varchar("code", { length: 50 }).unique().notNull(),
+  description: text("description"),
+  tierGranted: varchar("tier_granted", { length: 20 }).default("pro"),
+  usageLimit: integer("usage_limit").default(-1), // -1 for unlimited
+  currentUsage: integer("current_usage").default(0),
+  validDates: text("valid_dates").array().notNull(), // Array of valid dates (YYYY-MM-DD)
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
+export type InsertPromoCode = typeof promoCodes.$inferInsert;
+export type PromoCode = typeof promoCodes.$inferSelect;
+
+// Promo code usage tracking table
+export const promoCodeUsage = pgTable("promo_code_usage", {
+  id: serial("id").primaryKey(),
+  promoCodeId: integer("promo_code_id").references(() => promoCodes.id).notNull(),
+  userEmail: varchar("user_email", { length: 255 }).notNull(),
+  userId: varchar("user_id", { length: 255 }),
+  usedAt: timestamp("used_at").defaultNow().notNull(),
+  grantedTier: varchar("granted_tier", { length: 20 }),
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv6 support
+  userAgent: text("user_agent"),
+}, (table) => [
+  index("idx_promo_usage_email").on(table.userEmail),
+  index("idx_promo_usage_date").on(table.usedAt),
+  index("idx_promo_code_id").on(table.promoCodeId),
+]);
+
+export const promoCodeUsageRelations = relations(promoCodeUsage, ({ one }) => ({
+  promoCode: one(promoCodes, {
+    fields: [promoCodeUsage.promoCodeId],
+    references: [promoCodes.id],
+  }),
+}));
+
+export type InsertPromoCodeUsage = typeof promoCodeUsage.$inferInsert;
+export type PromoCodeUsage = typeof promoCodeUsage.$inferSelect;
 
 // Create insert schemas
 export const insertScriptSchema = createInsertSchema(scripts).omit({

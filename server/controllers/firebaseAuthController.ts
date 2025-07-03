@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { generateToken } from '../auth/jwt';
+import { promoCodeService } from '../services/promoCodeService';
 
 /**
  * Handle Firebase authentication with Firebase-only user management
@@ -71,26 +72,51 @@ export async function firebaseLogin(req: Request, res: Response) {
 
     console.log('Creating Firebase user:', userData.email);
 
-    // Check coupon code for premium upgrade or demo account
-    const validCouponCodes = ['DEMO2024', 'PREMIUM', 'LAUNCH', 'INDIE2025'];
-    const isPremiumCoupon = couponCode && validCouponCodes.includes(couponCode.toUpperCase());
+    // Handle promo code validation and application
+    let userTier = 'free'; // Default tier
     const isDemoAccount = userData.email === 'premium@demo.com';
-
-    // Set user tier based on coupon code or demo account  
-    const userTier = (isPremiumCoupon || isDemoAccount) ? 'pro' : 'free';
     
-    if (isPremiumCoupon) {
-      console.log('✓ INDIE2025 coupon applied for user:', userData.email, '- Granting pro access');
+    if (isDemoAccount) {
+      userTier = 'pro';
+      console.log('✓ Demo account detected - granting pro access');
+    } else if (couponCode) {
+      // Use new promo code service for validation
+      const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+      const userAgent = req.get('User-Agent') || 'Unknown';
+      
+      console.log(`Validating promo code: ${couponCode} for user: ${userData.email}`);
+      
+      const validation = await promoCodeService.validatePromoCode(couponCode, userData.email, clientIP);
+      
+      if (validation.isValid) {
+        // Apply the promo code
+        const applied = await promoCodeService.applyPromoCode(
+          couponCode, 
+          userData.email, 
+          userData.id, 
+          clientIP,
+          userAgent
+        );
+        
+        if (applied && validation.tier) {
+          userTier = validation.tier;
+          console.log(`✓ Promo code ${couponCode} applied successfully for user: ${userData.email} - Tier: ${userTier}`);
+        } else {
+          console.log(`✗ Failed to apply promo code ${couponCode} for user: ${userData.email}`);
+        }
+      } else {
+        console.log(`✗ Invalid promo code ${couponCode} for user: ${userData.email} - ${validation.errorMessage}`);
+      }
     }
 
     userData.tier = userTier;
-    if (isDemoAccount || isPremiumCoupon) {
+    if (isDemoAccount || userTier === 'pro') {
         userData.totalPages = -1; // Unlimited pages for premium users
         userData.maxShotsPerScene = -1; // Unlimited shots for premium users
         userData.canGenerateStoryboards = true;
         
-        if (isPremiumCoupon) {
-            console.log('✓ Premium coupon code used:', couponCode, 'for user:', userData.email);
+        if (userTier === 'pro' && couponCode) {
+            console.log('✓ Premium promo code access granted:', couponCode, 'for user:', userData.email);
         }
     }
 

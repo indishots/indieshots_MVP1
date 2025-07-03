@@ -93,6 +93,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const payuRoutes = await import('./routes/payu');
   app.use('/api/payu', payuRoutes.default);
   
+  // Promo code routes
+  const promoCodeRoutes = await import('./routes/promoCode');
+  app.use('/api/promo-codes', promoCodeRoutes.default);
+  
   // Debug routes (development only)
   if (process.env.NODE_ENV === 'development') {
     const debugRoutes = await import('./routes/debug');
