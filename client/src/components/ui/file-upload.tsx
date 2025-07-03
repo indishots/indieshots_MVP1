@@ -13,6 +13,8 @@ interface FileUploadProps extends React.HTMLAttributes<HTMLDivElement> {
   acceptedFileTypes?: string[];
   defaultText?: string;
   pageCount?: number;
+  userTier?: string;
+  totalPages?: number;
 }
 
 export function FileUpload({
@@ -23,6 +25,8 @@ export function FileUpload({
   acceptedFileTypes = [".pdf", ".docx", ".txt"],
   defaultText = "",
   pageCount = 0,
+  userTier = 'free',
+  totalPages = 5,
   ...props
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false);
@@ -192,7 +196,11 @@ export function FileUpload({
             </Button>
 
             <div className="text-xs text-muted-foreground">
-              Free tier: 5 pages per month ({pageCount} pages remaining)
+              {userTier === 'pro' ? (
+                'Pro tier: Unlimited pages'
+              ) : (
+                `Free tier: ${totalPages} pages per month (${pageCount} pages remaining)`
+              )}
             </div>
           </>
         )}
