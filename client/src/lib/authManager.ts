@@ -157,6 +157,9 @@ class AuthManager {
           console.log('Clearing used coupon code:', this.pendingCouponCode);
           this.pendingCouponCode = null;
         }
+        
+        // Automatically validate tier information after login
+        this.scheduleAutomaticTierValidation();
       } else {
         console.error('Backend session creation failed');
         this.authState = 'unauthenticated';
@@ -397,6 +400,57 @@ class AuthManager {
       }
     } catch (error) {
       console.error('Error refreshing user data from database:', error);
+    }
+  }
+
+  // Schedule automatic tier validation to ensure users get the correct tier access
+  private scheduleAutomaticTierValidation() {
+    if (!this.user) return;
+    
+    // Check tier validation after a short delay to allow UI to settle
+    setTimeout(async () => {
+      await this.validateAndUpdateTier();
+    }, 2000);
+  }
+
+  // Validate user tier and update if there's a mismatch
+  private async validateAndUpdateTier() {
+    if (!this.user) return;
+    
+    try {
+      const response = await fetch('/api/auth/refresh-session', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        const freshUserData = result.user;
+        
+        // Check if tier information differs
+        if (freshUserData.tier !== this.user.tier || 
+            freshUserData.canGenerateStoryboards !== this.user.canGenerateStoryboards ||
+            freshUserData.maxShotsPerScene !== this.user.maxShotsPerScene) {
+          
+          console.log(`Tier mismatch detected for ${this.user.email}. Updating from ${this.user.tier} to ${freshUserData.tier}`);
+          
+          // Update user data with fresh tier information
+          this.user = {
+            ...this.user,
+            tier: freshUserData.tier,
+            totalPages: freshUserData.totalPages,
+            maxShotsPerScene: freshUserData.maxShotsPerScene,
+            canGenerateStoryboards: freshUserData.canGenerateStoryboards
+          };
+          
+          // Notify listeners of the update
+          this.notifyListeners();
+          
+          console.log(`User ${this.user.email} tier automatically updated to ${this.user.tier}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error validating tier:', error);
     }
   }
 
