@@ -7,6 +7,7 @@ import * as otpController from '../controllers/otpController';
 import * as hybridAuthController from '../controllers/firebaseHybridAuthController';
 import { firebaseLogin } from '../controllers/firebaseAuthController';
 import { firebaseSync } from '../controllers/firebaseSyncController';
+import { tierValidationMiddleware } from '../middleware/tierValidation';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.post('/logout', authController.logout);
 router.get('/logout', authController.logout);
 
 // Get current authenticated user with fresh tier information
-router.get('/user', authMiddleware, async (req: Request, res: Response) => {
+router.get('/user', authMiddleware, tierValidationMiddleware, async (req: Request, res: Response) => {
   try {
     const jwtUser = (req as any).user;
     

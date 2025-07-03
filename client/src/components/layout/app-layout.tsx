@@ -18,6 +18,7 @@ import {
 import { useToggle } from "@/hooks/use-toggle";
 import { cn } from "@/lib/utils";
 import ContactButton from "@/components/ContactButton";
+import { useTierValidation } from "@/hooks/useTierValidation";
 
 interface AppLayoutProps {
   children: React.ReactNode;

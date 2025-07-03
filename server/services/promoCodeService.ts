@@ -201,9 +201,28 @@ export class PromoCodeService {
       
       await db.insert(promoCodeUsage).values(usageData);
       
-      // PromoCodeService only records usage - Firebase is single source of truth for tier
-      console.log(`✓ Promo code usage recorded for ${userEmail} with tier: ${validation.tier}`);
-      console.log(`✓ Tier will be synced to PostgreSQL when user signs in`)
+      // For existing users in PostgreSQL, update their tier immediately
+      // For new users, Firebase custom claims will handle this during first signin
+      const existingUser = await db.select()
+        .from(users)
+        .where(eq(users.email, userEmail.toLowerCase()))
+        .limit(1);
+      
+      if (existingUser.length > 0) {
+        // Update existing user's tier and tier-specific limits
+        await db.update(users)
+          .set({ 
+            tier: validation.tier,
+            totalPages: validation.tier === 'pro' ? -1 : 20,
+            maxShotsPerScene: validation.tier === 'pro' ? -1 : 5,
+            canGenerateStoryboards: validation.tier === 'pro',
+            updatedAt: new Date()
+          })
+          .where(eq(users.email, userEmail.toLowerCase()));
+        console.log(`✓ Updated existing user ${userEmail} to tier: ${validation.tier}`);
+      } else {
+        console.log(`✓ New user - tier will be set via Firebase custom claims on first signin`);
+      }
       
       // Update promo code usage count
       await db.update(promoCodes)
