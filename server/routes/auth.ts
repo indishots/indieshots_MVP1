@@ -52,7 +52,7 @@ router.get('/test', (req: Request, res: Response) => {
 router.get('/test-firebase', async (req: Request, res: Response) => {
   try {
     console.log('🧪 Testing Firebase Admin connectivity...');
-    const { auth as firebaseAdmin } = await import('../firebase/admin');
+    const { auth: firebaseAdmin } = require('../firebase/admin');
     
     // Try to check if a dummy user exists (should return user-not-found)
     try {
