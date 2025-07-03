@@ -89,8 +89,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <header className="bg-card border-b border-border px-6 py-4 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <h1 className="text-xl font-bold tracking-tight text-white">IndieShots</h1>
-            <span className="ml-2 px-2 py-0.5 text-xs bg-primary rounded-full text-white font-medium">Beta</span>
+            <button 
+              onClick={() => setLocation('/dashboard')}
+              className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
+            >
+              <h1 className="text-xl font-bold tracking-tight text-white">IndieShots</h1>
+              <span className="ml-2 px-2 py-0.5 text-xs bg-primary rounded-full text-white font-medium">Beta</span>
+            </button>
           </div>
           <div className="flex items-center space-x-4">
             {/* Tier-based Header Content */}
