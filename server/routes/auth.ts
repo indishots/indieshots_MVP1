@@ -307,6 +307,74 @@ router.delete('/delete-account-permanent', authMiddleware, async (req, res) => {
   }
 });
 
+// Cleanup orphaned Firebase user that exists in Firebase but not in PostgreSQL
+router.post('/cleanup-orphaned-user', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    console.log('Cleaning up orphaned Firebase user:', email);
+
+    // Check if user exists in PostgreSQL
+    const { storage } = await import('../storage');
+    const existingUser = await storage.getUserByEmail(email);
+    
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: 'User exists in database. Use normal deletion process.' 
+      });
+    }
+
+    // Try to delete from Firebase using admin SDK
+    try {
+      const admin = await import('firebase-admin');
+      
+      // Get user by email from Firebase
+      const userRecord = await admin.auth().getUserByEmail(email);
+      
+      if (userRecord) {
+        // Delete from Firebase
+        await admin.auth().deleteUser(userRecord.uid);
+        console.log('Successfully deleted Firebase user:', email);
+        
+        res.json({ 
+          message: 'Firebase user cleaned up successfully. You can now register with this email.',
+          success: true 
+        });
+      } else {
+        res.status(404).json({ 
+          message: 'User not found in Firebase either. Email should be available for registration.',
+          success: true
+        });
+      }
+      
+    } catch (firebaseError: any) {
+      if (firebaseError.code === 'auth/user-not-found') {
+        res.json({ 
+          message: 'User not found in Firebase. Email should be available for registration.',
+          success: true
+        });
+      } else {
+        console.error('Firebase cleanup error:', firebaseError);
+        res.status(500).json({ 
+          message: 'Could not clean up Firebase user. Please contact support.',
+          error: firebaseError.message 
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error cleaning up orphaned user:', error);
+    res.status(500).json({ 
+      message: 'Failed to cleanup user. Please contact support.',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Cancel scheduled deletion - requires authentication
 router.post('/cancel-delete-account', authMiddleware, async (req, res) => {
   try {
