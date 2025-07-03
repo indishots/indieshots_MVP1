@@ -89,6 +89,43 @@ class FirebaseAuthWrapper {
     
     return await admin.auth().createCustomToken(uid);
   }
+
+  async getUser(uid: string) {
+    if (!firebaseInitialized) {
+      throw new Error('Firebase not properly initialized. Please add service account credentials.');
+    }
+    
+    try {
+      return await admin.auth().getUser(uid);
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        const customError = new Error('User not found');
+        (customError as any).code = 'auth/user-not-found';
+        throw customError;
+      }
+      throw error;
+    }
+  }
+
+  async deleteUser(uid: string) {
+    if (!firebaseInitialized) {
+      throw new Error('Firebase not properly initialized. Please add service account credentials.');
+    }
+    
+    try {
+      await admin.auth().deleteUser(uid);
+      console.log(`🔥 Firebase: Deleted user with UID ${uid}`);
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        console.log(`🔥 Firebase: User ${uid} was already deleted or not found`);
+        const customError = new Error('User not found');
+        (customError as any).code = 'auth/user-not-found';
+        throw customError;
+      }
+      console.error(`🔥 Firebase: Error deleting user ${uid}:`, error);
+      throw error;
+    }
+  }
 }
 
 export const auth = new FirebaseAuthWrapper();
