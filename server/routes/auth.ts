@@ -130,9 +130,9 @@ router.post('/refresh-session', authMiddleware, async (req: Request, res: Respon
     // Generate new JWT token with fresh tier information
     const userData = {
       id: user.id,
-      uid: user.firebaseUid || jwtUser.uid,
+      uid: user.providerId || jwtUser.uid,
       email: user.email,
-      displayName: user.displayName || jwtUser.displayName,
+      displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || jwtUser.displayName,
       tier: user.tier || 'free',
       totalPages: user.tier === 'pro' ? -1 : 5,
       usedPages: user.usedPages || 0,

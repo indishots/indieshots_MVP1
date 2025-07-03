@@ -441,7 +441,7 @@ export default function Settings() {
               </div>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-4 space-y-3">
               {(upgradeStatus as any)?.tier === 'pro' ? (
                 <div className="text-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-700 rounded-lg">
                   <p className="text-green-800 dark:text-green-200 font-medium">You're on the Pro Plan!</p>
@@ -457,6 +457,30 @@ export default function Settings() {
                   Upgrade to Premium
                 </Button>
               )}
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={async () => {
+                  try {
+                    await refreshUserData();
+                    // Invalidate queries to refresh the UI
+                    queryClient.invalidateQueries({ queryKey: ["/api/upgrade/status"] });
+                    toast({
+                      title: "Tier refreshed",
+                      description: "Your account tier has been updated with the latest information."
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Refresh failed",
+                      description: "Unable to refresh tier information. Please try again.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              >
+                Refresh Tier Status
+              </Button>
             </div>
           </CardContent>
         </Card>
