@@ -25,7 +25,7 @@ import { useTranslation, type Language } from "@/lib/i18n";
 import { useLocation } from "wouter";
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
