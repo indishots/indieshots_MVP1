@@ -39,9 +39,9 @@ export default function PromoCodeInput({
       clearTimeout(validationTimeout);
     }
 
-    if (value.length >= 4 && email) {
+    if (value.trim().length >= 4 && email) {
       const timeout = setTimeout(() => {
-        validatePromoCode(value, email);
+        validatePromoCode(value.trim(), email);
       }, 500); // 500ms delay
       
       setValidationTimeout(timeout);
@@ -120,7 +120,7 @@ export default function PromoCodeInput({
   };
 
   const getValidationMessage = () => {
-    if (!validation && value.length < 4) {
+    if (!validation && value.trim().length < 4) {
       return null;
     }
 

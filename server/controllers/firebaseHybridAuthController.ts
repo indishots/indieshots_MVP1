@@ -54,10 +54,10 @@ export async function hybridSignup(req: Request, res: Response) {
   try {
     const validatedData = signupSchema.parse(req.body);
     const email = validatedData.email.toLowerCase();
-    
+
     // Check if user already exists in Firebase
     const userExists = await checkFirebaseUserExists(email);
-    
+
     if (userExists) {
       return res.status(400).json({ 
         message: 'Email already registered, sign in.',
@@ -65,21 +65,20 @@ export async function hybridSignup(req: Request, res: Response) {
         action: 'signin'
       });
     }
-    
+
     // User doesn't exist, send OTP
     const otp = generateOTP();
-    
+
     // Check promo code using PromoCodeService
-    const promoCodeService = new PromoCodeService();
     let userTier = 'free';
     let promoCodeValid = false;
-    
-    if (validatedData.couponCode) {
+
+    if (validatedData.couponCode && validatedData.couponCode.trim()) {
       const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
       console.log(`Validating promo code: ${validatedData.couponCode} for user: ${email}`);
-      
+
       const validation = await promoCodeService.validatePromoCode(validatedData.couponCode, email, clientIP);
-      
+
       if (validation.isValid && validation.tier) {
         userTier = validation.tier;
         promoCodeValid = true;
@@ -87,8 +86,10 @@ export async function hybridSignup(req: Request, res: Response) {
       } else {
         console.log(`✗ Invalid promo code ${validatedData.couponCode} for user: ${email} - ${validation.errorMessage}`);
       }
+    } else {
+      console.log(`No promo code provided for user: ${email} - Creating free account`);
     }
-    
+
     // Store user data with OTP
     const userData = {
       email,
@@ -100,7 +101,7 @@ export async function hybridSignup(req: Request, res: Response) {
       promoCodeValid,
       provider: 'email'
     };
-    
+
     // Store OTP with user data
     otpStore.set(email, {
       otp,
@@ -108,27 +109,27 @@ export async function hybridSignup(req: Request, res: Response) {
       userData,
       attempts: 0
     });
-    
+
     // Send OTP email
     const emailSent = await sendOTPEmail(email, otp, userData.firstName + ' ' + userData.lastName);
-    
+
     if (!emailSent) {
       console.log('📧 Email sending failed, falling back to console logging');
       logOTPToConsole(email, userData.firstName + ' ' + userData.lastName, otp);
     }
-    
+
     // Auto-cleanup OTP after expiration
     setTimeout(() => {
       otpStore.delete(email);
     }, 10 * 60 * 1000);
-    
+
     return res.status(200).json({
       message: 'Verification code sent to your email address!',
       email,
       requiresVerification: true,
       devNote: 'Check your email inbox for the OTP code'
     });
-    
+
   } catch (error: any) {
     console.error('Hybrid signup error:', error);
     return res.status(500).json({ message: 'Signup failed' });
@@ -142,10 +143,10 @@ export async function hybridSignin(req: Request, res: Response) {
   try {
     const validatedData = signinSchema.parse(req.body);
     const email = validatedData.email.toLowerCase();
-    
+
     // Check if user exists in Firebase
     const userExists = await checkFirebaseUserExists(email);
-    
+
     if (!userExists) {
       return res.status(400).json({ 
         message: 'Email is not registered, sign up.',
@@ -153,12 +154,12 @@ export async function hybridSignin(req: Request, res: Response) {
         action: 'signup'
       });
     }
-    
+
     // For Firebase-first approach, we need to use client-side Firebase Auth
     // Return user exists confirmation, client will handle Firebase authentication
     try {
       const firebaseUser = await firebaseAdmin.getUserByEmail(email);
-      
+
       return res.status(200).json({
         message: 'User found, use client-side Firebase authentication',
         action: 'firebase_auth',
@@ -168,14 +169,14 @@ export async function hybridSignin(req: Request, res: Response) {
           displayName: firebaseUser.displayName
         }
       });
-      
+
     } catch (error: any) {
       return res.status(401).json({ 
         message: 'Authentication failed',
         code: 'AUTH_FAILED'
       });
     }
-    
+
   } catch (error: any) {
     console.error('Hybrid signin error:', error);
     return res.status(500).json({ message: 'Signin failed' });
@@ -190,17 +191,17 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
     const validatedData = verifyOTPSchema.parse(req.body);
     const email = validatedData.email.toLowerCase();
     const otp = validatedData.otp;
-    
+
     // Get stored OTP data
     const storedData = otpStore.get(email);
-    
+
     if (!storedData) {
       return res.status(400).json({ 
         message: 'OTP expired or invalid. Please request a new code.',
         code: 'OTP_EXPIRED'
       });
     }
-    
+
     // Check if OTP expired
     if (Date.now() > storedData.expires) {
       otpStore.delete(email);
@@ -209,7 +210,7 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         code: 'OTP_EXPIRED'
       });
     }
-    
+
     // Check attempt limit
     if (storedData.attempts >= 5) {
       otpStore.delete(email);
@@ -218,7 +219,7 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         code: 'TOO_MANY_ATTEMPTS'
       });
     }
-    
+
     // Verify OTP
     if (storedData.otp !== otp) {
       storedData.attempts++;
@@ -228,11 +229,11 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         attemptsLeft: 5 - storedData.attempts
       });
     }
-    
+
     // OTP verified, create Firebase user
     try {
       const userData = storedData.userData;
-      
+
       // Create Firebase user
       const firebaseUser = await firebaseAdmin.createUser({
         email: userData.email,
@@ -240,13 +241,13 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         emailVerified: true,
         displayName: `${userData.firstName} ${userData.lastName}`.trim(),
       });
-      
+
       // Apply promo code if valid
       if (userData.promoCodeValid && userData.couponCode) {
         const promoCodeService = new PromoCodeService();
         const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
         const userAgent = req.get('User-Agent') || 'Unknown';
-        
+
         const applied = await promoCodeService.applyPromoCode(
           userData.couponCode,
           userData.email,
@@ -254,14 +255,14 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
           clientIP,
           userAgent
         );
-        
+
         if (applied) {
           console.log(`✓ Promo code ${userData.couponCode} applied successfully for user: ${userData.email}`);
         } else {
           console.log(`✗ Failed to apply promo code ${userData.couponCode} for user: ${userData.email}`);
         }
       }
-      
+
       // Create/update user in PostgreSQL with correct tier
       const { storage } = await import('../storage');
       const userRecord = await storage.upsertUser({
@@ -277,7 +278,7 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         totalPages: userData.tier === 'pro' ? -1 : 5,
         usedPages: 0
       });
-      
+
       // Set custom claims for tier and other metadata
       await firebaseAdmin.setCustomUserClaims(firebaseUser.uid, {
         tier: userData.tier,
@@ -285,20 +286,20 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         provider: userData.provider,
         createdAt: new Date().toISOString()
       });
-      
+
       // Update quota manager with correct tier (important for promo code users)
       if (userData.tier === 'pro') {
         const { productionQuotaManager } = await import('../lib/productionQuotaManager');
         await productionQuotaManager.upgradeToPro(firebaseUser.uid);
         console.log(`✓ Quota manager updated to pro tier for user: ${userData.email}`);
       }
-      
+
       // Clean up OTP
       otpStore.delete(email);
-      
+
       // Create custom token for immediate signin
       const customToken = await firebaseAdmin.createCustomToken(firebaseUser.uid);
-      
+
       return res.status(200).json({
         message: 'Email verified successfully! Account created.',
         user: {
@@ -310,23 +311,23 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         token: customToken,
         verified: true
       });
-      
+
     } catch (error: any) {
       console.error('Firebase user creation error:', error);
-      
+
       if (error.code === 'auth/email-already-exists') {
         return res.status(400).json({ 
           message: 'Email already registered',
           code: 'USER_EXISTS'
         });
       }
-      
+
       return res.status(500).json({ 
         message: 'Failed to create account',
         code: 'ACCOUNT_CREATION_FAILED'
       });
     }
-    
+
   } catch (error: any) {
     console.error('OTP verification error:', error);
     return res.status(500).json({ message: 'Verification failed' });
@@ -339,14 +340,14 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
 export async function hybridResendOTP(req: Request, res: Response) {
   try {
     const { email } = req.body;
-    
+
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
     }
-    
+
     const normalizedEmail = email.toLowerCase();
     let storedData = otpStore.get(normalizedEmail);
-    
+
     // If no stored data found, this means the user is trying to resend after expiration
     // Check if there's any recent signup attempt data we can recover
     if (!storedData) {
@@ -357,29 +358,29 @@ export async function hybridResendOTP(req: Request, res: Response) {
         code: 'SESSION_EXPIRED'
       });
     }
-    
+
     // Generate new OTP
     const newOTP = generateOTP();
-    
+
     // Update stored data with new 5-minute expiration
     storedData.otp = newOTP;
     storedData.expires = Date.now() + 5 * 60 * 1000; // 5 minutes
     storedData.attempts = 0;
-    
+
     // Send new OTP email
     const userData = storedData.userData;
     const emailSent = await sendOTPEmail(normalizedEmail, newOTP, userData.firstName + ' ' + userData.lastName);
-    
+
     if (!emailSent) {
       console.log('📧 Email sending failed, falling back to console logging');
       logOTPToConsole(normalizedEmail, userData.firstName + ' ' + userData.lastName, newOTP);
     }
-    
+
     return res.status(200).json({
       message: 'New verification code sent to your email address!',
       email: normalizedEmail
     });
-    
+
   } catch (error: any) {
     console.error('Resend OTP error:', error);
     return res.status(500).json({ message: 'Failed to resend OTP' });

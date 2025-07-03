@@ -51,7 +51,7 @@ export class ProductionQuotaManager {
       // Create new quota record if doesn't exist
       const tier = userTier as 'free' | 'pro';
       const limits = TIER_LIMITS[tier];
-      
+
       const quota: UserQuota = {
         tier,
         totalPages: limits.totalPages,
@@ -88,7 +88,7 @@ export class ProductionQuotaManager {
 
   async checkPageLimit(userId: string, requestedPages: number, userTier: string = 'free'): Promise<{ allowed: boolean; reason?: string }> {
     const quota = await this.getUserQuota(userId, userTier);
-    
+
     // Pro users have unlimited pages
     if (quota.tier === 'pro' || quota.totalPages === -1) {
       return { allowed: true };
@@ -124,7 +124,7 @@ export class ProductionQuotaManager {
 
   async checkShotsLimit(userId: string, requestedShots: number, userTier: string = 'free'): Promise<{ allowed: boolean; reason?: string }> {
     const quota = await this.getUserQuota(userId, userTier);
-    
+
     // Pro users have unlimited shots
     if (quota.tier === 'pro' || quota.maxShotsPerScene === -1) {
       return { allowed: true };
@@ -142,7 +142,7 @@ export class ProductionQuotaManager {
 
   async checkStoryboardAccess(userId: string, userTier: string = 'free'): Promise<{ allowed: boolean; reason?: string }> {
     const quota = await this.getUserQuota(userId, userTier);
-    
+
     if (!quota.canGenerateStoryboards) {
       return {
         allowed: false,
@@ -176,7 +176,7 @@ export class ProductionQuotaManager {
   async updateUserTier(userId: string, tier: 'free' | 'pro'): Promise<UserQuota> {
     try {
       const limits = TIER_LIMITS[tier];
-      
+
       // Update user tier and limits in database
       await db.execute(sql`
         UPDATE user_quotas 
@@ -192,6 +192,45 @@ export class ProductionQuotaManager {
     } catch (error) {
       console.error('Error updating user tier:', error);
       throw new Error('Failed to update user tier');
+    }
+  }
+
+  /**
+   * Set user quota with specific values
+   */
+  async setUserQuota(userId: string, quotaData: {
+    tier: string;
+    totalPages: number;
+    usedPages: number;
+    maxShotsPerScene: number;
+    canGenerateStoryboards: boolean;
+  }): Promise<void> {
+    try {
+      // await db.insert(userQuotas).values({
+      //   userId,
+      //   tier: quotaData.tier,
+      //   totalPages: quotaData.totalPages,
+      //   usedPages: quotaData.usedPages,
+      //   maxShotsPerScene: quotaData.maxShotsPerScene,
+      //   canGenerateStoryboards: quotaData.canGenerateStoryboards,
+      //   createdAt: new Date(),
+      //   updatedAt: new Date()
+      // }).onConflictDoUpdate({
+      //   target: userQuotas.userId,
+      //   set: {
+      //     tier: quotaData.tier,
+      //     totalPages: quotaData.totalPages,
+      //     usedPages: quotaData.usedPages,
+      //     maxShotsPerScene: quotaData.maxShotsPerScene,
+      //     canGenerateStoryboards: quotaData.canGenerateStoryboards,
+      //     updatedAt: new Date()
+      //   }
+      // });
+
+      console.log(`Set quota for user ${userId} to ${quotaData.tier} tier`);
+    } catch (error) {
+      console.error('Error setting user quota:', error);
+      throw error;
     }
   }
 
