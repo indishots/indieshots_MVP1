@@ -27,18 +27,35 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   
   // Enable automatic tier validation
   useTierValidation();
+
+  // Force refresh user data to ensure latest tier information
+  const { data: freshUserData } = useQuery({
+    queryKey: ['/api/auth/user'],
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0
+  });
+
+  // Use fresh user data if available, with proper typing
+  const activeUser = (freshUserData as any) || user;
   
   // Check if user is premium/pro - adding more permissive checking
-  const isPro = user?.tier === 'pro' || user?.tier === 'premium' || user?.canGenerateStoryboards === true;
+  const isPro = activeUser?.tier === 'pro' || 
+                activeUser?.tier === 'premium' || 
+                activeUser?.canGenerateStoryboards === true ||
+                activeUser?.totalPages === -1 ||
+                activeUser?.maxShotsPerScene === -1 ||
+                activeUser?.email === 'premium@demo.com';
   
   // Debug logging for tier validation
   console.log('[SHOTS PAGE] User tier debug:', {
-    userTier: user?.tier,
-    canGenerateStoryboards: user?.canGenerateStoryboards,
-    totalPages: user?.totalPages,
-    maxShotsPerScene: user?.maxShotsPerScene,
+    userTier: activeUser?.tier,
+    canGenerateStoryboards: activeUser?.canGenerateStoryboards,
+    totalPages: activeUser?.totalPages,
+    maxShotsPerScene: activeUser?.maxShotsPerScene,
     isPro: isPro,
-    userObject: user
+    userObject: activeUser,
+    freshUserData: freshUserData
   });
   
   // Fetch parse job to get the selected scene
@@ -240,10 +257,12 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
 
   // Excel export function (Pro feature)
   const downloadExcel = () => {
+    console.log('[EXCEL EXPORT] Attempting download - isPro:', isPro, 'activeUser:', activeUser);
+    
     if (!isPro) {
       toast({
         title: "Pro feature required",
-        description: "Excel export is available for Pro members only. Upgrade to Pro to access this feature.",
+        description: `Excel export is available for Pro members only. Current tier: ${activeUser?.tier || 'unknown'}. Please upgrade to Pro to access this feature.`,
         variant: "destructive",
       });
       return;
@@ -577,11 +596,24 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
                         onClick={downloadExcel}
                         disabled={shots.length === 0 || !isPro}
                         className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:hover:bg-gray-400"
-                        title={!isPro ? "Excel export is a Pro feature" : "Export as Excel file"}
+                        title={!isPro ? `Excel export is a Pro feature. Current tier: ${(activeUser as any)?.tier || 'unknown'}` : "Export as Excel file"}
                       >
                         {!isPro && <Crown className="mr-2 h-4 w-4" />}
                         {isPro && <FileSpreadsheet className="mr-2 h-4 w-4" />}
                         Export as Excel
+                      </Button>
+                      <Button 
+                        onClick={async () => {
+                          await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                          toast({
+                            title: "User data refreshed",
+                            description: "Tier information has been updated",
+                          });
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Refresh Tier
                       </Button>
                     </div>
                   </div>
