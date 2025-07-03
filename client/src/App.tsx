@@ -33,6 +33,7 @@ import Admin from "@/pages/admin";
 import Help from "@/pages/help";
 import PublicFAQ from "@/pages/public-faq";
 import VerifyEmail from "@/pages/verify-email";
+import FilmAnimationsDemo from "@/pages/film-animations-demo";
 
 function App() {
   return (
@@ -229,6 +230,14 @@ function App() {
                 <ProtectedRoute component={() => (
                   <AppLayout>
                     <Help />
+                  </AppLayout>
+                )} />
+              </Route>
+
+              <Route path="/film-animations-demo">
+                <ProtectedRoute component={() => (
+                  <AppLayout>
+                    <FilmAnimationsDemo />
                   </AppLayout>
                 )} />
               </Route>
