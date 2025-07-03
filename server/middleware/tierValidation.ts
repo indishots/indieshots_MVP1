@@ -21,8 +21,15 @@ export const tierValidationMiddleware = async (req: Request, res: Response, next
       return next();
     }
 
-    // Check if user's tier in JWT differs from database tier
-    if (user.tier !== dbUser.tier) {
+    // Check if user's tier information differs from database (any tier-related field)
+    const tierMismatch = (
+      user.tier !== dbUser.tier ||
+      user.totalPages !== dbUser.totalPages ||
+      user.maxShotsPerScene !== dbUser.maxShotsPerScene ||
+      user.canGenerateStoryboards !== dbUser.canGenerateStoryboards
+    );
+    
+    if (tierMismatch) {
       console.log(`[TIER VALIDATION] User ${user.email} tier mismatch: JWT=${user.tier}, DB=${dbUser.tier}`);
       
       // Generate new JWT token with correct tier

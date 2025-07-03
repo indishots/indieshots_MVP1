@@ -76,17 +76,17 @@ router.get('/user', authMiddleware, tierValidationMiddleware, async (req: Reques
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Return user data with fresh tier information
+    // Return user data with fresh tier information from database
     const userData = {
       id: user.id,
       uid: user.providerId || jwtUser.uid,
       email: user.email,
       displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || jwtUser.displayName,
       tier: user.tier || 'free',
-      totalPages: user.tier === 'pro' ? -1 : 5,
+      totalPages: user.totalPages || (user.tier === 'pro' ? -1 : 5),
       usedPages: user.usedPages || 0,
-      maxShotsPerScene: user.tier === 'pro' ? -1 : 5,
-      canGenerateStoryboards: user.tier === 'pro'
+      maxShotsPerScene: user.maxShotsPerScene || (user.tier === 'pro' ? -1 : 5),
+      canGenerateStoryboards: user.canGenerateStoryboards !== undefined ? user.canGenerateStoryboards : (user.tier === 'pro')
     };
 
     console.log(`[AUTH] User ${user.email} tier check: ${user.tier}`);

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Request, Response } from 'express';
 import { authMiddleware } from '../auth/jwt';
+import { tierValidationMiddleware } from '../middleware/tierValidation';
 import { storage } from '../storage';
 import { extractScenesFromText } from '../services/sceneProcessor';
 import { generateShotsFromScene } from '../services/shotGenerator';
@@ -66,7 +67,7 @@ router.get('/jobs/:jobId', authMiddleware, async (req: Request, res: Response) =
  * POST /api/shots/generate/:jobId/:sceneIndex
  * Generate shots for a specific scene
  */
-router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
+router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidationMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
@@ -211,7 +212,7 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, async (req: Re
  * GET /api/shots/:jobId
  * Get all shots for a job across all scenes
  */
-router.get('/shots/:jobId', authMiddleware, async (req: Request, res: Response) => {
+router.get('/shots/:jobId', authMiddleware, tierValidationMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
@@ -265,7 +266,7 @@ router.get('/shots/:jobId', authMiddleware, async (req: Request, res: Response) 
  * GET /api/shots/:jobId/:sceneIndex
  * Get shots for a specific scene
  */
-router.get('/shots/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
+router.get('/shots/:jobId/:sceneIndex', authMiddleware, tierValidationMiddleware, async (req: Request, res: Response) => {
   try {
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;

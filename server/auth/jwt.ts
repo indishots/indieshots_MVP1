@@ -12,6 +12,10 @@ interface TokenPayload {
   id: number;
   email: string;
   tier: string;
+  totalPages: number;
+  usedPages: number;
+  maxShotsPerScene: number;
+  canGenerateStoryboards: boolean;
   jti?: string; // JWT ID for token invalidation
 }
 
@@ -20,6 +24,10 @@ interface RequestUser {
   id: number;
   email: string;
   tier: string;
+  totalPages: number;
+  usedPages: number;
+  maxShotsPerScene: number;
+  canGenerateStoryboards: boolean;
   displayName?: string;
   provider?: string;
   [key: string]: any;
@@ -34,6 +42,10 @@ export function generateToken(user: any): string {
     id: user.id,
     email: user.email,
     tier: user.tier || 'free',
+    totalPages: user.totalPages || (user.tier === 'pro' ? -1 : 5),
+    usedPages: user.usedPages || 0,
+    maxShotsPerScene: user.maxShotsPerScene || (user.tier === 'pro' ? -1 : 5),
+    canGenerateStoryboards: user.canGenerateStoryboards || (user.tier === 'pro'),
     jti
   };
   
@@ -61,6 +73,10 @@ export function verifyToken(token: string): any {
         uid: (decoded as any).uid || (decoded as any).id,
         email: (decoded as any).email,
         tier: (decoded as any).tier || 'free',
+        totalPages: (decoded as any).totalPages || ((decoded as any).tier === 'pro' ? -1 : 5),
+        usedPages: (decoded as any).usedPages || 0,
+        maxShotsPerScene: (decoded as any).maxShotsPerScene || ((decoded as any).tier === 'pro' ? -1 : 5),
+        canGenerateStoryboards: (decoded as any).canGenerateStoryboards !== undefined ? (decoded as any).canGenerateStoryboards : ((decoded as any).tier === 'pro'),
         displayName: (decoded as any).displayName,
         // Preserve any other fields
         ...(decoded as any)
