@@ -70,6 +70,56 @@ router.get('/test-firebase', async (req: Request, res: Response) => {
   }
 });
 
+// Test Firebase user deletion (debugging endpoint)
+router.post('/test-firebase-delete', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+    
+    console.log('🧪 Testing Firebase user deletion for:', email);
+    const { auth: firebaseAdmin } = require('../firebase/admin');
+    
+    // First, try to get the user to verify they exist
+    let userRecord;
+    try {
+      userRecord = await firebaseAdmin.getUserByEmail(email);
+      console.log('Found user in Firebase:', userRecord.uid);
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        return res.json({ message: 'User not found in Firebase', email });
+      }
+      throw error;
+    }
+    
+    // Now try to delete the user
+    try {
+      await firebaseAdmin.deleteUser(userRecord.uid);
+      console.log('Successfully deleted user from Firebase:', email);
+      
+      // Verify deletion by trying to get the user again
+      try {
+        await firebaseAdmin.getUserByEmail(email);
+        return res.json({ message: 'ERROR: User still exists after deletion!', email });
+      } catch (verifyError: any) {
+        if (verifyError.code === 'auth/user-not-found') {
+          return res.json({ message: 'SUCCESS: User completely deleted from Firebase', email });
+        }
+        throw verifyError;
+      }
+    } catch (deleteError: any) {
+      console.error('Error deleting user from Firebase:', deleteError);
+      return res.status(500).json({ message: 'Failed to delete user from Firebase', error: deleteError.message });
+    }
+    
+  } catch (error: any) {
+    console.error('Firebase delete test error:', error);
+    return res.status(500).json({ message: 'Test failed', error: error.message });
+  }
+});
+
 // REMOVED: Duplicate endpoint - using the correct one below
 
 // Firebase authentication - no CSRF needed (uses Firebase idToken)
@@ -302,20 +352,58 @@ router.delete('/delete-account-permanent', authMiddleware, async (req, res) => {
       console.log('No session records found for user:', user.email);
     }
     
-    // Delete user from Firebase first
+    // Delete user from Firebase first - try multiple approaches
     try {
       const { auth: firebaseAdmin } = require('../firebase/admin');
-      await firebaseAdmin.deleteUser(user.id);
-      console.log('User deleted from Firebase:', user.email);
+      
+      let firebaseUserDeleted = false;
+      
+      // Approach 1: Try with Firebase UID (stored in providerId) 
+      if (user.providerId) {
+        try {
+          console.log('Attempting to delete Firebase user with UID:', user.providerId, 'for email:', user.email);
+          await firebaseAdmin.deleteUser(user.providerId);
+          firebaseUserDeleted = true;
+          console.log('User deleted from Firebase using UID:', user.email);
+        } catch (error: any) {
+          console.log('Failed to delete with UID, trying email approach:', error.message);
+        }
+      }
+      
+      // Approach 2: If UID deletion failed, try getting user by email first
+      if (!firebaseUserDeleted) {
+        try {
+          console.log('Attempting to delete Firebase user by email:', user.email);
+          const firebaseUser = await firebaseAdmin.getUserByEmail(user.email);
+          await firebaseAdmin.deleteUser(firebaseUser.uid);
+          firebaseUserDeleted = true;
+          console.log('User deleted from Firebase using email lookup:', user.email);
+        } catch (error: any) {
+          if (error.code === 'auth/user-not-found') {
+            console.log('User not found in Firebase (already deleted):', user.email);
+            firebaseUserDeleted = true; // Consider this success
+          } else {
+            console.error('Failed to delete Firebase user by email:', error.message);
+          }
+        }
+      }
+      
+      // Verify deletion by trying to get the user again
+      if (firebaseUserDeleted) {
+        try {
+          await firebaseAdmin.getUserByEmail(user.email);
+          console.error('WARNING: User still exists in Firebase after deletion!');
+        } catch (verifyError: any) {
+          if (verifyError.code === 'auth/user-not-found') {
+            console.log('VERIFIED: User completely removed from Firebase:', user.email);
+          }
+        }
+      }
+      
     } catch (error: any) {
       console.error('Error deleting user from Firebase:', error);
-      // If Firebase deletion fails, we still want to delete from our database
-      // but we should log this as an error for manual cleanup
-      if (error.code === 'auth/user-not-found') {
-        console.log('User not found in Firebase (already deleted):', user.email);
-      } else {
-        console.error('Firebase deletion failed but continuing with database deletion:', error.message);
-      }
+      // Continue with database deletion even if Firebase deletion fails
+      console.error('Firebase deletion failed but continuing with database deletion:', error.message);
     }
     
     // Blacklist the user from signing back in (backup protection)
