@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
 import { ClapperboardLoading, BufferingAnimation } from "@/components/ui/film-animations";
 import { useFilmAnimations } from "@/hooks/useFilmAnimations";
+import { useTierValidation } from "@/hooks/useTierValidation";
 
 interface ShotsProps {
   jobId: string;
@@ -24,8 +25,21 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { user } = useAuth();
   
-  // Check if user is premium/pro
-  const isPro = user?.tier === 'pro' || user?.tier === 'premium';
+  // Enable automatic tier validation
+  useTierValidation();
+  
+  // Check if user is premium/pro - adding more permissive checking
+  const isPro = user?.tier === 'pro' || user?.tier === 'premium' || user?.canGenerateStoryboards === true;
+  
+  // Debug logging for tier validation
+  console.log('[SHOTS PAGE] User tier debug:', {
+    userTier: user?.tier,
+    canGenerateStoryboards: user?.canGenerateStoryboards,
+    totalPages: user?.totalPages,
+    maxShotsPerScene: user?.maxShotsPerScene,
+    isPro: isPro,
+    userObject: user
+  });
   
   // Fetch parse job to get the selected scene
   const { data: parseJob, isLoading: isLoadingJob } = useQuery({
