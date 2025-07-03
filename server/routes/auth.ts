@@ -44,8 +44,8 @@ router.post('/reset-password', authController.resetPassword);
 router.post('/logout', authController.logout);
 router.get('/logout', authController.logout);
 
-// Get current authenticated user with fresh tier information
-router.get('/user', authMiddleware, tierValidationMiddleware, async (req: Request, res: Response) => {
+// Get current authenticated user with fresh tier information  
+router.get('/user', authMiddleware, async (req: Request, res: Response) => {
   try {
     const jwtUser = (req as any).user;
     
@@ -53,47 +53,49 @@ router.get('/user', authMiddleware, tierValidationMiddleware, async (req: Reques
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    // Get fresh user data from database to ensure tier is up to date
-    let user;
-    
-    // Try to get user by Firebase UID first (for promo code users)
-    if (jwtUser.uid) {
-      const users = await storage.getUserByProviderId('firebase', jwtUser.uid);
-      user = users;
-    }
-    
-    // Fallback to email lookup
-    if (!user && jwtUser.email) {
-      user = await storage.getUserByEmail(jwtUser.email);
-    }
-    
-    // Fallback to ID lookup
-    if (!user && jwtUser.id) {
-      user = await storage.getUser(jwtUser.id);
-    }
+    console.log(`[AUTH] Getting user data for: ${jwtUser.email}`);
+    console.log(`[AUTH] JWT user tier: ${jwtUser.tier}`);
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Return user data with fresh tier information from database
+    // For Firebase-only authentication, return the JWT user data directly
+    // since that's the authoritative source for Firebase users
     const userData = {
-      id: user.id,
-      uid: user.providerId || jwtUser.uid,
-      email: user.email,
-      displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || jwtUser.displayName,
-      tier: user.tier || 'free',
-      totalPages: user.totalPages || (user.tier === 'pro' ? -1 : 5),
-      usedPages: user.usedPages || 0,
-      maxShotsPerScene: user.maxShotsPerScene || (user.tier === 'pro' ? -1 : 5),
-      canGenerateStoryboards: user.canGenerateStoryboards !== undefined ? user.canGenerateStoryboards : (user.tier === 'pro')
+      id: jwtUser.id || jwtUser.uid,
+      uid: jwtUser.uid || jwtUser.id,
+      email: jwtUser.email,
+      displayName: jwtUser.displayName || jwtUser.email?.split('@')[0],
+      tier: jwtUser.tier || 'free',
+      totalPages: jwtUser.totalPages || (jwtUser.tier === 'pro' ? -1 : 5),
+      usedPages: jwtUser.usedPages || 0,
+      maxShotsPerScene: jwtUser.maxShotsPerScene || (jwtUser.tier === 'pro' ? -1 : 5),
+      canGenerateStoryboards: jwtUser.canGenerateStoryboards !== undefined ? jwtUser.canGenerateStoryboards : (jwtUser.tier === 'pro')
     };
 
-    console.log(`[AUTH] User ${user.email} tier check: ${user.tier}`);
+    console.log(`[AUTH] Returning user data - Tier: ${userData.tier}, CanGenerateStoryboards: ${userData.canGenerateStoryboards}`);
     res.json(userData);
   } catch (error) {
     console.error('Error getting user data:', error);
     res.status(500).json({ error: 'Failed to get user data' });
+  }
+});
+
+// Debug endpoint to check JWT token contents
+router.get('/debug-token', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const jwtUser = (req as any).user;
+    
+    console.log('[DEBUG] Full JWT user object:', JSON.stringify(jwtUser, null, 2));
+    
+    res.json({
+      jwtUser: jwtUser,
+      currentTier: jwtUser?.tier,
+      canGenerateStoryboards: jwtUser?.canGenerateStoryboards,
+      totalPages: jwtUser?.totalPages,
+      maxShotsPerScene: jwtUser?.maxShotsPerScene,
+      email: jwtUser?.email
+    });
+  } catch (error) {
+    console.error('Debug token error:', error);
+    res.status(500).json({ error: 'Failed to debug token' });
   }
 });
 

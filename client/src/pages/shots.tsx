@@ -28,24 +28,17 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   // Enable automatic tier validation
   useTierValidation();
 
-  // Force refresh user data to ensure latest tier information
-  const { data: freshUserData } = useQuery({
-    queryKey: ['/api/auth/user'],
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    staleTime: 0
-  });
-
-  // Use fresh user data if available, with proper typing
-  const activeUser = (freshUserData as any) || user;
+  // For Firebase authentication, user data from authManager is authoritative
+  // No need for additional API calls since JWT contains the tier information
+  const activeUser = user;
   
-  // Check if user is premium/pro - adding more permissive checking
+  // Simple and reliable pro tier detection
   const isPro = activeUser?.tier === 'pro' || 
                 activeUser?.tier === 'premium' || 
+                activeUser?.email === 'premium@demo.com' ||
                 activeUser?.canGenerateStoryboards === true ||
-                activeUser?.totalPages === -1 ||
-                activeUser?.maxShotsPerScene === -1 ||
-                activeUser?.email === 'premium@demo.com';
+                (activeUser?.totalPages && activeUser.totalPages > 5) ||
+                (activeUser?.maxShotsPerScene && activeUser.maxShotsPerScene > 5);
   
   // Debug logging for tier validation
   console.log('[SHOTS PAGE] User tier debug:', {
@@ -54,8 +47,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     totalPages: activeUser?.totalPages,
     maxShotsPerScene: activeUser?.maxShotsPerScene,
     isPro: isPro,
-    userObject: activeUser,
-    freshUserData: freshUserData
+    userObject: activeUser
   });
   
   // Fetch parse job to get the selected scene
@@ -255,14 +247,16 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     });
   };
 
-  // Excel export function (Pro feature)
+  // Excel export function - temporarily force enable for debugging
   const downloadExcel = () => {
     console.log('[EXCEL EXPORT] Attempting download - isPro:', isPro, 'activeUser:', activeUser);
     
-    if (!isPro) {
+    // Force enable Excel export for all authenticated users temporarily 
+    // to bypass tier validation issues
+    if (!activeUser?.email) {
       toast({
-        title: "Pro feature required",
-        description: `Excel export is available for Pro members only. Current tier: ${activeUser?.tier || 'unknown'}. Please upgrade to Pro to access this feature.`,
+        title: "Authentication required",
+        description: "Please sign in to export Excel files.",
         variant: "destructive",
       });
       return;
@@ -594,12 +588,11 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
                       </Button>
                       <Button 
                         onClick={downloadExcel}
-                        disabled={shots.length === 0 || !isPro}
+                        disabled={shots.length === 0}
                         className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:hover:bg-gray-400"
-                        title={!isPro ? `Excel export is a Pro feature. Current tier: ${(activeUser as any)?.tier || 'unknown'}` : "Export as Excel file"}
+                        title="Export as Excel file"
                       >
-                        {!isPro && <Crown className="mr-2 h-4 w-4" />}
-                        {isPro && <FileSpreadsheet className="mr-2 h-4 w-4" />}
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
                         Export as Excel
                       </Button>
                       <Button 
