@@ -95,8 +95,8 @@ export default function CleanAuthPage() {
 
       // Check if email verification is required
       if (data.requiresVerification) {
-        // Navigate to verification page with email
-        setLocation(`/verify-email?email=${encodeURIComponent(email)}`);
+        // Navigate to verification page with email and hybrid mode
+        setLocation(`/verify-email?email=${encodeURIComponent(email)}&mode=hybrid`);
         return;
       }
 
