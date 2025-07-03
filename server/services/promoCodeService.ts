@@ -336,6 +336,21 @@ export class PromoCodeService {
     const validDates = ['2025-07-03', '2025-07-06', '2025-07-07', '2025-07-26', '2025-07-27'];
     return validDates.includes(today);
   }
+
+  /**
+   * Delete all promo code usage records for a user (for permanent account deletion)
+   */
+  static async deleteUserPromoCodeUsage(email: string): Promise<void> {
+    try {
+      await db.delete(promoCodeUsage)
+        .where(eq(promoCodeUsage.userEmail, email.toLowerCase()));
+      
+      console.log(`Deleted promo code usage records for user: ${email}`);
+    } catch (error) {
+      console.error('Error deleting promo code usage records:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

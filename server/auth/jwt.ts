@@ -66,6 +66,14 @@ export function verifyToken(token: string): any {
         ...(decoded as any)
       };
       
+      // Check if user is permanently banned
+      const { tokenBlacklist } = require('./tokenBlacklist');
+      if (tokenBlacklist.isUserBanned(normalizedToken.id) || 
+          tokenBlacklist.isEmailBanned(normalizedToken.email)) {
+        console.log('User is permanently banned:', normalizedToken.email);
+        return null;
+      }
+      
       return normalizedToken;
     }
     
@@ -88,7 +96,7 @@ export function invalidateToken(token: string): void {
 /**
  * Middleware to verify JWT token in Authorization header or cookies
  */
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
     // Check for token in cookies first (for browser clients)
     let token = req.cookies?.auth_token;
@@ -117,7 +125,21 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
       return res.status(401).json({ message: 'Invalid token' });
     }
     
-    console.log('Auth middleware - token verified for user:', decoded.email);
+    // Check if user still exists in database (not permanently deleted)
+    try {
+      const { storage } = await import('../storage');
+      const user = await storage.getUserByProviderId('firebase', decoded.id);
+      
+      if (!user) {
+        console.log('Auth middleware - user not found in database, account may be deleted:', decoded.email);
+        return res.status(401).json({ message: 'Account not found or has been deleted' });
+      }
+      
+      console.log('Auth middleware - token verified for existing user:', decoded.email);
+    } catch (error) {
+      console.log('Auth middleware - error checking user existence:', error);
+      return res.status(401).json({ message: 'Authentication verification failed' });
+    }
     
     // Attach the decoded user info to the request
     req.user = decoded;

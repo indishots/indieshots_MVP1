@@ -247,6 +247,31 @@ router.delete('/delete-account-permanent', authMiddleware, async (req, res) => {
     const quotaManager = new ProductionQuotaManager();
     await quotaManager.deleteUserQuota(user.id);
     
+    // Delete promo code usage records for this user
+    try {
+      const { PromoCodeService } = await import('../services/promoCodeService');
+      await PromoCodeService.deleteUserPromoCodeUsage(user.email);
+      console.log('Deleted promo code usage records for user:', user.email);
+    } catch (error) {
+      console.log('No promo code usage records found for user:', user.email);
+    }
+    
+    // Delete any script health analysis records
+    try {
+      await storage.deleteScriptHealthAnalysisForUser(user.id);
+      console.log('Deleted script health analysis records for user:', user.email);
+    } catch (error) {
+      console.log('No script health analysis records found for user:', user.email);
+    }
+    
+    // Delete any session records for this user
+    try {
+      await storage.deleteUserSessions(user.id);
+      console.log('Deleted session records for user:', user.email);
+    } catch (error) {
+      console.log('No session records found for user:', user.email);
+    }
+    
     // Blacklist the user from signing back in
     const { tokenBlacklist } = await import('../auth/tokenBlacklist');
     

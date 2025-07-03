@@ -45,6 +45,33 @@ export async function cleanupScheduledDeletions() {
         } catch (error) {
           console.log('No quota record found for user:', user.email);
         }
+
+        // Delete promo code usage records for this user
+        try {
+          const { PromoCodeService } = await import('../services/promoCodeService');
+          if (user.email) {
+            await PromoCodeService.deleteUserPromoCodeUsage(user.email);
+            console.log('Deleted promo code usage records for user:', user.email);
+          }
+        } catch (error) {
+          console.log('No promo code usage records found for user:', user.email);
+        }
+
+        // Delete any script health analysis records
+        try {
+          await storage.deleteScriptHealthAnalysisForUser(user.providerId || user.id.toString());
+          console.log('Deleted script health analysis records for user:', user.email);
+        } catch (error) {
+          console.log('No script health analysis records found for user:', user.email);
+        }
+
+        // Delete any session records for this user
+        try {
+          await storage.deleteUserSessions(user.providerId || user.id.toString());
+          console.log('Deleted session records for user:', user.email);
+        } catch (error) {
+          console.log('No session records found for user:', user.email);
+        }
         
         // Finally delete the user account
         await storage.deleteUser(user.providerId || user.id.toString());

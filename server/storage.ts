@@ -61,6 +61,10 @@ export interface IStorage {
   createScriptHealthAnalysis(analysis: any): Promise<any>;
   getScriptHealthAnalysis(scriptId: number): Promise<any | undefined>;
   updateScriptHealthAnalysis(scriptId: number, updates: any): Promise<any>;
+  deleteScriptHealthAnalysisForUser(userId: string): Promise<void>;
+  
+  // Session operations
+  deleteUserSessions(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -460,6 +464,24 @@ export class DatabaseStorage implements IStorage {
       AND deletion_scheduled_at <= ${now.toISOString()}
     `);
     return result.rows as User[];
+  }
+
+  // Delete all script health analysis records for a user
+  async deleteScriptHealthAnalysisForUser(userId: string): Promise<void> {
+    // Delete script health analysis records using SQL since we have the schema imported
+    await db.execute(sql`
+      DELETE FROM script_health_analysis 
+      WHERE user_id = ${userId}
+    `);
+  }
+
+  // Delete all session records for a user
+  async deleteUserSessions(userId: string): Promise<void> {
+    // Delete sessions by user ID stored in sess data
+    await db.execute(sql`
+      DELETE FROM sessions 
+      WHERE sess::text LIKE '%"userId":"${userId}"%'
+    `);
   }
 }
 
