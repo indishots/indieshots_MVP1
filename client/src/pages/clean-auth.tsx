@@ -267,14 +267,14 @@ export default function CleanAuthPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="coupon-code" className="block text-sm font-medium text-foreground">
-                      Enter Coupon Code (Optional)
+                    <Label htmlFor="promo-code" className="block text-sm font-medium text-foreground">
+                      Enter Promo Code (Optional)
                     </Label>
                     <div className="mt-1">
                       <Input
-                        id="coupon-code"
+                        id="promo-code"
                         type="text"
-                        placeholder="Enter your coupon code"
+                        placeholder="Enter promo code to get premium account"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
                         className="w-full"

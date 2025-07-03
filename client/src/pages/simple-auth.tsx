@@ -236,13 +236,13 @@ export default function SimpleAuth() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="coupon-code">Coupon Code (Optional)</Label>
+                        <Label htmlFor="promo-code">Promo Code (Optional)</Label>
                         <Input
-                          id="coupon-code"
+                          id="promo-code"
                           type="text"
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value)}
-                          placeholder="Enter INDIE2025 for premium access"
+                          placeholder="Enter promo code to get premium account"
                           disabled={isLoading}
                         />
                         {couponCode.toUpperCase() === 'INDIE2025' && (
