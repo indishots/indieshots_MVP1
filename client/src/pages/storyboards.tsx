@@ -13,6 +13,7 @@ import { ArrowLeft, Image, Download, RefreshCw, ChevronLeft, ChevronRight, Edit3
 import { apiRequest } from "@/lib/queryClient";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
+import { StoryboardUpgradeModal } from "@/components/ui/storyboard-upgrade-modal";
 import StoryboardLoadingAnimation from "@/components/ui/StoryboardLoadingAnimation";
 
 interface StoryboardsProps {
@@ -40,6 +41,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const [carouselImages, setCarouselImages] = useState<{[key: number]: string}>({});
   const [updatedMainImages, setUpdatedMainImages] = useState<{[key: number]: string}>({});
   const [imageLoadingStates, setImageLoadingStates] = useState<{[key: number]: boolean}>({});
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   
   // Helper functions for image selection and carousel
@@ -220,6 +222,13 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   // Generate storyboards mutation
   const generateStoryboardsMutation = useMutation({
     mutationFn: async () => {
+      // Check if user is free tier - show upgrade modal instead
+      const userTier = (user as any)?.tier || 'free';
+      if (userTier === 'free') {
+        setShowUpgradeModal(true);
+        throw new Error('upgrade_required');
+      }
+      
       setIsGenerating(true);
       setHasStartedGeneration(true);
       const response = await fetch(`/api/storyboards/generate/${jobId}/${sceneIndex}`, {
@@ -250,11 +259,14 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       (window as any).pendingSuccessToast = true;
     },
     onError: (error: Error) => {
-      toast({
-        title: "Storyboard generation failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Don't show error toast for upgrade requirements
+      if (error.message !== 'upgrade_required') {
+        toast({
+          title: "Storyboard generation failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
       setIsGenerating(false);
     },
   });
@@ -269,6 +281,15 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
 
   const downloadSingleImage = (imageIndex: number) => {
     window.open(`/api/storyboards/${jobId}/${sceneIndex}/image/${imageIndex}`, '_blank');
+  };
+
+  const handleUpgrade = () => {
+    setShowUpgradeModal(false);
+    setLocation('/upgrade');
+  };
+
+  const handleCloseUpgradeModal = () => {
+    setShowUpgradeModal(false);
   };
   
   if (isLoadingShots) {
@@ -740,6 +761,13 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
           Back to Shots
         </Button>
       </div>
+
+      {/* Upgrade Modal */}
+      <StoryboardUpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={handleCloseUpgradeModal}
+        onUpgrade={handleUpgrade}
+      />
     </div>
   );
 }

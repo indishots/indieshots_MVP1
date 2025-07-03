@@ -4,7 +4,7 @@ export interface TierLimits {
   free: {
     totalPages: 5;
     maxShotsPerScene: 5;
-    canGenerateStoryboards: true;
+    canGenerateStoryboards: false;
   };
   pro: {
     totalPages: -1; // Unlimited
@@ -17,7 +17,7 @@ export const TIER_LIMITS: TierLimits = {
   free: {
     totalPages: 5,
     maxShotsPerScene: 5,
-    canGenerateStoryboards: true,
+    canGenerateStoryboards: false,
   },
   pro: {
     totalPages: -1, // Unlimited
@@ -34,7 +34,16 @@ export const checkStoryboardAccess = (req: Request, res: Response, next: NextFun
     return res.status(401).json({ message: 'Authentication required' });
   }
   
-  // All users can now generate storyboards
+  const userTier = user.tier || 'free';
+  
+  if (userTier === 'free') {
+    return res.status(403).json({ 
+      message: 'Storyboard generation is a Pro feature. Upgrade to Pro to generate visual storyboards.',
+      requiresUpgrade: true,
+      feature: 'storyboards'
+    });
+  }
+  
   next();
 };
 

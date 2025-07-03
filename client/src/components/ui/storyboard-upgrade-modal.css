@@ -1,0 +1,212 @@
+/* Storyboard Upgrade Modal Animations */
+
+.storyboard-upgrade-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Floating camera animations */
+.floating-cameras {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.floating-camera {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  color: rgba(139, 92, 246, 0.3);
+  animation: floatCamera 4s ease-in-out infinite;
+}
+
+.camera-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.camera-2 {
+  top: 60%;
+  right: 15%;
+  animation-delay: 1.5s;
+}
+
+.camera-3 {
+  top: 80%;
+  left: 20%;
+  animation-delay: 3s;
+}
+
+@keyframes floatCamera {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.2;
+  }
+  25% {
+    transform: translateY(-20px) rotate(5deg);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-10px) rotate(-3deg);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translateY(-25px) rotate(2deg);
+    opacity: 0.3;
+  }
+}
+
+/* Sparkle animations */
+.sparkles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.sparkle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  color: rgba(59, 130, 246, 0.4);
+  animation: sparkleFloat 3s ease-in-out infinite;
+}
+
+.sparkle-1 {
+  top: 15%;
+  right: 20%;
+  animation-delay: 0.5s;
+}
+
+.sparkle-2 {
+  top: 45%;
+  left: 15%;
+  animation-delay: 2s;
+}
+
+.sparkle-3 {
+  top: 70%;
+  right: 25%;
+  animation-delay: 3.5s;
+}
+
+.sparkle-4 {
+  top: 25%;
+  left: 70%;
+  animation-delay: 1s;
+}
+
+@keyframes sparkleFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(0.8) rotate(0deg);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translateY(-15px) scale(1.1) rotate(120deg);
+    opacity: 0.7;
+  }
+  66% {
+    transform: translateY(-8px) scale(0.9) rotate(240deg);
+    opacity: 0.5;
+  }
+}
+
+/* Crown bounce animation */
+.crown-bounce {
+  animation: crownBounce 2s ease-in-out infinite;
+}
+
+@keyframes crownBounce {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.05);
+  }
+}
+
+/* Pulse dot animations */
+.pulse-dot {
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+.delay-200 {
+  animation-delay: 0.2s;
+}
+
+.delay-400 {
+  animation-delay: 0.4s;
+}
+
+.delay-600 {
+  animation-delay: 0.6s;
+}
+
+@keyframes pulseDot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+}
+
+/* Upgrade button animation */
+.upgrade-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.upgrade-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+}
+
+.upgrade-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.upgrade-button:hover::before {
+  left: 100%;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .floating-camera,
+  .sparkle {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .camera-1,
+  .camera-2,
+  .camera-3 {
+    animation-duration: 5s;
+  }
+  
+  .sparkle-1,
+  .sparkle-2,
+  .sparkle-3,
+  .sparkle-4 {
+    animation-duration: 4s;
+  }
+}

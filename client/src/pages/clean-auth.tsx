@@ -342,8 +342,8 @@ export default function CleanAuthPage() {
                     <span>5 shots per scene maximum</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Camera className="h-4 w-4" />
-                    <span>Storyboard generation</span>
+                    <Camera className="h-4 w-4 opacity-50" />
+                    <span className="line-through opacity-50">Storyboard generation</span>
                   </div>
                 </div>
               </div>
