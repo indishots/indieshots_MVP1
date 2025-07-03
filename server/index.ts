@@ -72,11 +72,14 @@ app.use((req, res, next) => {
   server.listen(port, "0.0.0.0", () => {
     log(`serving on port ${port}`);
     
-    // Force reliable Replit preview access
+    // Multiple preview URL formats for Replit
     if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-      // Use stable domain format for reliable preview access
       log(`Preview access: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.replit.app`);
       log(`Replit preview configured for port ${port}`);
+    }
+    
+    if (process.env.REPLIT_DEV_DOMAIN) {
+      log(`Development preview: https://${process.env.REPLIT_DEV_DOMAIN}`);
     }
     
     log(`Local access: http://localhost:${port}`);
