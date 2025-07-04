@@ -596,19 +596,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
                         <FileSpreadsheet className="mr-2 h-4 w-4" />
                         Export as Excel
                       </Button>
-                      <Button 
-                        onClick={async () => {
-                          await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-                          toast({
-                            title: "User data refreshed",
-                            description: "Tier information has been updated",
-                          });
-                        }}
-                        variant="outline"
-                        size="sm"
-                      >
-                        Refresh Tier
-                      </Button>
+
                     </div>
                   </div>
                 </CardHeader>
