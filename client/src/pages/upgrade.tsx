@@ -298,63 +298,73 @@ export default function Upgrade() {
         <p className="text-muted-foreground">See what you get with each plan</p>
       </div>
       
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid gap-4">
         {/* Pages per month */}
         <Card className="p-4">
-          <div className="text-center">
-            <FileText className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-            <h3 className="font-medium mb-2">Pages per month</h3>
-            <div className="space-y-1">
-              <div className="text-sm text-gray-600">Free: 5</div>
-              <div className="text-sm text-indigo-600 font-medium">Pro: Unlimited</div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="h-5 w-5 text-indigo-600" />
+              <span className="font-medium">Pages per month</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">Free: 5</span>
+              <span className="text-sm text-indigo-600 font-medium">Pro: ∞</span>
             </div>
           </div>
         </Card>
 
         {/* Shots per scene */}
         <Card className="p-4">
-          <div className="text-center">
-            <Camera className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-            <h3 className="font-medium mb-2">Shots per scene</h3>
-            <div className="space-y-1">
-              <div className="text-sm text-gray-600">Free: 5</div>
-              <div className="text-sm text-indigo-600 font-medium">Pro: Unlimited</div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Camera className="h-5 w-5 text-indigo-600" />
+              <span className="font-medium">Shots per scene</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">Free: 5</span>
+              <span className="text-sm text-indigo-600 font-medium">Pro: ∞</span>
             </div>
           </div>
         </Card>
 
         {/* Storyboards */}
         <Card className="p-4">
-          <div className="text-center">
-            <Image className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-            <h3 className="font-medium mb-2">Storyboards</h3>
-            <div className="space-y-1">
-              <div className="text-sm text-gray-500">Free: —</div>
-              <div className="text-sm text-green-600 font-medium">Pro: ✓</div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Image className="h-5 w-5 text-indigo-600" />
+              <span className="font-medium">Storyboards</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">Free: ✗</span>
+              <span className="text-sm text-green-600 font-medium">Pro: ✓</span>
             </div>
           </div>
         </Card>
 
         {/* AI images */}
         <Card className="p-4">
-          <div className="text-center">
-            <Sparkles className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-            <h3 className="font-medium mb-2">AI images</h3>
-            <div className="space-y-1">
-              <div className="text-sm text-gray-500">Free: —</div>
-              <div className="text-sm text-green-600 font-medium">Pro: ✓</div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-indigo-600" />
+              <span className="font-medium">AI images</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">Free: ✗</span>
+              <span className="text-sm text-green-600 font-medium">Pro: ✓</span>
             </div>
           </div>
         </Card>
 
         {/* Support */}
         <Card className="p-4">
-          <div className="text-center">
-            <Headphones className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-            <h3 className="font-medium mb-2">Support</h3>
-            <div className="space-y-1">
-              <div className="text-sm text-gray-600">Free: Standard</div>
-              <div className="text-sm text-indigo-600 font-medium">Pro: Priority</div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Headphones className="h-5 w-5 text-indigo-600" />
+              <span className="font-medium">Support</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">Free: Standard</span>
+              <span className="text-sm text-indigo-600 font-medium">Pro: Priority</span>
             </div>
           </div>
         </Card>
