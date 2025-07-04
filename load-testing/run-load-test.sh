@@ -36,9 +36,6 @@ if [ ! -f "artillery-config.yml" ]; then
     exit 1
 fi
 
-# Set target URL as environment variable
-export TARGET_URL="https://indieshots.replit.app"
-
 # Run the load test
 echo "▶️  Starting load test..."
 artillery run artillery-config.yml \
