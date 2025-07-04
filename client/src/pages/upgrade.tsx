@@ -300,62 +300,62 @@ export default function Upgrade() {
             See what you get with each plan
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {/* Pages per month */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
             <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-indigo-600" />
+              <FileText className="h-4 w-4 text-indigo-600" />
               <span className="font-medium">Pages per month</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600">Free: 5</span>
               <span className="text-sm text-indigo-600 font-medium">Pro: ∞</span>
             </div>
           </div>
 
           {/* Shots per scene */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
             <div className="flex items-center gap-3">
-              <Camera className="h-5 w-5 text-indigo-600" />
+              <Camera className="h-4 w-4 text-indigo-600" />
               <span className="font-medium">Shots per scene</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600">Free: 5</span>
               <span className="text-sm text-indigo-600 font-medium">Pro: ∞</span>
             </div>
           </div>
 
           {/* Storyboards */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
             <div className="flex items-center gap-3">
-              <Image className="h-5 w-5 text-indigo-600" />
+              <Image className="h-4 w-4 text-indigo-600" />
               <span className="font-medium">Storyboards</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">Free: ✗</span>
               <span className="text-sm text-green-600 font-medium">Pro: ✓</span>
             </div>
           </div>
 
           {/* AI images */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
             <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-indigo-600" />
+              <Sparkles className="h-4 w-4 text-indigo-600" />
               <span className="font-medium">AI images</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="text-sm text-gray-500">Free: ✗</span>
               <span className="text-sm text-green-600 font-medium">Pro: ✓</span>
             </div>
           </div>
 
           {/* Support */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between py-2">
             <div className="flex items-center gap-3">
-              <Headphones className="h-5 w-5 text-indigo-600" />
+              <Headphones className="h-4 w-4 text-indigo-600" />
               <span className="font-medium">Support</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600">Free: Standard</span>
               <span className="text-sm text-indigo-600 font-medium">Pro: Priority</span>
             </div>
