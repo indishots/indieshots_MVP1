@@ -177,14 +177,23 @@ export function ComprehensiveGoogleAuth() {
         hasToken: !!authData.idToken
       });
       
-      const response = await fetch('/api/auth/firebase-login', {
+      const response = await fetch('/api/auth/firebase-sync', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(authData),
+        body: JSON.stringify({
+          firebaseUser: {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL,
+            emailVerified: result.user.emailVerified
+          },
+          provider: 'firebase'
+        }),
       });
       
       console.log("Backend response status:", response.status);

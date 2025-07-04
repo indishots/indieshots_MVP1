@@ -28,17 +28,19 @@ export function WorkingGoogleAuth() {
         // Create backend session
         const idToken = await result.user.getIdToken(true);
         
-        const response = await fetch('/api/auth/firebase-login', {
+        const response = await fetch('/api/auth/firebase-sync', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({
-            idToken,
-            provider: 'google.com',
-            providerUserId: result.user.uid,
-            email: result.user.email,
-            displayName: result.user.displayName,
-            photoURL: result.user.photoURL,
+            firebaseUser: {
+              uid: result.user.uid,
+              email: result.user.email,
+              displayName: result.user.displayName,
+              photoURL: result.user.photoURL,
+              emailVerified: result.user.emailVerified
+            },
+            provider: 'firebase'
           }),
         });
 
