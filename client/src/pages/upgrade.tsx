@@ -293,159 +293,54 @@ export default function Upgrade() {
       </div>
 
       {/* Feature Comparison */}
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Feature Comparison</h2>
-          <p className="text-muted-foreground">See what you get with each plan</p>
-        </div>
-        
-        <div className="grid gap-4">
-          {/* Pages per month */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
-                    <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <h3 className="font-medium">Pages per month</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Free</p>
-                    <span className="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm font-medium">
-                      5 📄
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Pro</p>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 rounded text-sm font-medium text-indigo-700 dark:text-indigo-300">
-                      <Infinity className="h-4 w-4" />
-                      Unlimited ✨
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Shots per scene */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
-                    <Camera className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <h3 className="font-medium">Shots per scene</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Free</p>
-                    <span className="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm font-medium">
-                      5 🎬
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Pro</p>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 rounded text-sm font-medium text-indigo-700 dark:text-indigo-300">
-                      <Infinity className="h-4 w-4" />
-                      Unlimited 🎭
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Storyboard generation */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
-                    <Image className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <h3 className="font-medium">Storyboard generation</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Free</p>
-                    <span className="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Not included ❌
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Pro</p>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 rounded text-sm font-medium text-green-700 dark:text-green-400">
-                      <CheckCircle className="h-4 w-4" />
-                      Included 🎨
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* AI image generation */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
-                    <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <h3 className="font-medium">AI image generation</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Free</p>
-                    <span className="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Not included ❌
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Pro</p>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 rounded text-sm font-medium text-green-700 dark:text-green-400">
-                      <Image className="h-4 w-4" />
-                      Included 🤖
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Priority support */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
-                    <Headphones className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  </div>
-                  <h3 className="font-medium">Priority support</h3>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Free</p>
-                    <span className="inline-flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Standard 📧
-                    </span>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 mb-1">Pro</p>
-                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 dark:bg-green-900/30 rounded text-sm font-medium text-green-700 dark:text-green-400">
-                      <CheckCircle className="h-4 w-4" />
-                      Priority 🚀
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Feature Comparison</CardTitle>
+          <CardDescription>
+            See what you get with each plan
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2">Feature</th>
+                  <th className="text-center py-2">Free</th>
+                  <th className="text-center py-2">Pro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b">
+                  <td className="py-2">Pages per month</td>
+                  <td className="text-center py-2">5</td>
+                  <td className="text-center py-2">Unlimited</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2">Shots per scene</td>
+                  <td className="text-center py-2">5</td>
+                  <td className="text-center py-2">Unlimited</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2">Storyboards</td>
+                  <td className="text-center py-2 text-gray-500">—</td>
+                  <td className="text-center py-2 text-green-600">✓</td>
+                </tr>
+                <tr className="border-b">
+                  <td className="py-2">AI images</td>
+                  <td className="text-center py-2 text-gray-500">—</td>
+                  <td className="text-center py-2 text-green-600">✓</td>
+                </tr>
+                <tr>
+                  <td className="py-2">Support</td>
+                  <td className="text-center py-2">Standard</td>
+                  <td className="text-center py-2">Priority</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* FAQ Section */}
       <div className="mt-12 text-center">
