@@ -103,16 +103,22 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
               <div>
                 <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   {isProUser ? (
-                    <>
-                      <Crown className="h-3 w-3 text-amber-500" />
-                      Pro Plan
-                    </>
+                    <span className="flex items-center gap-1.5 px-2 py-1 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-full border border-amber-200/50 dark:border-amber-700/30">
+                      <Crown className="h-3 w-3 text-amber-500 animate-pulse" />
+                      <span className="font-bold text-amber-700 dark:text-amber-300">Pro Plan</span>
+                    </span>
                   ) : (
                     'Free Plan'
                   )}
                 </p>
-                <p className="text-sm font-semibold mt-0.5">
-                  {isProUser ? 'Unlimited pages' : `${usageData?.totalPages || 5} pages/month`}
+                <p className="text-sm font-semibold mt-2">
+                  {isProUser ? (
+                    <span className="bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent font-bold">
+                      Unlimited pages
+                    </span>
+                  ) : (
+                    `${usageData?.totalPages || 5} pages/month`
+                  )}
                 </p>
               </div>
               {!isProUser && (
@@ -138,12 +144,22 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
             )}
             
             {isProUser && (
-              <div className="text-center py-2">
-                <p className="text-sm font-medium text-green-600 flex items-center justify-center gap-1">
-                  <Crown className="h-4 w-4 text-amber-500" />
+              <div className="text-center py-3 px-2 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+                <div className="relative">
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                  <Crown className="h-5 w-5 text-amber-500 mx-auto mb-1.5 drop-shadow-sm" />
+                </div>
+                <p className="text-sm font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">
                   Unlimited Access
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Enjoy all premium features</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1 font-medium">
+                  Enjoy all premium features
+                </p>
+                <div className="flex justify-center mt-2 space-x-1">
+                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                </div>
               </div>
             )}
           </div>
