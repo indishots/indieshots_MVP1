@@ -150,20 +150,26 @@ function detectProblematicCharacters(text: string): string[] {
 export function sanitizeText(text: string): string {
   if (!text) return '';
   
+  console.log(`🔧 SANITIZATION START: Original text length: ${text.length}`);
+  console.log(`🔧 SANITIZATION START: First 100 chars: "${text.substring(0, 100)}"`);
+  
   // Log problematic characters for debugging
   const problematicChars = detectProblematicCharacters(text);
   if (problematicChars.length > 0) {
-    console.log(`🔧 SANITIZATION: Found problematic characters in text: ${problematicChars.join('; ')}`);
-    console.log(`🔧 SANITIZATION: Original text (first 200 chars): ${text.substring(0, 200)}`);
+    console.log(`🔧 SANITIZATION: Found problematic characters: ${problematicChars.join('; ')}`);
   }
   
-  return text
+  let sanitized = text
     // Remove control characters and non-printable characters
     .replace(/[\x00-\x1F\x7F-\x9F]/g, ' ')
     // Remove problematic Unicode characters
     .replace(/[\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F]/g, ' ')
-    // Keep only alphanumeric, spaces, and basic punctuation
-    .replace(/[^\w\s\-.,!?;:()"']/g, ' ')
+    // Remove special dashes, quotes, and symbols that cause issues
+    .replace(/[""'']/g, '"')  // Replace smart quotes
+    .replace(/[–—]/g, '-')    // Replace em/en dashes
+    .replace(/[…]/g, '...')   // Replace ellipsis
+    // Keep only basic characters and punctuation
+    .replace(/[^\w\s\-.,!?;:()"'\n]/g, ' ')
     // Clean up multiple characters
     .replace(/\s+/g, ' ') // Replace multiple spaces with single space
     .replace(/["']{2,}/g, '"') // Replace multiple quotes with single quote
@@ -171,64 +177,78 @@ export function sanitizeText(text: string): string {
     .replace(/[!]{2,}/g, '!') // Replace multiple exclamation marks
     .replace(/[?]{2,}/g, '?') // Replace multiple question marks
     .trim(); // Remove leading/trailing whitespace
+  
+  console.log(`🔧 SANITIZATION COMPLETE: Sanitized length: ${sanitized.length}`);
+  console.log(`🔧 SANITIZATION COMPLETE: First 100 chars: "${sanitized.substring(0, 100)}"`);
+  console.log(`🔧 SANITIZATION RESULT: Characters removed: ${text.length - sanitized.length}`);
+  
+  return sanitized;
 }
 
 /**
- * Build prompt from shot data using the working Python format with sanitization
+ * Build concise, effective prompts from shot data with comprehensive sanitization
  */
 function buildPrompt(shot: any): string {
-  // Sanitize all fields before building prompt
+  console.log(`🎬 PROMPT CONSTRUCTION START for shot: ${shot.id || 'unknown'}`);
+  
+  // Sanitize and truncate all fields before building prompt
   const sanitizedShot = {
-    shotType: sanitizeText(shot.shot_type || shot.shotType || ''),
-    lens: sanitizeText(shot.lens || ''),
-    movement: sanitizeText(shot.movement || ''),
-    location: sanitizeText(shot.location || ''),
-    timeOfDay: sanitizeText(shot.time_of_day || shot.timeOfDay || ''),
-    mood: sanitizeText(shot.mood_and_ambience || shot.moodAndAmbience || ''),
-    tone: sanitizeText(shot.tone || ''),
-    lighting: sanitizeText(shot.lighting || ''),
-    props: sanitizeText(shot.props || ''),
-    notes: sanitizeText(shot.notes || ''),
-    sound: sanitizeText(shot.sound_design || shot.soundDesign || ''),
-    description: sanitizeText(shot.shot_description || shot.shotDescription || ''),
-    characters: sanitizeText(shot.characters || ''),
-    dialogue: sanitizeText(shot.dialogue || '')
+    shotType: sanitizeText(shot.shot_type || shot.shotType || '').substring(0, 50),
+    lens: sanitizeText(shot.lens || '').substring(0, 20),
+    movement: sanitizeText(shot.movement || '').substring(0, 30),
+    location: sanitizeText(shot.location || '').substring(0, 40),
+    timeOfDay: sanitizeText(shot.time_of_day || shot.timeOfDay || '').substring(0, 20),
+    mood: sanitizeText(shot.mood_and_ambience || shot.moodAndAmbience || '').substring(0, 40),
+    lighting: sanitizeText(shot.lighting || '').substring(0, 40),
+    props: sanitizeText(shot.props || '').substring(0, 50),
+    description: sanitizeText(shot.shot_description || shot.shotDescription || '').substring(0, 200),
+    characters: sanitizeText(shot.characters || '').substring(0, 100)
   };
   
-  // Build prompt with sanitized data
-  let prompt = 
-    `Scene Type: ${sanitizedShot.shotType}, Lens: ${sanitizedShot.lens}, Movement: ${sanitizedShot.movement}\n` +
-    `Location: ${sanitizedShot.location} (${sanitizedShot.timeOfDay}), Mood: ${sanitizedShot.mood}, Tone: ${sanitizedShot.tone}\n` +
-    `Lighting: ${sanitizedShot.lighting}, Props: ${sanitizedShot.props}, Notes: ${sanitizedShot.notes}, Sound: ${sanitizedShot.sound}\n\n` +
-    `Describe this scene in a cinematic, stylized animated graphic novel format. ` +
-    `Use moody lighting, animated art direction, and visual storytelling tone.\n\n` +
-    `Action: ${sanitizedShot.description}`;
-  
-  // Add characters if they exist
-  if (sanitizedShot.characters && sanitizedShot.characters !== 'None' && sanitizedShot.characters.trim()) {
-    prompt += `\n\nCharacters: ${sanitizedShot.characters}`;
-  }
-  
-  // Add dialogue if it exists
-  if (sanitizedShot.dialogue && sanitizedShot.dialogue !== 'None' && sanitizedShot.dialogue.trim()) {
-    prompt += `\n\nDialogue: ${sanitizedShot.dialogue}`;
-  }
-  
-  // Log the prompt construction process for debugging
-  console.log(`🎬 PROMPT CONSTRUCTION:`);
+  // Log sanitized fields for debugging
+  console.log(`🎬 SANITIZED FIELDS:`);
   console.log(`   Shot Type: "${sanitizedShot.shotType}"`);
   console.log(`   Description: "${sanitizedShot.description}"`);
   console.log(`   Characters: "${sanitizedShot.characters}"`);
-  console.log(`   Dialogue: "${sanitizedShot.dialogue}"`);
+  console.log(`   Location: "${sanitizedShot.location}"`);
   
-  // Final sanitization of the complete prompt with logging
+  // Build a concise, focused prompt (target: under 400 characters)
+  let prompt = `${sanitizedShot.shotType} shot of ${sanitizedShot.description}`;
+  
+  // Add essential details only if they exist and are meaningful
+  if (sanitizedShot.characters && sanitizedShot.characters !== 'None' && sanitizedShot.characters.trim()) {
+    prompt += `, featuring ${sanitizedShot.characters}`;
+  }
+  
+  if (sanitizedShot.location && sanitizedShot.location !== 'None' && sanitizedShot.location.trim()) {
+    prompt += ` at ${sanitizedShot.location}`;
+  }
+  
+  if (sanitizedShot.lighting && sanitizedShot.lighting !== 'None' && sanitizedShot.lighting.trim()) {
+    prompt += `, ${sanitizedShot.lighting} lighting`;
+  }
+  
+  if (sanitizedShot.mood && sanitizedShot.mood !== 'None' && sanitizedShot.mood.trim()) {
+    prompt += `, ${sanitizedShot.mood} mood`;
+  }
+  
+  // Always add cinematic styling
+  prompt += `, professional movie scene, artistic lighting, film production quality`;
+  
+  // Final sanitization and validation
   const finalPrompt = sanitizeText(prompt);
   
   console.log(`🎬 PROMPT BUILD COMPLETE:`);
   console.log(`   - Original length: ${prompt.length} chars`);
-  console.log(`   - Sanitized length: ${finalPrompt.length} chars`);
-  console.log(`   - Original: ${prompt.substring(0, 100)}...`);
-  console.log(`   - Sanitized: ${finalPrompt.substring(0, 100)}...`);
+  console.log(`   - Final length: ${finalPrompt.length} chars`);
+  console.log(`   - Full prompt: "${finalPrompt}"`);
+  
+  // Ensure prompt isn't too long (OpenAI DALL-E limit is 1000 chars)
+  if (finalPrompt.length > 800) {
+    const truncatedPrompt = finalPrompt.substring(0, 800).trim();
+    console.log(`⚠️ PROMPT TRUNCATED: ${finalPrompt.length} -> ${truncatedPrompt.length} chars`);
+    return truncatedPrompt;
+  }
   
   return finalPrompt;
 }
@@ -436,9 +456,9 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
       const base64Data = imageBuffer.toString('base64');
       
-      // Validate base64 data is not corrupted
+      // Comprehensive base64 validation
       if (base64Data.length < 1000) {
-        console.error(`Base64 data too short (${base64Data.length} chars), likely corrupted`);
+        console.error(`❌ Base64 data too short (${base64Data.length} chars), likely corrupted`);
         if (attempt === retries) return 'GENERATION_FAILED';
         await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
         continue;
@@ -448,13 +468,13 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       try {
         const testBuffer = Buffer.from(base64Data, 'base64');
         if (testBuffer.length < 1000) {
-          console.error(`Decoded image buffer too small (${testBuffer.length} bytes)`);
+          console.error(`❌ Decoded image buffer too small (${testBuffer.length} bytes)`);
           if (attempt === retries) return 'GENERATION_FAILED';
           await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
           continue;
         }
       } catch (decodeError) {
-        console.error(`Invalid base64 data generated:`, decodeError);
+        console.error(`❌ Invalid base64 data generated:`, decodeError);
         if (attempt === retries) return 'GENERATION_FAILED';
         await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
         continue;
@@ -462,10 +482,20 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       
       // Final validation and logging
       const isValidBase64 = /^[A-Za-z0-9+/]+=*$/.test(base64Data);
-      console.log(`✅ Image generation SUCCESS:`);
+      
+      if (!isValidBase64) {
+        console.error(`❌ Base64 format validation failed`);
+        if (attempt === retries) return 'GENERATION_FAILED';
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+        continue;
+      }
+      
+      console.log(`✅ IMAGE GENERATION SUCCESS:`);
       console.log(`   - Attempt: ${attempt}/${retries}`);
       console.log(`   - Base64 length: ${base64Data.length} chars`);
       console.log(`   - Valid format: ${isValidBase64}`);
+      console.log(`   - Buffer size: ${imageBuffer.length} bytes`);
+      console.log(`   - Preview: ${base64Data.substring(0, 50)}...`);
       console.log(`   - Preview: ${base64Data.substring(0, 50)}...`);
       
       if (!isValidBase64) {
