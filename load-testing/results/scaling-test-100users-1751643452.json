@@ -1,0 +1,18 @@
+{
+  "timestamp": 1751643452,
+  "test_config": {
+    "users": 100,
+    "duration": 60,
+    "url": "https://indieshots.replit.app"
+  },
+  "results": {
+    "user_count": 100,
+    "success_rate": 80.0,
+    "avg_response_time": 311.732958316803,
+    "max_response_time": 431.9915771484375,
+    "min_response_time": 259.3207359313965,
+    "errors": 100,
+    "total_requests": 500,
+    "duration": 3.0116779804229736
+  }
+}
