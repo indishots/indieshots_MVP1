@@ -117,41 +117,119 @@ export interface StoryboardFrame {
 }
 
 /**
- * Build prompt from shot data using the working Python format
+ * Detect problematic characters that might cause OpenAI API errors
  */
-function buildPrompt(shot: any): string {
-  // Match the exact format from the working Python version using correct database column names
-  let prompt = 
-    `Scene Type: ${shot.shot_type || shot.shotType || ''}, Lens: ${shot.lens || ''}, Movement: ${shot.movement || ''}\n` +
-    `Location: ${shot.location || ''} (${shot.time_of_day || shot.timeOfDay || ''}), Mood: ${shot.mood_and_ambience || shot.moodAndAmbience || ''}, Tone: ${shot.tone || ''}\n` +
-    `Lighting: ${shot.lighting || ''}, Props: ${shot.props || ''}, Notes: ${shot.notes || ''}, Sound: ${shot.sound_design || shot.soundDesign || ''}\n\n` +
-    `Describe this scene in a cinematic, stylized animated graphic novel format. ` +
-    `Use moody lighting, animated art direction, and visual storytelling tone.\n\n` +
-    `Action: ${shot.shot_description || shot.shotDescription || ''}`;
+function detectProblematicCharacters(text: string): string[] {
+  if (!text) return [];
   
-  // Add characters if they exist in the shot data (use database column name)
-  if (shot.characters && shot.characters !== 'None' && shot.characters.trim()) {
-    prompt += `\n\nCharacters: ${shot.characters}`;
+  const problematicChars = [];
+  const problematicPatterns = [
+    { pattern: /[^\w\s\-.,!?;:()"']/g, name: 'Special characters' },
+    { pattern: /["']{3,}/g, name: 'Multiple quotes' },
+    { pattern: /[.]{3,}/g, name: 'Multiple dots' },
+    { pattern: /[!]{3,}/g, name: 'Multiple exclamation marks' },
+    { pattern: /[?]{3,}/g, name: 'Multiple question marks' },
+    { pattern: /\s{3,}/g, name: 'Multiple spaces' },
+    { pattern: /[\x00-\x1F\x7F-\x9F]/g, name: 'Control characters' },
+    { pattern: /[\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F]/g, name: 'Unicode punctuation' }
+  ];
+  
+  for (const { pattern, name } of problematicPatterns) {
+    const matches = text.match(pattern);
+    if (matches) {
+      problematicChars.push(`${name}: ${matches.slice(0, 5).join(', ')}`);
+    }
   }
   
-  // Add dialogue if it exists
-  if (shot.dialogue && shot.dialogue !== 'None' && shot.dialogue.trim()) {
-    prompt += `\n\nDialogue: ${shot.dialogue}`;
-  }
-  
-  return prompt;
+  return problematicChars;
 }
 
 /**
- * Generate visual prompt using GPT-4 with character memory integration
+ * Sanitize text to remove special characters that cause OpenAI API errors
+ */
+function sanitizeText(text: string): string {
+  if (!text) return '';
+  
+  // Log problematic characters for debugging
+  const problematicChars = detectProblematicCharacters(text);
+  if (problematicChars.length > 0) {
+    console.log(`🔧 Sanitizing text - Found problematic characters: ${problematicChars.join('; ')}`);
+  }
+  
+  return text
+    // Remove control characters and non-printable characters
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, ' ')
+    // Remove problematic Unicode characters
+    .replace(/[\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F]/g, ' ')
+    // Keep only alphanumeric, spaces, and basic punctuation
+    .replace(/[^\w\s\-.,!?;:()"']/g, ' ')
+    // Clean up multiple characters
+    .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+    .replace(/["']{2,}/g, '"') // Replace multiple quotes with single quote
+    .replace(/[.]{2,}/g, '.') // Replace multiple dots with single dot
+    .replace(/[!]{2,}/g, '!') // Replace multiple exclamation marks
+    .replace(/[?]{2,}/g, '?') // Replace multiple question marks
+    .trim(); // Remove leading/trailing whitespace
+}
+
+/**
+ * Build prompt from shot data using the working Python format with sanitization
+ */
+function buildPrompt(shot: any): string {
+  // Sanitize all fields before building prompt
+  const sanitizedShot = {
+    shotType: sanitizeText(shot.shot_type || shot.shotType || ''),
+    lens: sanitizeText(shot.lens || ''),
+    movement: sanitizeText(shot.movement || ''),
+    location: sanitizeText(shot.location || ''),
+    timeOfDay: sanitizeText(shot.time_of_day || shot.timeOfDay || ''),
+    mood: sanitizeText(shot.mood_and_ambience || shot.moodAndAmbience || ''),
+    tone: sanitizeText(shot.tone || ''),
+    lighting: sanitizeText(shot.lighting || ''),
+    props: sanitizeText(shot.props || ''),
+    notes: sanitizeText(shot.notes || ''),
+    sound: sanitizeText(shot.sound_design || shot.soundDesign || ''),
+    description: sanitizeText(shot.shot_description || shot.shotDescription || ''),
+    characters: sanitizeText(shot.characters || ''),
+    dialogue: sanitizeText(shot.dialogue || '')
+  };
+  
+  // Build prompt with sanitized data
+  let prompt = 
+    `Scene Type: ${sanitizedShot.shotType}, Lens: ${sanitizedShot.lens}, Movement: ${sanitizedShot.movement}\n` +
+    `Location: ${sanitizedShot.location} (${sanitizedShot.timeOfDay}), Mood: ${sanitizedShot.mood}, Tone: ${sanitizedShot.tone}\n` +
+    `Lighting: ${sanitizedShot.lighting}, Props: ${sanitizedShot.props}, Notes: ${sanitizedShot.notes}, Sound: ${sanitizedShot.sound}\n\n` +
+    `Describe this scene in a cinematic, stylized animated graphic novel format. ` +
+    `Use moody lighting, animated art direction, and visual storytelling tone.\n\n` +
+    `Action: ${sanitizedShot.description}`;
+  
+  // Add characters if they exist
+  if (sanitizedShot.characters && sanitizedShot.characters !== 'None' && sanitizedShot.characters.trim()) {
+    prompt += `\n\nCharacters: ${sanitizedShot.characters}`;
+  }
+  
+  // Add dialogue if it exists
+  if (sanitizedShot.dialogue && sanitizedShot.dialogue !== 'None' && sanitizedShot.dialogue.trim()) {
+    prompt += `\n\nDialogue: ${sanitizedShot.dialogue}`;
+  }
+  
+  // Final sanitization of the complete prompt
+  return sanitizeText(prompt);
+}
+
+/**
+ * Generate visual prompt using GPT-4 with character memory integration and sanitization
  */
 async function generatePrompt(userMessage: string, retries: number = 2): Promise<string | null> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Generating prompt (attempt ${attempt}/${retries})`);
       
+      // Sanitize the input message first
+      const sanitizedMessage = sanitizeText(userMessage);
+      
       // First, enhance the prompt with character consistency
-      const enhancedMessage = await characterMemoryService.buildEnhancedPrompt(userMessage);
+      const enhancedMessage = await characterMemoryService.buildEnhancedPrompt(sanitizedMessage);
       
       const response = await promptClient.chat.completions.create({
         model: 'gpt-4',
@@ -165,14 +243,16 @@ async function generatePrompt(userMessage: string, retries: number = 2): Promise
       
       const prompt = response.choices[0].message.content?.trim();
       if (prompt && prompt.length > 10) {
-        console.log(`Generated character-enhanced prompt: ${prompt.substring(0, 100)}...`);
-        return prompt;
+        // Sanitize the generated prompt before returning
+        const sanitizedPrompt = sanitizeText(prompt);
+        console.log(`Generated character-enhanced prompt: ${sanitizedPrompt.substring(0, 100)}...`);
+        return sanitizedPrompt;
       } else {
         console.log(`Generated prompt too short or empty (attempt ${attempt})`);
         if (attempt === retries) {
           // Fallback to a basic prompt based on shot data
-          const fallbackPrompt = `A cinematic shot showing ${userMessage.includes('Shot Description:') ? 
-            userMessage.split('Shot Description:')[1]?.split('\n')[0]?.trim() || 'scene' : 'scene'}`;
+          const fallbackPrompt = `A cinematic shot showing ${sanitizedMessage.includes('Shot Description:') ? 
+            sanitizeText(sanitizedMessage.split('Shot Description:')[1]?.split('\n')[0]?.trim() || 'scene') : 'scene'}`;
           console.log(`Using fallback prompt: ${fallbackPrompt}`);
           return fallbackPrompt;
         }
@@ -292,8 +372,8 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
     try {
       console.log(`Generating image data (attempt ${attempt}/${retries}) with prompt: ${prompt.substring(0, 100)}...`);
       
-      // Clean the prompt to avoid content policy violations
-      const cleanedPrompt = sanitizePromptForGeneration(prompt);
+      // Clean the prompt to avoid content policy violations and special characters
+      const cleanedPrompt = sanitizeText(sanitizePromptForGeneration(prompt));
       console.log(`=== IMAGE GENERATION DEBUG ===`);
       console.log(`Original prompt: ${prompt}`);
       console.log(`Cleaned prompt: ${cleanedPrompt}`);
@@ -377,6 +457,12 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         waitTime = 5000; // Fixed 5 second wait for rate limits
       } else if (error?.status === 400 || error?.message?.includes('content policy')) {
         console.log(`Content policy issue (attempt ${attempt}/${retries}), will try with safer prompt...`);
+        console.log(`Original prompt causing issue: ${prompt.substring(0, 200)}...`);
+        // Log the characters that might be causing problems
+        const problematicChars = detectProblematicCharacters(prompt);
+        if (problematicChars.length > 0) {
+          console.log(`Potential problematic characters found: ${problematicChars.join('; ')}`);
+        }
         waitTime = 1000; // Short wait for content policy
       } else if (error?.message?.includes('timeout') || error?.name === 'AbortError') {
         console.log(`Request timeout (attempt ${attempt}/${retries}), retrying...`);
