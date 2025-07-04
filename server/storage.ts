@@ -81,8 +81,25 @@ export class DatabaseStorage implements IStorage {
     
     if (!user) return user;
     
-    // Special handling for premium demo account only
-    if (user.email === 'premium@demo.com') {
+    // Special handling for premium demo account and critical INDIE2025 accounts
+    const criticalProAccounts = [
+      'premium@demo.com',
+      'dhulipallagopichandu@gmail.com',
+      'gopichandudhulipalla@gmail.com'
+    ];
+    
+    if (user.email && criticalProAccounts.includes(user.email)) {
+      // If not already pro tier, update in database
+      if (user.tier !== 'pro') {
+        console.log(`🔧 CRITICAL ACCOUNT: Restoring pro tier for ${user.email}`);
+        await this.updateUser(user.id, {
+          tier: 'pro',
+          totalPages: -1,
+          maxShotsPerScene: -1,
+          canGenerateStoryboards: true
+        });
+      }
+      
       return {
         ...user,
         tier: 'pro',
