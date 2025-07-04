@@ -41,22 +41,22 @@ export function UpgradePrompt({ feature, currentUsage, limit, message, compact =
 
   if (compact) {
     return (
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+      <div className="bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-full">
-              <Crown className="h-4 w-4 text-amber-600" />
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-full">
+              <Crown className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+              <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200">
                 {message || `${config.title} is a Pro feature`}
               </p>
-              <p className="text-xs text-amber-700 dark:text-amber-300">
+              <p className="text-xs text-indigo-600 dark:text-indigo-400">
                 Upgrade to unlock {config.benefitText}
               </p>
             </div>
           </div>
-          <Button size="sm" onClick={() => setLocation('/upgrade')} className="bg-amber-600 hover:bg-amber-700">
+          <Button size="sm" onClick={() => setLocation('/upgrade')} className="bg-indigo-600 hover:bg-indigo-700">
             Upgrade
             <ArrowRight className="h-3 w-3 ml-1" />
           </Button>
@@ -66,30 +66,30 @@ export function UpgradePrompt({ feature, currentUsage, limit, message, compact =
   }
 
   return (
-    <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+    <Card className="border-indigo-200 bg-indigo-50 dark:bg-indigo-950/20 dark:border-indigo-800">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-amber-100 dark:bg-amber-800 rounded-full">
-              <IconComponent className="h-6 w-6 text-amber-600" />
+            <div className="p-3 bg-indigo-100 dark:bg-indigo-900/50 rounded-full">
+              <IconComponent className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <CardTitle className="text-lg text-amber-900 dark:text-amber-100">
+              <CardTitle className="text-lg text-indigo-800 dark:text-indigo-200">
                 Unlock {config.title}
               </CardTitle>
-              <CardDescription className="text-amber-700 dark:text-amber-300">
+              <CardDescription className="text-indigo-600 dark:text-indigo-400">
                 {config.description}
               </CardDescription>
             </div>
           </div>
-          <Badge className="bg-amber-600 text-white">Pro Feature</Badge>
+          <Badge variant="success" className="text-xs">Pro Feature</Badge>
         </div>
       </CardHeader>
       
       <CardContent>
         <div className="space-y-4">
           {message && (
-            <p className="text-sm text-amber-800 dark:text-amber-200 bg-amber-100/50 dark:bg-amber-900/30 p-3 rounded-md">
+            <p className="text-sm text-gray-700 dark:text-gray-300 bg-indigo-100/50 dark:bg-indigo-900/30 p-3 rounded-md border border-indigo-200/50 dark:border-indigo-700/30">
               {message}
             </p>
           )}
@@ -97,14 +97,14 @@ export function UpgradePrompt({ feature, currentUsage, limit, message, compact =
           {currentUsage !== undefined && limit !== undefined && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-amber-700 dark:text-amber-300">Current Usage</span>
-                <span className="font-medium text-amber-900 dark:text-amber-100">
+                <span className="text-indigo-600 dark:text-indigo-400">Current Usage</span>
+                <span className="font-medium text-indigo-800 dark:text-indigo-200">
                   {currentUsage}/{limit === -1 ? '∞' : limit}
                 </span>
               </div>
-              <div className="w-full bg-amber-200 dark:bg-amber-800 rounded-full h-2">
+              <div className="w-full bg-indigo-200 dark:bg-indigo-800 rounded-full h-2">
                 <div 
-                  className="bg-amber-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: limit === -1 ? '0%' : `${Math.min(100, (currentUsage / limit) * 100)}%` }}
                 />
               </div>
@@ -114,7 +114,7 @@ export function UpgradePrompt({ feature, currentUsage, limit, message, compact =
           <div className="flex flex-col sm:flex-row gap-3">
             <Button 
               onClick={() => setLocation('/upgrade')} 
-              className="bg-amber-600 hover:bg-amber-700 flex-1"
+              className="bg-indigo-600 hover:bg-indigo-700 flex-1"
             >
               <Crown className="h-4 w-4 mr-2" />
               Upgrade to Pro
@@ -122,7 +122,7 @@ export function UpgradePrompt({ feature, currentUsage, limit, message, compact =
             <Button 
               variant="outline" 
               onClick={() => setLocation('/upgrade')}
-              className="border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/30"
+              className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/30"
             >
               Compare Plans
             </Button>
