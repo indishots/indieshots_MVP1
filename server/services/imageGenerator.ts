@@ -656,41 +656,41 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
   const shotId = shot.shotNumber?.toString() || `shot_${index + 1}`;
   
   try {
-    console.log(`Processing shot ${shotId} (ID: ${shot.id})`);
+    console.log(`🎬 PROCESSING SHOT ${shotId} (ID: ${shot.id})`);
     console.log(`Shot object keys:`, Object.keys(shot));
     console.log(`Shot characters field:`, shot.characters);
     
-    const userMessage = buildPrompt(shot);
-    console.log(`Built prompt:`, userMessage.substring(0, 200) + '...');
+    // Use the clean, direct prompt from buildPrompt instead of calling generatePrompt
+    const finalPrompt = buildPrompt(shot);
+    console.log(`🎬 USING DIRECT PROMPT: "${finalPrompt}"`);
     
-    const prompt = await generatePrompt(userMessage);
-    if (!prompt) {
-      console.error(`Prompt generation failed for shot ${shotId}`);
+    if (!finalPrompt || finalPrompt.length === 0) {
+      console.error(`❌ Direct prompt generation failed for shot ${shotId}`);
       return { shotId, status: 'prompt generation failed' };
     }
 
-    // Generate image and get base64 data instead of saving to file
-    const imageData = await generateImageData(prompt);
+    // Generate image and get base64 data directly with clean prompt
+    const imageData = await generateImageData(finalPrompt);
     if (!imageData || imageData === 'GENERATION_FAILED' || imageData === 'CONTENT_POLICY_VIOLATION') {
-      console.error(`Image generation failed for shot ${shotId}: ${imageData || 'unknown error'}`);
+      console.error(`❌ Image generation failed for shot ${shotId}: ${imageData || 'unknown error'}`);
       
       // Store the failure status in the database so frontend knows this shot failed
       const { storage } = await import('../storage');
       const failureMarker = imageData === 'CONTENT_POLICY_VIOLATION' ? 'CONTENT_POLICY_ERROR' : 'GENERATION_ERROR';
-      await storage.updateShotImage(shot.id, failureMarker, prompt);
+      await storage.updateShotImage(shot.id, failureMarker, finalPrompt);
       
       return { shotId, status: `image generation failed: ${imageData || 'unknown error'}` };
     }
 
     // Store image data in the shot record
     const { storage } = await import('../storage');
-    await storage.updateShotImage(shot.id, imageData, prompt);
+    await storage.updateShotImage(shot.id, imageData, finalPrompt);
     
-    console.log(`Successfully generated and stored image for shot ${shotId}`);
+    console.log(`✅ Successfully generated and stored image for shot ${shotId}`);
     
     const frame: StoryboardFrame = {
       shotNumber: shot.shotNumber || index + 1,
-      prompt,
+      prompt: finalPrompt,
       description: shot.shotDescription || '',
       shotType: shot.shotType || '',
       cameraAngle: shot.lens || '',
@@ -700,7 +700,7 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
 
     return { shotId, status: 'stored in database', frame };
   } catch (error) {
-    console.error(`Error processing shot ${shotId}:`, error);
+    console.error(`❌ Error processing shot ${shotId}:`, error);
     return { shotId, status: `error: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
 }
@@ -740,6 +740,11 @@ function recordSuccess() {
     circuitBreakerOpenTime = 0;
   }
 }
+
+/**
+ * Export the generateImageData function for regeneration
+ */
+export { generateImageData };
 
 /**
  * Generate storyboard frames for multiple shots with retry mechanism and circuit breakerm
