@@ -4,6 +4,9 @@
 echo "🚀 Starting IndieShots Load Testing Suite"
 echo "=========================================="
 
+# Change to load-testing directory
+cd "$(dirname "$0")"
+
 # Install Artillery if not present
 if ! command -v artillery &> /dev/null; then
     echo "📦 Installing Artillery..."
@@ -25,16 +28,31 @@ echo "   • Static assets (15%)"
 echo "   • Upload simulation (10%)"
 echo ""
 
+# Check if config file exists
+if [ ! -f "artillery-config.yml" ]; then
+    echo "❌ Error: artillery-config.yml not found!"
+    echo "📂 Current directory: $(pwd)"
+    echo "📋 Files available: $(ls -la)"
+    exit 1
+fi
+
 # Run the load test
 echo "▶️  Starting load test..."
 artillery run artillery-config.yml \
   --output "results/load-test-${TIMESTAMP}.json" \
   --config config.target=https://indieshots.replit.app
 
-# Generate HTML report
-echo "📈 Generating HTML report..."
-artillery report "results/load-test-${TIMESTAMP}.json" \
-  --output "results/load-test-report-${TIMESTAMP}.html"
+# Check if results file was created
+if [ -f "results/load-test-${TIMESTAMP}.json" ]; then
+    # Generate HTML report
+    echo "📈 Generating HTML report..."
+    artillery report "results/load-test-${TIMESTAMP}.json" \
+      --output "results/load-test-report-${TIMESTAMP}.html"
+else
+    echo "❌ No results file generated - test may have failed"
+    echo "📂 Checking results directory:"
+    ls -la results/ 2>/dev/null || echo "No results directory found"
+fi
 
 echo ""
 echo "✅ Load test completed!"
