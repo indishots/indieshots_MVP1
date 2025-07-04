@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users, Video, Move, Palette, MapPin, Sun, Box, Lightbulb, MessageSquare, Heart, Volume2, FileText, Download, FileSpreadsheet, Crown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
-import { ClapperboardLoading, BufferingAnimation } from "@/components/ui/film-animations";
+import { ClassyShotAnimation } from "@/components/ui/classy-shot-animation";
+import { BufferingAnimation } from "@/components/ui/film-animations";
 import { useFilmAnimations } from "@/hooks/useFilmAnimations";
 import { useTierValidation } from "@/hooks/useTierValidation";
 
@@ -138,7 +139,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   if (isLoadingJob) {
     return (
       <div className="max-w-6xl mx-auto p-6">
-        <ClapperboardLoading message="Loading scene data..." />
+        <ClassyShotAnimation message="Loading scene data..." />
       </div>
     );
   }
@@ -501,7 +502,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
       {/* Cinematic Loading Overlay for Shot Generation */}
       {isGenerating && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-          <ClapperboardLoading message="Creating cinematic shots..." />
+          <ClassyShotAnimation message="Creating cinematic shots..." />
         </div>
       )}
       

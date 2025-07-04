@@ -14,7 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
 import { StoryboardUpgradeModal } from "@/components/ui/storyboard-upgrade-modal";
-import StoryboardLoadingAnimation from "@/components/ui/StoryboardLoadingAnimation";
+import { LuxuryStoryboardAnimation } from "@/components/ui/classy-shot-animation";
 
 interface StoryboardsProps {
   jobId: string;
@@ -331,7 +331,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
               Creating visual storyboard frames for this scene...
             </p>
           </div>
-          <StoryboardLoadingAnimation />
+          <LuxuryStoryboardAnimation message="Creating visual storyboard frames..." />
         </div>
       ) : storyboardFrames.length === 0 ? (
         <Card className="mb-6">
