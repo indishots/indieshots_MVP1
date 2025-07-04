@@ -168,6 +168,15 @@ class AuthManager {
           canGenerateStoryboards: isPremiumDemo ? true : userData.canGenerateStoryboards
         };
         
+        console.log('🎯 USER AUTHENTICATED:', {
+          email: this.user.email,
+          tier: this.user.tier,
+          totalPages: this.user.totalPages,
+          maxShotsPerScene: this.user.maxShotsPerScene,
+          canGenerateStoryboards: this.user.canGenerateStoryboards,
+          isPremiumDemo: isPremiumDemo
+        });
+        
         if (isPremiumDemo) {
           console.log('🔒 FRONTEND: Applied pro tier override for premium@demo.com');
         }

@@ -92,7 +92,7 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
             // Get Firebase ID token and sync with backend
             const idToken = await userCredential.user.getIdToken();
             
-            // Sync user data with backend (this will create PostgreSQL record)
+            // Sync user data with backend (this will create PostgreSQL record with correct tier from Firebase custom claims)
             const syncResponse = await fetch('/api/auth/firebase-sync', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -105,24 +105,41 @@ export default function VerifyEmail({ email: propEmail }: VerifyEmailProps) {
                   photoURL: userCredential.user.photoURL,
                   emailVerified: userCredential.user.emailVerified
                 },
-                idToken,
                 provider: 'firebase'
               })
             });
             
             if (syncResponse.ok) {
-              console.log('✓ Backend sync successful');
+              const syncData = await syncResponse.json();
+              console.log('✓ Backend sync successful - User tier:', syncData.tier);
               
-              // Invalidate React Query cache to force fresh data
-              const { queryClient } = await import('@/lib/queryClient');
-              await queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-              await queryClient.invalidateQueries({ queryKey: ['/api/upgrade/status'] });
+              // Clear any stored promo code data
+              sessionStorage.removeItem('pendingPromoCode');
               
-              navigate('/dashboard');
+              // Show success message with tier information
+              if (syncData.tier === 'pro') {
+                toast({
+                  title: "Pro Account Activated!",
+                  description: "Your promo code has been applied. You now have unlimited access to all features.",
+                });
+              } else {
+                toast({
+                  title: "Account Created!",
+                  description: "Welcome to IndieShots. You can upgrade to Pro anytime for unlimited features.",
+                });
+              }
+              
+              // Force reload the page to ensure all components pick up the new authentication state
+              setTimeout(() => {
+                window.location.href = '/dashboard';
+              }, 1000);
             } else {
               console.error('Backend sync failed');
+              const errorText = await syncResponse.text();
+              console.error('Sync error details:', errorText);
+              
               // Still navigate to dashboard as Firebase auth succeeded
-              navigate('/dashboard');
+              window.location.href = '/dashboard';
             }
           }
         } catch (error) {

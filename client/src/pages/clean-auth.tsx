@@ -127,6 +127,12 @@ export default function CleanAuthPage() {
 
       // Check if email verification is required
       if (data.requiresVerification) {
+        // Store promo code for verification page
+        if (couponCode && couponCode.trim()) {
+          sessionStorage.setItem('pendingPromoCode', couponCode);
+          console.log('Stored promo code for verification:', couponCode);
+        }
+        
         // Navigate to verification page with email and hybrid mode
         setLocation(`/verify-email?email=${encodeURIComponent(email)}&mode=hybrid`);
         return;
