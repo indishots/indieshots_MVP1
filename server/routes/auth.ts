@@ -6,7 +6,7 @@ import * as authController from '../controllers/authController';
 import * as otpController from '../controllers/otpController';
 import * as hybridAuthController from '../controllers/firebaseHybridAuthController';
 import { firebaseLogin } from '../controllers/firebaseAuthController';
-import { firebaseSync } from '../controllers/firebaseSyncController';
+import { syncFirebaseUser } from '../controllers/firebaseSyncController.simple';
 import { tierValidationMiddleware } from '../middleware/tierValidation';
 
 const router = Router();
@@ -395,7 +395,7 @@ router.post('/test-comprehensive-firebase-delete', async (req: Request, res: Res
 
 // Firebase authentication - no CSRF needed (uses Firebase idToken)
 router.post('/firebase-login', firebaseLogin);
-router.post('/firebase-sync', firebaseSync);
+router.post('/firebase-sync', syncFirebaseUser);
 
 // Get currently authenticated user (Firebase-only) with fresh tier data
 router.get('/user', authMiddleware, async (req, res) => {
