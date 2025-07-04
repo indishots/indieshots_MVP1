@@ -360,17 +360,25 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       index: idx,
       hasImage: frame.hasImage,
       hasImageData: !!frame.imageData,
-      imageDataLength: frame.imageData?.length || 0
+      imageDataLength: frame.imageData?.length || 0,
+      imagePath: frame.imagePath ? 'has imagePath' : 'no imagePath'
     }))
   });
   
-  const storyboardFrames = allStoryboardFrames.filter((frame: any) => frame.hasImage && frame.imageData);
+  // Fix: Check for imageData OR imagePath (API returns imagePath with data URL)
+  const storyboardFrames = allStoryboardFrames.filter((frame: any) => {
+    const hasImageData = !!frame.imageData;
+    const hasImagePath = !!frame.imagePath;
+    return frame.hasImage && (hasImageData || hasImagePath);
+  });
+  
   const hasGeneratedImages = storyboardFrames.length > 0;
   
   console.log('🎯 Filtered results:', {
     filteredCount: storyboardFrames.length,
     hasGeneratedImages,
-    shouldShowGenerate: !hasGeneratedImages
+    shouldShowGenerate: !hasGeneratedImages,
+    filteringLogic: 'Checking both imageData and imagePath'
   });
   
   return (
@@ -527,9 +535,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                              setShowCarousel(true);
                            }
                          }}>
-                      {frame.hasImage && frame.imageData ? (
+                      {frame.hasImage && (frame.imageData || frame.imagePath) ? (
                         <img 
-                          src={`data:image/png;base64,${updatedMainImages[idx] || frame.imageData}`}
+                          src={updatedMainImages[idx] || 
+                               (frame.imageData ? `data:image/png;base64,${frame.imageData}` : frame.imagePath)}
                           alt={`Storyboard frame ${idx + 1}`}
                           className="w-full h-full object-cover rounded-lg"
                           key={`img-${idx}-${imageRefreshTimestamps[idx] || initialTimestamp}`}
@@ -540,12 +549,14 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               newSet.add(idx);
                               return newSet;
                             });
-                            console.log(`✅ Image ${idx} loaded successfully - Length: ${frame.imageData?.length}`);
+                            console.log(`✅ Image ${idx} loaded successfully - HasImageData: ${!!frame.imageData}, HasImagePath: ${!!frame.imagePath}`);
                           }}
                           onError={(e) => {
                             console.error(`❌ Failed to load image ${idx}:`, {
                               hasImageData: !!frame.imageData,
+                              hasImagePath: !!frame.imagePath,
                               dataLength: frame.imageData?.length || 0,
+                              imagePath: frame.imagePath,
                               isValidBase64: frame.imageData ? /^[A-Za-z0-9+/]+=*$/.test(frame.imageData) : false,
                               dataPreview: frame.imageData?.substring(0, 50) || 'no data',
                               error: e.type
@@ -690,9 +701,12 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div>
                           <span>Updating image...</span>
                         </div>
-                      ) : (storyboardFrames[selectedImages[currentImageIndex]]?.imageData || carouselImages[selectedImages[currentImageIndex]]) ? (
+                      ) : (storyboardFrames[selectedImages[currentImageIndex]]?.imageData || storyboardFrames[selectedImages[currentImageIndex]]?.imagePath || carouselImages[selectedImages[currentImageIndex]]) ? (
                         <img 
-                          src={`data:image/png;base64,${carouselImages[selectedImages[currentImageIndex]] || storyboardFrames[selectedImages[currentImageIndex]].imageData}`}
+                          src={carouselImages[selectedImages[currentImageIndex]] || 
+                               (storyboardFrames[selectedImages[currentImageIndex]]?.imageData ? 
+                                `data:image/png;base64,${storyboardFrames[selectedImages[currentImageIndex]].imageData}` : 
+                                storyboardFrames[selectedImages[currentImageIndex]]?.imagePath)}
                           alt="Storyboard"
                           className="max-w-full max-h-full object-contain rounded-lg"
                           key={`carousel-${selectedImages[currentImageIndex]}-${carouselImageVersions[selectedImages[currentImageIndex]] || initialTimestamp}`}
