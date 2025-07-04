@@ -86,21 +86,28 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {userTier === 'pro' ? (
-              <div className="text-center py-4 px-3 bg-gradient-to-br from-indigo-50 to-amber-50 dark:from-indigo-950/20 dark:to-amber-950/20 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30">
-                <div className="relative mb-3">
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                  <Crown className="h-6 w-6 text-amber-500 mx-auto drop-shadow-sm" />
-                </div>
-                <p className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-amber-600 dark:from-indigo-400 dark:to-amber-400 bg-clip-text text-transparent mb-1">
-                  Unlimited Pages
-                </p>
-                <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium mb-3">
-                  Enjoy unlimited script processing
-                </p>
-                <div className="flex justify-center space-x-1">
-                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              <div className="relative text-center py-4 px-3 bg-gradient-to-br from-indigo-50 via-amber-50 to-indigo-50 dark:from-indigo-950/20 dark:via-amber-950/20 dark:to-indigo-950/20 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30 overflow-hidden">
+                {/* Golden shine overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-300/20 to-transparent animate-pulse opacity-70"></div>
+                <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-amber-200/10 via-transparent to-indigo-200/10 animate-pulse"></div>
+                
+                <div className="relative z-10">
+                  <div className="relative mb-3">
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse shadow-amber-400/50 shadow-lg"></div>
+                    <div className="absolute -top-2 -right-2 w-4 h-4 bg-amber-300/30 rounded-full animate-ping"></div>
+                    <Crown className="h-6 w-6 text-amber-500 mx-auto drop-shadow-lg filter drop-shadow-amber-500/30" />
+                  </div>
+                  <p className="text-lg font-bold bg-gradient-to-r from-indigo-600 via-amber-600 to-indigo-600 dark:from-indigo-400 dark:via-amber-400 dark:to-indigo-400 bg-clip-text text-transparent mb-1 animate-pulse">
+                    Unlimited Pages
+                  </p>
+                  <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium mb-3">
+                    Enjoy unlimited script processing
+                  </p>
+                  <div className="flex justify-center space-x-1">
+                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce shadow-indigo-400/50 shadow-sm"></div>
+                    <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce shadow-amber-400/50 shadow-sm" style={{animationDelay: '0.1s'}}></div>
+                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce shadow-indigo-400/50 shadow-sm" style={{animationDelay: '0.2s'}}></div>
+                  </div>
                 </div>
               </div>
             ) : (
