@@ -10,8 +10,7 @@ import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users, Video, Move, Palette
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
 
-import { BufferingAnimation } from "@/components/ui/film-animations";
-import { useFilmAnimations } from "@/hooks/useFilmAnimations";
+
 import { useTierValidation } from "@/hooks/useTierValidation";
 
 interface ShotsProps {
