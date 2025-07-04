@@ -108,7 +108,7 @@ export default function Review({ id }: ReviewProps) {
               </span>
               <Badge 
                 variant={(parseJob as any)?.status === 'completed' ? 'success' : 'secondary'}
-                className={(parseJob as any)?.status === 'completed' ? 'animate-pulse shadow-lg shadow-amber-500/30' : ''}
+                className={(parseJob as any)?.status === 'completed' ? 'shadow-sm' : ''}
               >
                 {(parseJob as any)?.status === 'completed' ? 'Parsed ✨' : (parseJob as any)?.status || 'In Progress'}
               </Badge>
