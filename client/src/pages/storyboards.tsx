@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Image, Download, RefreshCw, ChevronLeft, ChevronRight, Edit3, Clock } from "lucide-react";
+import { ArrowLeft, Image, Download, RefreshCw, ChevronLeft, ChevronRight, Edit3 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
@@ -44,28 +44,6 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [progressiveImages, setProgressiveImages] = useState<{[key: number]: string}>({});
   const [generationProgress, setGenerationProgress] = useState<{total: number, completed: number}>({total: 0, completed: 0});
-  const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState<number>(0);
-  const [generationStartTime, setGenerationStartTime] = useState<number>(0);
-
-  // Helper function to format time remaining
-  const formatTimeRemaining = (seconds: number): string => {
-    if (seconds <= 0) return "Almost done...";
-    if (seconds < 60) return `${seconds}s remaining`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s remaining`;
-  };
-
-  // Timer countdown effect - updates every second during generation
-  useEffect(() => {
-    if (isGenerating && estimatedTimeRemaining > 0) {
-      const timer = setInterval(() => {
-        setEstimatedTimeRemaining(prev => Math.max(0, prev - 1));
-      }, 1000);
-      
-      return () => clearInterval(timer);
-    }
-  }, [isGenerating, estimatedTimeRemaining > 0]);
 
   
   // Helper functions for image selection and carousel
@@ -244,27 +222,17 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         completed: completedCount
       });
       
-      // Calculate estimated time remaining
-      if (isGenerating && generationStartTime > 0 && completedCount > 0) {
-        const timeElapsed = Date.now() - generationStartTime;
-        const averageTimePerImage = timeElapsed / completedCount;
-        const remainingImages = storyboardData.storyboards.length - completedCount;
-        const estimatedMs = remainingImages * averageTimePerImage;
-        setEstimatedTimeRemaining(Math.max(0, Math.ceil(estimatedMs / 1000)));
-      }
-      
       // If generation is complete, stop loading state
       if (completedCount === storyboardData.storyboards.length && isGenerating) {
         setIsGenerating(false);
         setIsLoadingImages(false);
-        setEstimatedTimeRemaining(0);
         toast({
           title: "Storyboard generation complete",
           description: `All ${completedCount} storyboard images generated successfully`,
         });
       }
     }
-  }, [storyboards, isGenerating, generationStartTime, toast]);
+  }, [storyboards, isGenerating, toast]);
   
   // Generate storyboards mutation
   const generateStoryboardsMutation = useMutation({
@@ -279,12 +247,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       setIsGenerating(true);
       setHasStartedGeneration(true);
       
-      // Initialize progress tracking and timer
+      // Initialize progress tracking
       const totalShots = (shotsData as any)?.shots?.length || 0;
       setGenerationProgress({total: totalShots, completed: 0});
       setProgressiveImages({});
-      setGenerationStartTime(Date.now());
-      setEstimatedTimeRemaining(totalShots * 30); // Initial estimate: 30 seconds per image
       
       const response = await fetch(`/api/storyboards/generate/${jobId}/${sceneIndex}`, {
         method: 'POST',
@@ -382,24 +348,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         <div className="mb-6">
           <div className="mb-4">
             <h2 className="text-2xl font-semibold mb-1">Generating Storyboards</h2>
-            <div className="flex flex-col gap-2 text-muted-foreground">
-              <p>Progress: {generationProgress.completed} of {generationProgress.total} images generated</p>
-              
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${(generationProgress.completed / generationProgress.total) * 100}%` }}
-                />
-              </div>
-              
-              <p className="text-sm">
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {formatTimeRemaining(estimatedTimeRemaining)}
-                </span>
-              </p>
-            </div>
+            <p className="text-muted-foreground">
+              Progress: {generationProgress.completed} of {generationProgress.total} images generated
+            </p>
           </div>
           
           {/* Progressive Grid */}
