@@ -146,8 +146,8 @@ export default function Dashboard() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="pt-0">
-            <Button variant="outline" size="sm" className="w-full" asChild>
+          <CardFooter className="pt-0 flex justify-center">
+            <Button variant="outline" size="sm" asChild>
               <Link href="/upload">
                 Upload New Script
               </Link>
