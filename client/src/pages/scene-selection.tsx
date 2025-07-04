@@ -56,7 +56,11 @@ export default function SceneSelection({ id }: SceneSelectionProps) {
   };
   
   if (isLoadingJob || isLoadingScript) {
-    return <CinematicShotAnimation message="Loading scenes..." />;
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <CinematicShotAnimation message="Loading scenes..." />
+      </div>
+    );
   }
   
 

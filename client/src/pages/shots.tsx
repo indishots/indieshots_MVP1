@@ -495,9 +495,6 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Cinematic Loading Overlay for Shot Generation */}
-      {isGenerating && <CinematicShotAnimation message="Creating cinematic shots..." />}
-      
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto p-6">
@@ -536,33 +533,30 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
           
           {/* Generate Shots Section */}
           {shots.length === 0 ? (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Generate Shots</CardTitle>
-                <CardDescription>
-                  Create a detailed shot breakdown for this scene using AI analysis
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button 
-                  onClick={() => generateShotsMutation.mutate()}
-                  disabled={isGenerating}
-                  className="w-full md:w-auto"
-                >
-                  {isGenerating ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Generating Shots...
-                    </>
-                  ) : (
-                    <>
-                      <Camera className="mr-2 h-4 w-4" />
-                      Generate Shots
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+            isGenerating ? (
+              <div className="mb-6">
+                <CinematicShotAnimation message="Creating cinematic shots..." />
+              </div>
+            ) : (
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Generate Shots</CardTitle>
+                  <CardDescription>
+                    Create a detailed shot breakdown for this scene using AI analysis
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => generateShotsMutation.mutate()}
+                    disabled={isGenerating}
+                    className="w-full md:w-auto"
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Generate Shots
+                  </Button>
+                </CardContent>
+              </Card>
+            )
           ) : (
             <>
               {/* Shots Table */}
