@@ -430,7 +430,16 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
 
     // Get ALL shots from database and show their current status
     const shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
-    const storyboards = shots.map(shot => ({
+    
+    console.log(`📷 STORYBOARD FETCH: Found ${shots.length} shots for jobId:${jobId} sceneIndex:${sceneIndex}`);
+    
+    const storyboards = shots.map((shot, index) => {
+      const hasImage = !!shot.imageData;
+      const imageDataLength = shot.imageData ? shot.imageData.length : 0;
+      
+      console.log(`   Shot ${index + 1}: hasImage=${hasImage}, dataLength=${imageDataLength}, shotNumber=${shot.shotNumberInScene}`);
+      
+      return {
         shotNumber: shot.shotNumberInScene,
         description: shot.shotDescription,
         shotType: shot.shotType,
@@ -439,8 +448,12 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
         imagePath: shot.imageData ? `data:image/png;base64,${shot.imageData}` : null,
         imageData: shot.imageData, // Include raw base64 data for immediate display
         prompt: shot.imagePromptText,
-        hasImage: !!shot.imageData
-      }));
+        hasImage: hasImage
+      };
+    });
+    
+    const withImages = storyboards.filter(s => s.hasImage).length;
+    console.log(`📷 STORYBOARD RESPONSE: ${withImages}/${storyboards.length} shots have images`);
 
     // Prevent caching to ensure fresh data after regeneration
     res.set({

@@ -147,13 +147,14 @@ function detectProblematicCharacters(text: string): string[] {
 /**
  * Sanitize text to remove special characters that cause OpenAI API errors
  */
-function sanitizeText(text: string): string {
+export function sanitizeText(text: string): string {
   if (!text) return '';
   
   // Log problematic characters for debugging
   const problematicChars = detectProblematicCharacters(text);
   if (problematicChars.length > 0) {
-    console.log(`🔧 Sanitizing text - Found problematic characters: ${problematicChars.join('; ')}`);
+    console.log(`🔧 SANITIZATION: Found problematic characters in text: ${problematicChars.join('; ')}`);
+    console.log(`🔧 SANITIZATION: Original text (first 200 chars): ${text.substring(0, 200)}`);
   }
   
   return text
@@ -213,8 +214,23 @@ function buildPrompt(shot: any): string {
     prompt += `\n\nDialogue: ${sanitizedShot.dialogue}`;
   }
   
-  // Final sanitization of the complete prompt
-  return sanitizeText(prompt);
+  // Log the prompt construction process for debugging
+  console.log(`🎬 PROMPT CONSTRUCTION:`);
+  console.log(`   Shot Type: "${sanitizedShot.shotType}"`);
+  console.log(`   Description: "${sanitizedShot.description}"`);
+  console.log(`   Characters: "${sanitizedShot.characters}"`);
+  console.log(`   Dialogue: "${sanitizedShot.dialogue}"`);
+  
+  // Final sanitization of the complete prompt with logging
+  const finalPrompt = sanitizeText(prompt);
+  
+  console.log(`🎬 PROMPT BUILD COMPLETE:`);
+  console.log(`   - Original length: ${prompt.length} chars`);
+  console.log(`   - Sanitized length: ${finalPrompt.length} chars`);
+  console.log(`   - Original: ${prompt.substring(0, 100)}...`);
+  console.log(`   - Sanitized: ${finalPrompt.substring(0, 100)}...`);
+  
+  return finalPrompt;
 }
 
 /**
@@ -444,7 +460,21 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         continue;
       }
       
-      console.log(`Successfully generated valid image data (attempt ${attempt}), base64 length:`, base64Data.length);
+      // Final validation and logging
+      const isValidBase64 = /^[A-Za-z0-9+/]+=*$/.test(base64Data);
+      console.log(`✅ Image generation SUCCESS:`);
+      console.log(`   - Attempt: ${attempt}/${retries}`);
+      console.log(`   - Base64 length: ${base64Data.length} chars`);
+      console.log(`   - Valid format: ${isValidBase64}`);
+      console.log(`   - Preview: ${base64Data.substring(0, 50)}...`);
+      
+      if (!isValidBase64) {
+        console.error(`❌ Invalid base64 format! Contains invalid characters.`);
+        if (attempt === retries) return 'GENERATION_FAILED';
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+        continue;
+      }
+      
       return base64Data;
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);

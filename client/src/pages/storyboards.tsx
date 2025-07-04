@@ -518,15 +518,27 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               newSet.add(idx);
                               return newSet;
                             });
-                            console.log(`Image ${idx} loaded successfully with data length:`, frame.imageData?.length, 'Generated at:', frame.imageGeneratedAt);
+                            console.log(`✅ Image ${idx} loaded successfully - Length: ${frame.imageData?.length}`);
                           }}
-                          onError={() => {
-                            console.error(`Failed to load image ${idx}`, {
+                          onError={(e) => {
+                            console.error(`❌ Failed to load image ${idx}:`, {
                               hasImageData: !!frame.imageData,
                               dataLength: frame.imageData?.length || 0,
+                              isValidBase64: frame.imageData ? /^[A-Za-z0-9+/]+=*$/.test(frame.imageData) : false,
                               dataPreview: frame.imageData?.substring(0, 50) || 'no data',
-                              generatedAt: frame.imageGeneratedAt
+                              error: e.type
                             });
+                            
+                            // Try to fix corrupted base64 data
+                            if (frame.imageData && frame.imageData.length > 100) {
+                              console.log(`🔧 Attempting to fix image ${idx} base64 data...`);
+                              // Remove any invalid characters and try again
+                              const cleanedData = frame.imageData.replace(/[^A-Za-z0-9+/=]/g, '');
+                              if (cleanedData !== frame.imageData && e.target instanceof HTMLImageElement) {
+                                console.log(`🔧 Cleaned image data for ${idx}, retrying...`);
+                                e.target.src = `data:image/png;base64,${cleanedData}`;
+                              }
+                            }
                           }}
                         />
                       ) : frame.imagePath === 'GENERATION_ERROR' ? (
