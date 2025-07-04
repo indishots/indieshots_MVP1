@@ -106,7 +106,7 @@ export default function Dashboard() {
               </>
             )}
           </CardContent>
-          <CardFooter>
+          <CardFooter className="pt-0 flex justify-center">
             {userTier === 'free' && (
               <Button variant="outline" size="sm" asChild>
                 <Link href="/upgrade">
