@@ -125,7 +125,7 @@ export default function Dashboard() {
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 text-center">
             <CardTitle className="text-lg font-semibold">Scripts Uploaded</CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
               Total scripts in your account
