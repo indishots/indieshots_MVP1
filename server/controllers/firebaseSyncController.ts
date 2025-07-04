@@ -177,11 +177,12 @@ export async function firebaseSync(req: Request, res: Response) {
       
       // UNIVERSAL INDIE2025 VALIDATION: Ensure any user with INDIE2025 promo code has pro tier
       try {
-        const promoUsageCheck = await storage.db?.execute(`
+        const { db } = await import('../db.js');
+        const promoUsageCheck = await db.execute(`
           SELECT pc.code FROM promo_code_usage pcu 
           JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
-          WHERE pcu.user_email = ? AND pc.code = 'INDIE2025'
-        `, [user.email.toLowerCase()]);
+          WHERE pcu.user_email = $1 AND pc.code = 'INDIE2025'
+        `, [user.email?.toLowerCase() || '']);
         
         const hasINDIE2025 = promoUsageCheck && promoUsageCheck.length > 0;
         

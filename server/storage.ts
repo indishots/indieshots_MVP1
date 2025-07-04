@@ -77,8 +77,16 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
     
-    // Special handling for premium demo account - always force pro tier
-    if (user && user.email === 'premium@demo.com') {
+    if (!user) return user;
+    
+    // Special handling for premium demo account and INDIE2025 protected accounts - always force pro tier
+    const protectedProAccounts = [
+      'premium@demo.com',
+      'gopichandudhulipalla@gmail.com',
+      'dhulipallagopichandu@gmail.com'
+    ];
+    
+    if (protectedProAccounts.includes(user.email)) {
       return {
         ...user,
         tier: 'pro',
@@ -86,6 +94,42 @@ export class DatabaseStorage implements IStorage {
         maxShotsPerScene: -1,
         canGenerateStoryboards: true
       };
+    }
+    
+    // INDIE2025 UNIVERSAL VALIDATION: Check if user has INDIE2025 promo code
+    try {
+      const promoUsageCheck = await db.execute(`
+        SELECT pc.code FROM promo_code_usage pcu 
+        JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
+        WHERE pcu.user_email = '${user.email?.toLowerCase()}' AND pc.code = 'INDIE2025'
+      `);
+      
+      const hasINDIE2025 = promoUsageCheck && Array.isArray(promoUsageCheck) && promoUsageCheck.length > 0;
+      
+      if (hasINDIE2025 && user.tier !== 'pro') {
+        console.log(`🔧 INDIE2025 UNIVERSAL FIX: Upgrading ${user.email} from ${user.tier} to pro tier`);
+        
+        // Update user in database immediately
+        await this.updateUser(user.id, {
+          tier: 'pro',
+          totalPages: -1,
+          maxShotsPerScene: -1,
+          canGenerateStoryboards: true
+        });
+        
+        // Return corrected user object
+        return {
+          ...user,
+          tier: 'pro',
+          totalPages: -1,
+          maxShotsPerScene: -1,
+          canGenerateStoryboards: true
+        };
+      } else if (hasINDIE2025 && user.tier === 'pro') {
+        console.log(`✓ INDIE2025 UNIVERSAL: ${user.email} already has correct pro tier`);
+      }
+    } catch (error) {
+      console.log('INDIE2025 universal check skipped (non-critical):', error);
     }
     
     return user;
