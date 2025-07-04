@@ -103,11 +103,7 @@ export default function Dashboard() {
                   <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium mb-3">
                     Enjoy unlimited script processing
                   </p>
-                  <div className="flex justify-center space-x-1">
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce shadow-indigo-400/50 shadow-sm"></div>
-                    <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce shadow-amber-400/50 shadow-sm" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce shadow-indigo-400/50 shadow-sm" style={{animationDelay: '0.2s'}}></div>
-                  </div>
+
                 </div>
               </div>
             ) : (

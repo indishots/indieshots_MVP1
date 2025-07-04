@@ -155,11 +155,7 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
                 <p className="text-xs text-indigo-700 dark:text-indigo-300 mt-1 font-medium">
                   Enjoy unlimited script processing
                 </p>
-                <div className="flex justify-center mt-2 space-x-1">
-                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                </div>
+
               </div>
             )}
           </div>
