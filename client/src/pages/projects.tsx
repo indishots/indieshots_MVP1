@@ -265,8 +265,8 @@ export default function Projects() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">Status:</span>
                       {jobStatus === 'completed' ? (
-                        <Badge variant="default" className="bg-green-100 text-green-800">
-                          Parsed
+                        <Badge variant="success">
+                          Parsed ✨
                         </Badge>
                       ) : jobStatus === 'processing' || jobStatus === 'pending' ? (
                         <Badge variant="secondary">
