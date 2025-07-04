@@ -92,18 +92,28 @@ export default function Dashboard() {
                 </p>
               </div>
             ) : (
-              <>
-                <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
-                  <div 
-                    className="bg-primary h-full rounded-full" 
-                    style={{ width: `${usagePercentage}%` }}
-                  ></div>
+              <div className="text-center py-2">
+                <div className="mb-4">
+                  <div className="text-2xl font-bold text-foreground mb-1">
+                    {pagesUsed}/{totalPages}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    pages used
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>{pagesUsed}/{totalPages} pages used</span>
-                  <span>{usagePercentage}%</span>
+                
+                <div className="mb-3">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
+                    <div 
+                      className="bg-primary h-full rounded-full transition-all duration-300" 
+                      style={{ width: `${usagePercentage}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-sm text-muted-foreground font-medium">
+                    {usagePercentage}% used
+                  </div>
                 </div>
-              </>
+              </div>
             )}
           </CardContent>
           <CardFooter className="pt-0 flex justify-center">
