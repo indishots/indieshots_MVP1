@@ -212,7 +212,7 @@ export default function Upgrade() {
             className={`relative ${plan.popular ? 'border-primary ring-2 ring-primary/20' : ''} ${plan.current ? 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800' : ''}`}
           >
             {plan.popular && (
-              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-700">
+              <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-white text-amber-600 dark:bg-gray-800 dark:text-amber-400 border border-amber-300 dark:border-amber-600">
                 Most Popular
               </Badge>
             )}
