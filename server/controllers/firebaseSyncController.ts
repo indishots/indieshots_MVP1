@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { generateToken } from '../auth/jwt';
+import { ensurePremiumDemoProTier, applyPremiumDemoOverrides } from '../utils/premiumDemo';
 
 /**
  * Sync Firebase user with local database
@@ -143,8 +144,9 @@ export async function firebaseSync(req: Request, res: Response) {
       }
     }
     
-    // Generate JWT token for session
-    const token = generateToken(user);
+    // Generate JWT token for session with premium demo overrides
+    const userForToken = applyPremiumDemoOverrides(user);
+    const token = generateToken(userForToken);
     
     // Set HTTP-only cookie
     const cookieOptions = {
@@ -176,8 +178,11 @@ export async function firebaseSync(req: Request, res: Response) {
     // Return user data (excluding sensitive fields)
     const { password, ...userData } = user;
     
+    // Apply premium demo overrides to response
+    const finalUserData = applyPremiumDemoOverrides(userData);
+    
     const responseData = { 
-      ...userData, 
+      ...finalUserData, 
       message: 'User synced successfully',
       redirectTo: '/dashboard',
       authenticated: true

@@ -76,6 +76,18 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase()));
+    
+    // Special handling for premium demo account - always force pro tier
+    if (user && user.email === 'premium@demo.com') {
+      return {
+        ...user,
+        tier: 'pro',
+        totalPages: -1,
+        maxShotsPerScene: -1,
+        canGenerateStoryboards: true
+      };
+    }
+    
     return user;
   }
 
@@ -89,6 +101,18 @@ export class DatabaseStorage implements IStorage {
           eq(users.providerId, providerId)
         )
       );
+    
+    // Special handling for premium demo account - always force pro tier
+    if (user && user.email === 'premium@demo.com') {
+      return {
+        ...user,
+        tier: 'pro',
+        totalPages: -1,
+        maxShotsPerScene: -1,
+        canGenerateStoryboards: true
+      };
+    }
+    
     return user;
   }
   

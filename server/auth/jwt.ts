@@ -81,20 +81,27 @@ export function verifyToken(token: string): any {
     
     // Handle both old and new token formats
     if (decoded && typeof decoded === 'object') {
+      // Special handling for premium demo account - force pro tier values
+      const isPremiumDemo = (decoded as any).email === 'premium@demo.com';
+      
       // Normalize token format - handle both uid and id fields
       const normalizedToken = {
         id: (decoded as any).uid || (decoded as any).id,
         uid: (decoded as any).uid || (decoded as any).id,
         email: (decoded as any).email,
-        tier: (decoded as any).tier || 'free',
-        totalPages: (decoded as any).totalPages || ((decoded as any).tier === 'pro' ? -1 : 5),
+        tier: isPremiumDemo ? 'pro' : ((decoded as any).tier || 'free'),
+        totalPages: isPremiumDemo ? -1 : ((decoded as any).totalPages || ((decoded as any).tier === 'pro' ? -1 : 5)),
         usedPages: (decoded as any).usedPages || 0,
-        maxShotsPerScene: (decoded as any).maxShotsPerScene || ((decoded as any).tier === 'pro' ? -1 : 5),
-        canGenerateStoryboards: (decoded as any).canGenerateStoryboards !== undefined ? (decoded as any).canGenerateStoryboards : ((decoded as any).tier === 'pro'),
+        maxShotsPerScene: isPremiumDemo ? -1 : ((decoded as any).maxShotsPerScene || ((decoded as any).tier === 'pro' ? -1 : 5)),
+        canGenerateStoryboards: isPremiumDemo ? true : ((decoded as any).canGenerateStoryboards !== undefined ? (decoded as any).canGenerateStoryboards : ((decoded as any).tier === 'pro')),
         displayName: (decoded as any).displayName,
         // Preserve any other fields
         ...(decoded as any)
       };
+      
+      if (isPremiumDemo) {
+        console.log('🔒 JWT VERIFY: Forcing pro tier for premium@demo.com');
+      }
       
       return normalizedToken;
     }
