@@ -293,54 +293,72 @@ export default function Upgrade() {
       </div>
 
       {/* Feature Comparison */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Feature Comparison</CardTitle>
-          <CardDescription>
-            See what you get with each plan
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2">Feature</th>
-                  <th className="text-center py-2">Free</th>
-                  <th className="text-center py-2">Pro</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b">
-                  <td className="py-2">Pages per month</td>
-                  <td className="text-center py-2">5</td>
-                  <td className="text-center py-2">Unlimited</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2">Shots per scene</td>
-                  <td className="text-center py-2">5</td>
-                  <td className="text-center py-2">Unlimited</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2">Storyboards</td>
-                  <td className="text-center py-2 text-gray-500">—</td>
-                  <td className="text-center py-2 text-green-600">✓</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="py-2">AI images</td>
-                  <td className="text-center py-2 text-gray-500">—</td>
-                  <td className="text-center py-2 text-green-600">✓</td>
-                </tr>
-                <tr>
-                  <td className="py-2">Support</td>
-                  <td className="text-center py-2">Standard</td>
-                  <td className="text-center py-2">Priority</td>
-                </tr>
-              </tbody>
-            </table>
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold mb-2">Feature Comparison</h2>
+        <p className="text-muted-foreground">See what you get with each plan</p>
+      </div>
+      
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Pages per month */}
+        <Card className="p-4">
+          <div className="text-center">
+            <FileText className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
+            <h3 className="font-medium mb-2">Pages per month</h3>
+            <div className="space-y-1">
+              <div className="text-sm text-gray-600">Free: 5</div>
+              <div className="text-sm text-indigo-600 font-medium">Pro: Unlimited</div>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </Card>
+
+        {/* Shots per scene */}
+        <Card className="p-4">
+          <div className="text-center">
+            <Camera className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
+            <h3 className="font-medium mb-2">Shots per scene</h3>
+            <div className="space-y-1">
+              <div className="text-sm text-gray-600">Free: 5</div>
+              <div className="text-sm text-indigo-600 font-medium">Pro: Unlimited</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Storyboards */}
+        <Card className="p-4">
+          <div className="text-center">
+            <Image className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
+            <h3 className="font-medium mb-2">Storyboards</h3>
+            <div className="space-y-1">
+              <div className="text-sm text-gray-500">Free: —</div>
+              <div className="text-sm text-green-600 font-medium">Pro: ✓</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* AI images */}
+        <Card className="p-4">
+          <div className="text-center">
+            <Sparkles className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
+            <h3 className="font-medium mb-2">AI images</h3>
+            <div className="space-y-1">
+              <div className="text-sm text-gray-500">Free: —</div>
+              <div className="text-sm text-green-600 font-medium">Pro: ✓</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Support */}
+        <Card className="p-4">
+          <div className="text-center">
+            <Headphones className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
+            <h3 className="font-medium mb-2">Support</h3>
+            <div className="space-y-1">
+              <div className="text-sm text-gray-600">Free: Standard</div>
+              <div className="text-sm text-indigo-600 font-medium">Pro: Priority</div>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {/* FAQ Section */}
       <div className="mt-12 text-center">
