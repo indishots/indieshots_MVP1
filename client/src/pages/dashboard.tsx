@@ -53,36 +53,29 @@ export default function Dashboard() {
       {/* Usage Stats */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
         <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  {userTier === 'pro' ? (
-                    <span className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-amber-100 dark:from-indigo-900/30 dark:to-amber-900/30 rounded-full border border-indigo-200/50 dark:border-indigo-700/30">
-                      <Crown className="h-4 w-4 text-amber-500 animate-pulse" />
-                      <span className="font-bold text-indigo-700 dark:text-indigo-300">Pro Plan</span>
-                    </span>
-                  ) : (
-                    <>
-                      <Zap className="h-5 w-5" />
-                      Usage Quota
-                    </>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  {userTier === 'pro' ? (
-                    <span className="bg-gradient-to-r from-indigo-600 to-amber-600 dark:from-indigo-400 dark:to-amber-400 bg-clip-text text-transparent font-medium">
-                      Unlimited access
-                    </span>
-                  ) : (
-                    'Free tier monthly limit'
-                  )}
-                </CardDescription>
-              </div>
-              {userTier === 'pro' && (
-                <Crown className="h-6 w-6 text-amber-500" />
+          <CardHeader className="pb-3 text-center">
+            <CardTitle className="text-lg font-semibold flex items-center justify-center gap-2">
+              {userTier === 'pro' ? (
+                <span className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-amber-100 dark:from-indigo-900/30 dark:to-amber-900/30 rounded-full border border-indigo-200/50 dark:border-indigo-700/30">
+                  <Crown className="h-4 w-4 text-amber-500 animate-pulse" />
+                  <span className="font-bold text-indigo-700 dark:text-indigo-300">Pro Plan</span>
+                </span>
+              ) : (
+                <>
+                  <Zap className="h-5 w-5" />
+                  Usage Quota
+                </>
               )}
-            </div>
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              {userTier === 'pro' ? (
+                <span className="bg-gradient-to-r from-indigo-600 to-amber-600 dark:from-indigo-400 dark:to-amber-400 bg-clip-text text-transparent font-medium">
+                  Unlimited access
+                </span>
+              ) : (
+                'Free tier monthly limit'
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {userTier === 'pro' ? (
