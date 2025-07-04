@@ -36,11 +36,13 @@ if [ ! -f "artillery-config.yml" ]; then
     exit 1
 fi
 
+# Set target URL as environment variable
+export TARGET_URL="https://indieshots.replit.app"
+
 # Run the load test
 echo "▶️  Starting load test..."
 artillery run artillery-config.yml \
-  --output "results/load-test-${TIMESTAMP}.json" \
-  --config target=https://indieshots.replit.app
+  --output "results/load-test-${TIMESTAMP}.json"
 
 # Check if results file was created
 if [ -f "results/load-test-${TIMESTAMP}.json" ]; then

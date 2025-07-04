@@ -1,6 +1,6 @@
 
 config:
-  target: 'https://indieshots.replit.app'
+  target: '{{ $processEnvironment.TARGET_URL || "https://indieshots.replit.app" }}'
   phases:
     # Warm-up phase
     - duration: 30
