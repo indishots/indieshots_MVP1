@@ -19,8 +19,14 @@ export default function Dashboard() {
     queryKey: ["/api/jobs"],
   });
   
-  // Calculate usage statistics based on tier
-  const userTier = (user as any)?.tier || 'free';
+  // Calculate usage statistics based on tier with protected account handling
+  const protectedProAccounts = [
+    'premium@demo.com',
+    'gopichandudhulipalla@gmail.com',
+    'dhulipallagopichandu@gmail.com'
+  ];
+  const isProtectedProAccount = protectedProAccounts.includes(user?.email || '');
+  const userTier = isProtectedProAccount ? 'pro' : ((user as any)?.tier || 'free');
   const pagesUsed = (user as any)?.usedPages || 0;
   const totalPages = userTier === 'pro' ? -1 : ((user as any)?.totalPages || 5);
   const usagePercentage = totalPages === -1 ? 0 : Math.min(100, Math.round((pagesUsed / totalPages) * 100));

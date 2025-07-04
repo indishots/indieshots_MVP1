@@ -220,11 +220,16 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
     
     console.log('🔍 UPGRADE STATUS DEBUG: Actual quota from manager:', actualQuota);
     
-    // Special handling for premium demo account (check both email and ID)
-    const isPremiumDemo = user.email === 'premium@demo.com' || 
-                         user.id === '119' || 
-                         user.id === 119;
-    const finalQuota = isPremiumDemo ? {
+    // Special handling for premium demo account and INDIE2025 protected accounts
+    const protectedProAccounts = [
+      'premium@demo.com',
+      'gopichandudhulipalla@gmail.com',
+      'dhulipallagopichandu@gmail.com'
+    ];
+    const isProtectedProAccount = protectedProAccounts.includes(user.email) || 
+                                  user.id === '119' || 
+                                  user.id === 119;
+    const finalQuota = isProtectedProAccount ? {
       tier: 'pro',
       totalPages: -1,
       usedPages: 0,
@@ -232,8 +237,8 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
       canGenerateStoryboards: true
     } : actualQuota;
     
-    if (isPremiumDemo) {
-      console.log('🔒 UPGRADE STATUS: Applied pro tier override for premium@demo.com');
+    if (isProtectedProAccount) {
+      console.log('🔒 UPGRADE STATUS: Applied pro tier override for protected account:', user.email);
     }
     
     const responseData = {

@@ -41,13 +41,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
   });
 
   // Get accurate tier information from upgrade status
-  // Special handling for premium demo account
-  const isPremiumDemo = user?.email === 'premium@demo.com';
-  const userTier = isPremiumDemo ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
+  // Special handling for premium demo account and INDIE2025 protected accounts
+  const protectedProAccounts = [
+    'premium@demo.com',
+    'gopichandudhulipalla@gmail.com',
+    'dhulipallagopichandu@gmail.com'
+  ];
+  const isProtectedProAccount = protectedProAccounts.includes(user?.email || '');
+  const userTier = isProtectedProAccount ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
   const isProUser = userTier === 'pro';
   
-  if (isPremiumDemo) {
-    console.log('🔒 HEADER: Applied pro tier override for premium@demo.com');
+  if (isProtectedProAccount) {
+    console.log('🔒 HEADER: Applied pro tier override for protected account:', user?.email);
   }
 
   // Pages that should show the sidebar
