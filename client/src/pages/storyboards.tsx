@@ -101,7 +101,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       return result;
     },
     onSuccess: async (data, storyboardIndex) => {
-      setEditingPrompt("");
+      // Don't clear the prompt yet - wait until we confirm the image updated
       
       // Fetch fresh image data but only update carousel view
       try {
@@ -156,6 +156,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                 [storyboardIndex]: false
               }));
               
+              // Clear the editing prompt only after successful image update
+              setEditingPrompt("");
+              
               // Show success message only after image update is complete
               setTimeout(() => {
                 toast({ title: "Image regenerated successfully" });
@@ -165,13 +168,19 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             console.log(`Regenerated image updated in carousel view for index ${storyboardIndex}, data length: ${newImageData.length}`);
           } else {
             console.error('No image data found for storyboard index:', storyboardIndex);
+            // Still clear prompt on success response, even if no image data
+            setEditingPrompt("");
             toast({ title: "Image regenerated successfully" });
           }
         } else {
+          // Still clear prompt if we get a response but can't fetch fresh data
+          setEditingPrompt("");
           toast({ title: "Image regenerated successfully" });
         }
       } catch (error) {
         console.error('Error fetching regenerated image:', error);
+        // Still clear prompt on success, even with fetch error
+        setEditingPrompt("");
         toast({ title: "Image regenerated successfully" });
       }
     },
@@ -702,6 +711,8 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                       value={editingPrompt}
                       onChange={(e) => setEditingPrompt(e.target.value)}
                       rows={3}
+                      disabled={isRegenerating}
+                      className={isRegenerating ? "opacity-75" : ""}
                     />
                   </div>
                   
