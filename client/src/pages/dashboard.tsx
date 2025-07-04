@@ -92,8 +92,8 @@ export default function Dashboard() {
                 </p>
               </div>
             ) : (
-              <div className="text-center py-2">
-                <div className="mb-4">
+              <div className="text-center py-1">
+                <div className="mb-2">
                   <div className="text-2xl font-bold text-foreground mb-1">
                     {pagesUsed}/{totalPages}
                   </div>
@@ -102,8 +102,8 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div className="mb-3">
-                  <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
+                <div className="mb-2">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden mb-1">
                     <div 
                       className="bg-primary h-full rounded-full transition-all duration-300" 
                       style={{ width: `${usagePercentage}%` }}
