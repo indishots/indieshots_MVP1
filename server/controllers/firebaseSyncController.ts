@@ -46,8 +46,26 @@ export async function firebaseSync(req: Request, res: Response) {
       console.log('Could not fetch Firebase custom claims:', error);
     }
     
-    // Check if user exists by Firebase UID only (Firebase is single source of truth)
+    // Check if user exists by Firebase UID first, then by email as fallback
     let user = await storage.getUserByProviderId(provider, firebaseUser.uid);
+    
+    if (!user) {
+      // Check if user exists by email (for existing accounts)
+      try {
+        user = await storage.getUserByEmail(firebaseUser.email.toLowerCase());
+        if (user) {
+          console.log('Found existing user by email, updating Firebase provider info');
+          // Update the existing user's provider info to match Firebase
+          user = await storage.updateUser(user.id, {
+            provider,
+            providerId: firebaseUser.uid,
+            emailVerified: firebaseUser.emailVerified || false,
+          });
+        }
+      } catch (error) {
+        console.log('No existing user found by email');
+      }
+    }
     
     if (!user) {
       // Create new user from Firebase data
