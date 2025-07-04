@@ -152,8 +152,21 @@ export async function firebaseSync(req: Request, res: Response) {
           updates.canGenerateStoryboards = tierFromFirebase === 'pro';
           console.log(`🔄 TIER SYNC: ${user.email} - PostgreSQL tier: ${user.tier} → Firebase tier: ${tierFromFirebase}`);
           console.log(`🔄 TIER SYNC: Setting totalPages: ${updates.totalPages}, maxShots: ${updates.maxShotsPerScene}, storyboards: ${updates.canGenerateStoryboards}`);
+          
+          // Special validation for INDIE2025 promo code users
+          if (tierFromFirebase === 'pro') {
+            console.log(`🎯 PRO TIER SYNC: Applying unlimited access for ${user.email}`);
+          }
         } else {
           console.log(`✓ TIER SYNC: ${user.email} - Tiers already match: ${tierFromFirebase}`);
+          
+          // Additional validation: Ensure pro tier users have correct unlimited values
+          if (tierFromFirebase === 'pro' && (user.totalPages !== -1 || user.maxShotsPerScene !== -1 || !user.canGenerateStoryboards)) {
+            updates.totalPages = -1;
+            updates.maxShotsPerScene = -1;
+            updates.canGenerateStoryboards = true;
+            console.log(`🔧 PRO TIER CORRECTION: Fixed unlimited access values for ${user.email}`);
+          }
         }
       }
       

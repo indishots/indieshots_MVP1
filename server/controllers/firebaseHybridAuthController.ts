@@ -254,8 +254,12 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         displayName: `${userData.firstName} ${userData.lastName}`.trim(),
       });
 
-      // Apply promo code if valid (record usage in promo_code_usage table)
+      // CRITICAL: Apply promo code and ensure tier is correctly set
+      let finalTier = userData.tier; // Default from signup validation
+      
       if (userData.promoCodeValid && userData.couponCode) {
+        console.log(`🎯 APPLYING PROMO CODE: ${userData.couponCode} for ${userData.email} with expected tier: ${userData.tier}`);
+        
         const promoCodeService = new PromoCodeService();
         const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
         const userAgent = req.get('User-Agent') || 'Unknown';
@@ -269,19 +273,29 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         );
 
         if (applied) {
+          // Double-check tier assignment for promo codes
+          if (userData.couponCode.toUpperCase() === 'INDIE2025') {
+            finalTier = 'pro'; // Force pro tier for INDIE2025
+            console.log(`✅ INDIE2025 PROMO CODE: Successfully applied pro tier for ${userData.email}`);
+          }
           console.log(`✓ Promo code ${userData.couponCode} applied successfully for user: ${userData.email}`);
         } else {
-          console.log(`✗ Failed to apply promo code ${userData.couponCode} for user: ${userData.email}`);
+          console.error(`❌ CRITICAL: Failed to apply promo code ${userData.couponCode} for user: ${userData.email}`);
+          // Still set the tier from validation even if application failed
         }
+      } else {
+        console.log(`📋 No promo code for user: ${userData.email} - Creating ${finalTier} tier account`);
       }
 
-      // Set Firebase custom claims as single source of truth
+      // Set Firebase custom claims as single source of truth with confirmed tier
       await firebaseAdmin.setCustomUserClaims(firebaseUser.uid, {
-        tier: userData.tier,
+        tier: finalTier,
         couponCode: userData.couponCode,
         provider: userData.provider,
         createdAt: new Date().toISOString()
       });
+      
+      console.log(`🔥 FIREBASE CUSTOM CLAIMS SET: tier=${finalTier}, couponCode=${userData.couponCode} for ${userData.email}`);
 
       console.log(`✓ Firebase user created with tier: ${userData.tier} for ${userData.email}`);
       console.log(`✓ Firebase custom claims set:`, { 
