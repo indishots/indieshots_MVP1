@@ -722,7 +722,12 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     } else {
       modifiedPrompt = `${basePrompt} ${modifications}`;
     }
-    console.log(`Using regeneration prompt: ${modifiedPrompt}`);
+    
+    console.log(`=== REGENERATION DEBUG ===`);
+    console.log(`Original basePrompt: ${basePrompt}`);
+    console.log(`User modifications: ${modifications}`);
+    console.log(`Final modifiedPrompt: ${modifiedPrompt}`);
+    console.log(`=========================`);
     
     // Debug: Test the specific failing prompt
     if (modifiedPrompt.includes('blood-soaked') || modifiedPrompt.includes('blood soaked')) {

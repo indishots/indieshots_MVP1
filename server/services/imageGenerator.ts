@@ -293,8 +293,11 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       
       // Clean the prompt to avoid content policy violations
       const cleanedPrompt = sanitizePromptForGeneration(prompt);
+      console.log(`=== IMAGE GENERATION DEBUG ===`);
       console.log(`Original prompt: ${prompt}`);
       console.log(`Cleaned prompt: ${cleanedPrompt}`);
+      console.log(`Prompt length: ${cleanedPrompt.length} characters`);
+      console.log(`==============================`);
       
       const response = await imageClient.images.generate({
         model: "dall-e-3",
