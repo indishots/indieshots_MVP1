@@ -153,20 +153,24 @@ class AuthManager {
       if (response.ok) {
         const userData = await response.json();
         
-        // Use backend-provided tier information directly (backend handles all promo code logic)
-        // Special override only for premium demo account for development purposes
-        const isPremiumDemo = userData.email === 'premium@demo.com';
+        // Frontend protection for critical accounts + backend dynamic promo code handling
+        const protectedProAccounts = [
+          'premium@demo.com',
+          'gopichandudhulipalla@gmail.com',
+          'dhulipallagopichandu@gmail.com'
+        ];
+        const isProtectedProAccount = protectedProAccounts.includes(userData.email);
         
         this.user = {
           id: userData.id,
           email: userData.email,
           displayName: userData.displayName || userData.email?.split('@')[0] || 'User',
           provider: userData.provider || 'password',
-          tier: isPremiumDemo ? 'pro' : userData.tier,
+          tier: isProtectedProAccount ? 'pro' : userData.tier,
           usedPages: userData.usedPages,
-          totalPages: isPremiumDemo ? -1 : userData.totalPages,
-          maxShotsPerScene: isPremiumDemo ? -1 : userData.maxShotsPerScene,
-          canGenerateStoryboards: isPremiumDemo ? true : userData.canGenerateStoryboards
+          totalPages: isProtectedProAccount ? -1 : userData.totalPages,
+          maxShotsPerScene: isProtectedProAccount ? -1 : userData.maxShotsPerScene,
+          canGenerateStoryboards: isProtectedProAccount ? true : userData.canGenerateStoryboards
         };
         
         console.log('🎯 USER AUTHENTICATED:', {
@@ -175,11 +179,11 @@ class AuthManager {
           totalPages: this.user.totalPages,
           maxShotsPerScene: this.user.maxShotsPerScene,
           canGenerateStoryboards: this.user.canGenerateStoryboards,
-          isPremiumDemo: isPremiumDemo
+          isProtectedProAccount: isProtectedProAccount
         });
         
-        if (isPremiumDemo) {
-          console.log('🔒 FRONTEND: Applied pro tier override for premium@demo.com');
+        if (isProtectedProAccount) {
+          console.log('🔒 FRONTEND: Applied pro tier override for protected account:', this.user.email);
         }
         this.authState = 'authenticated';
         console.log('Backend session created for:', this.user.email, 'with tier:', this.user.tier);

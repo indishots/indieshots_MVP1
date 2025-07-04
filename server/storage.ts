@@ -88,7 +88,18 @@ export class DatabaseStorage implements IStorage {
       'dhulipallagopichandu@gmail.com'
     ];
     
-    if (protectedProAccounts.includes(user.email)) {
+    if (user.email && protectedProAccounts.includes(user.email)) {
+      // If user isn't already pro tier, update them in database immediately
+      if (user.tier !== 'pro') {
+        console.log(`🔧 PROTECTED ACCOUNT FIX: Upgrading ${user.email} to pro tier`);
+        await this.updateUser(user.id, {
+          tier: 'pro',
+          totalPages: -1,
+          maxShotsPerScene: -1,
+          canGenerateStoryboards: true
+        });
+      }
+      
       return {
         ...user,
         tier: 'pro',
@@ -101,20 +112,19 @@ export class DatabaseStorage implements IStorage {
     // DYNAMIC PROMO CODE VALIDATION: Check if user has any active promo code (INDIE2025 or future codes)
     try {
       if (user.email) {
-        const promoUsageResult = await db
-          .select({
-            code: promoCodes.code,
-            grantedTier: promoCodeUsage.grantedTier
-          })
-          .from(promoCodeUsage)
-          .innerJoin(promoCodes, eq(promoCodeUsage.promoCodeId, promoCodes.id))
-          .where(eq(promoCodeUsage.userEmail, user.email.toLowerCase()));
+        // Use raw SQL query to avoid TypeScript issues temporarily
+        const promoResult = await db.execute(`
+          SELECT pc.code, pcu.granted_tier 
+          FROM promo_code_usage pcu 
+          JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
+          WHERE pcu.user_email = '${user.email.toLowerCase()}'
+          AND pcu.granted_tier = 'pro'
+        `);
         
-        const hasPromoCode = promoUsageResult && promoUsageResult.length > 0;
-        const promoTier = hasPromoCode ? promoUsageResult[0].grantedTier : null;
+        const hasProPromoCode = promoResult && promoResult.length > 0;
         
-        if (hasPromoCode && promoTier === 'pro' && user.tier !== 'pro') {
-          console.log(`🔧 PROMO CODE DYNAMIC FIX: Upgrading ${user.email} from ${user.tier} to pro tier (Promo: ${promoUsageResult[0].code})`);
+        if (hasProPromoCode && user.tier !== 'pro') {
+          console.log(`🔧 PROMO CODE DYNAMIC FIX: Upgrading ${user.email} from ${user.tier} to pro tier`);
           
           // Update user in database immediately
           await this.updateUser(user.id, {
@@ -132,8 +142,8 @@ export class DatabaseStorage implements IStorage {
             maxShotsPerScene: -1,
             canGenerateStoryboards: true
           };
-        } else if (hasPromoCode && promoTier === 'pro' && user.tier === 'pro') {
-          console.log(`✓ PROMO CODE DYNAMIC: ${user.email} already has correct pro tier (Promo: ${promoUsageResult[0].code})`);
+        } else if (hasProPromoCode && user.tier === 'pro') {
+          console.log(`✓ PROMO CODE DYNAMIC: ${user.email} already has correct pro tier`);
         }
       }
     } catch (error) {
