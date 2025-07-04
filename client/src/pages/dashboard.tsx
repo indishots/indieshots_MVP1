@@ -116,7 +116,7 @@ export default function Dashboard() {
               </div>
             )}
           </CardContent>
-          <CardFooter className="pt-1 flex justify-center">
+          <CardFooter className="pt-0 pb-4 flex justify-center">
             {userTier === 'free' && (
               <Button variant="outline" size="sm" asChild>
                 <Link href="/upgrade">
@@ -146,7 +146,7 @@ export default function Dashboard() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="pt-0 flex justify-center">
+          <CardFooter className="pt-0 pb-4 flex justify-center">
             <Button variant="outline" size="sm" asChild>
               <Link href="/upload">
                 Upload New Script
