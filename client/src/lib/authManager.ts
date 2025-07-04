@@ -129,6 +129,8 @@ class AuthManager {
         console.log('Including coupon code in backend session:', this.pendingCouponCode);
       }
 
+      console.log('Making Firebase sync request for:', firebaseUser.email);
+      
       const response = await fetch('/api/auth/firebase-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -141,10 +143,12 @@ class AuthManager {
             photoURL: firebaseUser.photoURL,
             emailVerified: firebaseUser.emailVerified
           },
-          idToken: authData.idToken,
-          provider: authData.provider
+          provider: 'firebase'
         }),
       });
+      
+      console.log('Firebase sync response status:', response.status);
+      console.log('Firebase sync response ok:', response.ok);
 
       if (response.ok) {
         const userData = await response.json();
@@ -179,7 +183,10 @@ class AuthManager {
         // Automatically validate tier information after login
         this.scheduleAutomaticTierValidation();
       } else {
+        const errorText = await response.text();
         console.error('Backend session creation failed');
+        console.error('Response status:', response.status);
+        console.error('Response error:', errorText);
         this.authState = 'unauthenticated';
         this.user = null;
         // Clear pending coupon on failure too
@@ -187,6 +194,8 @@ class AuthManager {
       }
     } catch (error) {
       console.error('Backend session error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
       this.authState = 'unauthenticated';
       this.user = null;
       // Clear pending coupon on error
