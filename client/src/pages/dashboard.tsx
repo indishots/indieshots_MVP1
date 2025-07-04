@@ -58,10 +58,10 @@ export default function Dashboard() {
               <div>
                 <CardTitle className="text-lg flex items-center gap-2">
                   {userTier === 'pro' ? (
-                    <>
-                      <Crown className="h-5 w-5 text-amber-500" />
-                      Pro Plan
-                    </>
+                    <span className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 rounded-full border border-amber-200/50 dark:border-amber-700/30">
+                      <Crown className="h-4 w-4 text-amber-500 animate-pulse" />
+                      <span className="font-bold text-amber-700 dark:text-amber-300">Pro Plan</span>
+                    </span>
                   ) : (
                     <>
                       <Zap className="h-5 w-5" />
@@ -70,7 +70,13 @@ export default function Dashboard() {
                   )}
                 </CardTitle>
                 <CardDescription>
-                  {userTier === 'pro' ? 'Unlimited access' : 'Free tier monthly limit'}
+                  {userTier === 'pro' ? (
+                    <span className="bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent font-medium">
+                      Unlimited access
+                    </span>
+                  ) : (
+                    'Free tier monthly limit'
+                  )}
                 </CardDescription>
               </div>
               {userTier === 'pro' && (
@@ -80,9 +86,22 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {userTier === 'pro' ? (
-              <div className="text-center py-4">
-                <p className="text-lg font-medium text-green-600">Unlimited Pages</p>
-                <p className="text-sm text-muted-foreground">Enjoy unlimited script processing</p>
+              <div className="text-center py-4 px-3 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+                <div className="relative mb-3">
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                  <Crown className="h-6 w-6 text-amber-500 mx-auto drop-shadow-sm" />
+                </div>
+                <p className="text-lg font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent mb-1">
+                  Unlimited Pages
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 font-medium mb-3">
+                  Enjoy unlimited script processing
+                </p>
+                <div className="flex justify-center space-x-1">
+                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce"></div>
+                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                </div>
               </div>
             ) : (
               <>
