@@ -49,8 +49,8 @@ export default function Features() {
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-100 to-amber-50 rounded-xl shadow-sm border border-indigo-200/50">
-                    <CheckCircle2 className="h-6 w-6 text-indigo-700" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-200/70 to-amber-200/60 rounded-xl shadow-sm border border-indigo-300/40">
+                    <CheckCircle2 className="h-6 w-6 text-indigo-800" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-800 to-amber-700 bg-clip-text text-transparent mb-3">
@@ -69,8 +69,8 @@ export default function Features() {
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-100 to-amber-50 rounded-xl shadow-sm border border-indigo-200/50">
-                    <Globe className="h-6 w-6 text-indigo-700" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-200/70 to-amber-200/60 rounded-xl shadow-sm border border-indigo-300/40">
+                    <Globe className="h-6 w-6 text-indigo-800" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-800 to-amber-700 bg-clip-text text-transparent mb-3">
@@ -89,8 +89,8 @@ export default function Features() {
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-100 to-amber-50 rounded-xl shadow-sm border border-indigo-200/50">
-                    <Clock className="h-6 w-6 text-indigo-700" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-200/70 to-amber-200/60 rounded-xl shadow-sm border border-indigo-300/40">
+                    <Clock className="h-6 w-6 text-indigo-800" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-800 to-amber-700 bg-clip-text text-transparent mb-3">
@@ -109,8 +109,8 @@ export default function Features() {
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-100 to-amber-50 rounded-xl shadow-sm border border-indigo-200/50">
-                    <Zap className="h-6 w-6 text-indigo-700" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-indigo-200/70 to-amber-200/60 rounded-xl shadow-sm border border-indigo-300/40">
+                    <Zap className="h-6 w-6 text-indigo-800" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-800 to-amber-700 bg-clip-text text-transparent mb-3">
