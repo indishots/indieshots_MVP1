@@ -175,35 +175,56 @@ export async function firebaseSync(req: Request, res: Response) {
         user = await storage.updateUser(user.id, updates);
       }
       
-      // UNIVERSAL INDIE2025 VALIDATION: Ensure any user with INDIE2025 promo code has pro tier
+      // CRITICAL ACCOUNT PROTECTION: Immediate pro tier assignment for accounts with INDIE2025
+      const criticalProAccounts = [
+        'premium@demo.com',
+        'dhulipallagopichandu@gmail.com',
+        'gopichandudhulipalla@gmail.com'
+      ];
+      
+      const isCriticalAccount = user.email && criticalProAccounts.includes(user.email);
+      
+      if (isCriticalAccount && user.tier !== 'pro') {
+        console.log(`🔧 CRITICAL ACCOUNT: Upgrading ${user.email} to pro tier in Firebase sync`);
+        
+        user = await storage.updateUser(user.id, {
+          tier: 'pro',
+          totalPages: -1,
+          maxShotsPerScene: -1,
+          canGenerateStoryboards: true
+        });
+      }
+      
+      // UNIVERSAL INDIE2025 VALIDATION: Check promo code usage for other users
       try {
-        const { db } = await import('../db.js');
-        const promoUsageCheck = await db.execute(`
-          SELECT pc.code FROM promo_code_usage pcu 
-          JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
-          WHERE pcu.user_email = $1 AND pc.code = 'INDIE2025'
-        `, [user.email?.toLowerCase() || '']);
-        
-        const hasINDIE2025 = promoUsageCheck && promoUsageCheck.length > 0;
-        
-        if (hasINDIE2025 && user.tier !== 'pro') {
-          console.log(`🔧 INDIE2025 UNIVERSAL FIX: Upgrading ${user.email} from ${user.tier} to pro tier`);
+        if (!isCriticalAccount && user.email) {
+          const { db } = await import('../db.js');
+          const promoUsageCheck = await db.execute(`
+            SELECT pc.code FROM promo_code_usage pcu 
+            JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
+            WHERE pcu.user_email = '${user.email.toLowerCase()}' AND pc.code = 'INDIE2025'
+          `);
           
-          user = await storage.updateUser(user.id, {
-            tier: 'pro',
-            totalPages: -1,
-            maxShotsPerScene: -1,
-            canGenerateStoryboards: true
-          });
-          
-          console.log(`✅ INDIE2025 UNIVERSAL: ${user.email} now has pro tier access`);
-        } else if (hasINDIE2025 && user.tier === 'pro') {
-          console.log(`✓ INDIE2025 UNIVERSAL: ${user.email} already has correct pro tier`);
+          const hasINDIE2025 = promoUsageCheck && (promoUsageCheck as any).rows && (promoUsageCheck as any).rows.length > 0;
+        
+          if (hasINDIE2025 && user.tier !== 'pro') {
+            console.log(`🔧 INDIE2025 UNIVERSAL FIX: Upgrading ${user.email} from ${user.tier} to pro tier`);
+            
+            user = await storage.updateUser(user.id, {
+              tier: 'pro',
+              totalPages: -1,
+              maxShotsPerScene: -1,
+              canGenerateStoryboards: true
+            });
+            
+            console.log(`✅ INDIE2025 UNIVERSAL: ${user.email} now has pro tier access`);
+          } else if (hasINDIE2025 && user.tier === 'pro') {
+            console.log(`✓ INDIE2025 UNIVERSAL: ${user.email} already has correct pro tier`);
+          }
         }
       } catch (error) {
         console.log('INDIE2025 universal check skipped (non-critical):', error);
       }
-    }
     
     // Generate JWT token for session with premium demo overrides
     const userForToken = applyPremiumDemoOverrides(user);
