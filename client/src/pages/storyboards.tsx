@@ -291,9 +291,27 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     onError: (error: Error) => {
       // Don't show error toast for upgrade requirements
       if (error.message !== 'upgrade_required') {
+        let errorMessage = error.message;
+        let errorTitle = "Storyboard generation failed";
+        
+        // Provide user-friendly error messages for common issues
+        if (error.message.includes('upstream') || error.message.includes('JSON')) {
+          errorTitle = "OpenAI service temporarily unavailable";
+          errorMessage = "The AI image generation service is experiencing issues. Please wait a few minutes and try again.";
+        } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+          errorTitle = "Service busy";
+          errorMessage = "The AI service is currently handling many requests. Please wait a moment and try again.";
+        } else if (error.message.includes('content policy')) {
+          errorTitle = "Content restriction";
+          errorMessage = "Some content couldn't be generated due to safety guidelines. Try rephrasing your scene descriptions.";
+        } else if (error.message.includes('timeout')) {
+          errorTitle = "Request timeout";
+          errorMessage = "Image generation took too long. Please try again with simpler scene descriptions.";
+        }
+        
         toast({
-          title: "Storyboard generation failed",
-          description: error.message,
+          title: errorTitle,
+          description: errorMessage,
           variant: "destructive",
         });
       }

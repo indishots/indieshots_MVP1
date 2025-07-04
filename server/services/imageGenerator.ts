@@ -299,13 +299,19 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       console.log(`Prompt length: ${cleanedPrompt.length} characters`);
       console.log(`==============================`);
       
-      const response = await imageClient.images.generate({
-        model: "dall-e-3",
-        prompt: cleanedPrompt,
-        n: 1,
-        size: "1792x1024", // Wider cinematic format
-        response_format: "url"
-      });
+      // Add timeout and better error handling
+      const response = await Promise.race([
+        imageClient.images.generate({
+          model: "dall-e-3",
+          prompt: cleanedPrompt,
+          n: 1,
+          size: "1792x1024", // Wider cinematic format
+          response_format: "url"
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Image generation timeout after 60 seconds')), 60000)
+        )
+      ]) as any;
 
       const imageUrl = response.data?.[0]?.url;
       if (!imageUrl) {
@@ -338,22 +344,28 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
       
-      // Handle specific OpenAI errors
-      if (error?.status === 429) {
+      // Handle different types of errors
+      if (error?.status === 429 || error?.message?.includes('rate limit')) {
         console.log('Rate limit hit, waiting longer before retry...');
-        await new Promise(resolve => setTimeout(resolve, 10000 * attempt)); // Longer wait for rate limits
-      } else if (error?.name === 'AbortError') {
-        console.log('Request timed out, retrying...');
-        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
-      } else if (error?.message?.includes('content policy')) {
-        console.log('Content policy violation, attempting to clean prompt...');
-        // For content policy issues, return null immediately to mark as failed
+        await new Promise(resolve => setTimeout(resolve, 15000 * attempt)); // Longer wait for rate limits
+      } else if (error?.status === 400 || error?.message?.includes('content policy')) {
+        console.log('Content policy violation detected');
         if (attempt === retries) {
           console.error(`Content policy violation - cannot generate image for this prompt`);
           return 'CONTENT_POLICY_VIOLATION';
         }
+      } else if (error?.message?.includes('timeout') || error?.name === 'AbortError') {
+        console.log('Request timed out, retrying...');
+        await new Promise(resolve => setTimeout(resolve, 5000 * attempt));
+      } else if (error?.message?.includes('upstream') || error?.message?.includes('JSON')) {
+        console.log('OpenAI server error detected, waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 10000 * attempt));
+      } else if (error?.status >= 500) {
+        console.log('OpenAI server error (5xx), waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 8000 * attempt));
       } else if (attempt < retries) {
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        console.log('Unknown error, retrying with standard delay...');
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
       }
       
       if (attempt === retries) {
@@ -421,8 +433,44 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
   }
 }
 
+// Simple circuit breaker for OpenAI API
+let consecutiveFailures = 0;
+const MAX_CONSECUTIVE_FAILURES = 3;
+const CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minute
+let circuitBreakerOpenTime = 0;
+
+function isCircuitBreakerOpen(): boolean {
+  if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+    if (Date.now() - circuitBreakerOpenTime < CIRCUIT_BREAKER_TIMEOUT) {
+      return true;
+    } else {
+      // Reset circuit breaker after timeout
+      consecutiveFailures = 0;
+      circuitBreakerOpenTime = 0;
+      console.log('Circuit breaker reset - attempting to reconnect to OpenAI');
+    }
+  }
+  return false;
+}
+
+function recordFailure() {
+  consecutiveFailures++;
+  if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+    circuitBreakerOpenTime = Date.now();
+    console.log(`Circuit breaker opened - too many consecutive OpenAI failures (${consecutiveFailures})`);
+  }
+}
+
+function recordSuccess() {
+  if (consecutiveFailures > 0) {
+    console.log(`OpenAI service recovered - resetting failure count from ${consecutiveFailures}`);
+    consecutiveFailures = 0;
+    circuitBreakerOpenTime = 0;
+  }
+}
+
 /**
- * Generate storyboard frames for multiple shots with retry mechanism
+ * Generate storyboard frames for multiple shots with retry mechanism and circuit breakerm
  */
 export async function generateStoryboards(shots: any[]): Promise<{ results: any[]; frames: StoryboardFrame[] }> {
   const results: any[] = [];
@@ -431,20 +479,30 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
 
   console.log(`Processing ${shots.length} shots sequentially for maximum reliability`);
 
-  // First pass: process all shots sequentially
+  // First pass: process all shots sequentially with enhanced rate limiting
   for (let shotIndex = 0; shotIndex < shots.length; shotIndex++) {
     const shot = shots[shotIndex];
     console.log(`Processing shot ${shotIndex + 1}/${shots.length} (ID: ${shot.id})`);
     
     try {
+      // Check circuit breaker before processing
+      if (isCircuitBreakerOpen()) {
+        console.log(`Skipping shot ${shot.shotNumberInScene || shot.id} - circuit breaker is open`);
+        failedShots.push(shot);
+        results.push({ shotId: `shot_${shotIndex}`, status: 'skipped - service unavailable' });
+        continue;
+      }
+      
       const shotResult = await processShot(shot, shotIndex);
       
       if (shotResult && shotResult.status.includes('stored in database')) {
+        recordSuccess(); // Record successful generation
         results.push(shotResult);
         if ('frame' in shotResult && shotResult.frame) {
           frames.push(shotResult.frame);
         }
       } else {
+        recordFailure(); // Record failure
         console.log(`Shot ${shot.shotNumberInScene || shot.id} failed, adding to retry list. Status: ${shotResult?.status}`);
         failedShots.push(shot);
         results.push(shotResult || { shotId: `shot_${shotIndex}`, status: 'processing failed' });
@@ -455,10 +513,11 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
       results.push({ shotId: `shot_${shotIndex}`, status: `error: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
 
-    // Wait between shots to respect rate limits
+    // Enhanced rate limiting - longer delays to prevent OpenAI errors
     if (shotIndex < shots.length - 1) {
-      console.log(`Waiting 5 seconds before next shot...`);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      const delayTime = 8000; // Increased to 8 seconds
+      console.log(`Waiting ${delayTime/1000} seconds before next shot to prevent rate limits...`);
+      await new Promise(resolve => setTimeout(resolve, delayTime));
     }
   }
 
