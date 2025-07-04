@@ -340,7 +340,31 @@ export async function generateImageData(prompt: string, retries: number = 10): P
       const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
       const base64Data = imageBuffer.toString('base64');
       
-      console.log(`Successfully generated image data (attempt ${attempt}), base64 length:`, base64Data.length);
+      // Validate base64 data is not corrupted
+      if (base64Data.length < 1000) {
+        console.error(`Base64 data too short (${base64Data.length} chars), likely corrupted`);
+        if (attempt === retries) return 'GENERATION_FAILED';
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+        continue;
+      }
+      
+      // Test that the base64 can be decoded properly
+      try {
+        const testBuffer = Buffer.from(base64Data, 'base64');
+        if (testBuffer.length < 1000) {
+          console.error(`Decoded image buffer too small (${testBuffer.length} bytes)`);
+          if (attempt === retries) return 'GENERATION_FAILED';
+          await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+          continue;
+        }
+      } catch (decodeError) {
+        console.error(`Invalid base64 data generated:`, decodeError);
+        if (attempt === retries) return 'GENERATION_FAILED';
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+        continue;
+      }
+      
+      console.log(`Successfully generated valid image data (attempt ${attempt}), base64 length:`, base64Data.length);
       return base64Data;
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
