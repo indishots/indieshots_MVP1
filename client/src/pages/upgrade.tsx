@@ -209,7 +209,7 @@ export default function Upgrade() {
         {plans.map((plan: any) => (
           <Card 
             key={plan.id} 
-            className={`relative ${plan.popular ? 'border-primary ring-2 ring-primary/20' : ''} ${plan.current ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
+            className={`relative ${plan.popular ? 'border-primary ring-2 ring-primary/20' : ''} ${plan.current ? 'bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800' : ''}`}
           >
             {plan.popular && (
               <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -236,7 +236,7 @@ export default function Upgrade() {
                   </CardDescription>
                 </div>
                 {plan.current && (
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                  <Badge variant="success" className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
                     Current Plan
                   </Badge>
                 )}
