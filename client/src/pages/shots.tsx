@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users, Video, Move, Palette, MapPin, Sun, Box, Lightbulb, MessageSquare, Heart, Volume2, FileText, Download, FileSpreadsheet, Crown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
-import { ClassyShotAnimation } from "@/components/ui/classy-shot-animation";
+import { CinematicShotAnimation } from "@/components/ui/cinematic-shot-animation";
 import { BufferingAnimation } from "@/components/ui/film-animations";
 import { useFilmAnimations } from "@/hooks/useFilmAnimations";
 import { useTierValidation } from "@/hooks/useTierValidation";
@@ -137,11 +137,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   };
   
   if (isLoadingJob) {
-    return (
-      <div className="max-w-6xl mx-auto p-6">
-        <ClassyShotAnimation message="Loading scene data..." />
-      </div>
-    );
+    return <CinematicShotAnimation message="Loading scene data..." />;
   }
   
   if (!selectedScene) {
@@ -500,11 +496,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   return (
     <div className="flex h-screen bg-background">
       {/* Cinematic Loading Overlay for Shot Generation */}
-      {isGenerating && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-          <ClassyShotAnimation message="Creating cinematic shots..." />
-        </div>
-      )}
+      {isGenerating && <CinematicShotAnimation message="Creating cinematic shots..." />}
       
       {/* Main Content */}
       <div className="flex-1 overflow-auto">

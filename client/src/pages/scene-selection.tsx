@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ArrowLeft, Film, MapPin, Users, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CinematicShotAnimation } from "@/components/ui/cinematic-shot-animation";
 
 interface SceneSelectionProps {
   id: string;
@@ -55,20 +56,10 @@ export default function SceneSelection({ id }: SceneSelectionProps) {
   };
   
   if (isLoadingJob || isLoadingScript) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center">Loading scenes...</div>
-      </div>
-    );
+    return <CinematicShotAnimation message="Loading scenes..." />;
   }
   
-  if (isLoadingJob) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center">Loading scenes...</div>
-      </div>
-    );
-  }
+
 
   if (!parseJob) {
     return (
