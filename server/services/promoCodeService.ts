@@ -201,37 +201,60 @@ export class PromoCodeService {
       
       await db.insert(promoCodeUsage).values(usageData);
       
-      // For existing users in PostgreSQL, update their tier immediately
-      // For new users, Firebase custom claims will handle this during first signin
-      const existingUser = await db.select()
-        .from(users)
-        .where(eq(users.email, userEmail.toLowerCase()))
-        .limit(1);
+      // FIREBASE-FIRST APPROACH: Only update users who exist in Firebase
+      // This ensures data consistency - no PostgreSQL users without Firebase users
       
-      if (existingUser.length > 0) {
-        // Update existing user's tier and tier-specific limits
-        await db.update(users)
-          .set({ 
-            tier: validation.tier,
-            totalPages: validation.tier === 'pro' ? -1 : 20,
-            maxShotsPerScene: validation.tier === 'pro' ? -1 : 5,
-            canGenerateStoryboards: validation.tier === 'pro',
-            updatedAt: new Date()
-          })
-          .where(eq(users.email, userEmail.toLowerCase()));
-
-        // Also update user_quotas table for comprehensive tier synchronization
-        try {
-          const { productionQuotaManager } = await import('../lib/productionQuotaManager');
-          await productionQuotaManager.updateUserTier(userId, validation.tier);
-          console.log(`✓ Updated user_quotas table for ${userEmail} to tier: ${validation.tier}`);
-        } catch (error) {
-          console.log(`⚠️ Could not update user_quotas table:`, error);
+      // First, verify if user exists in Firebase
+      let userExistsInFirebase = false;
+      try {
+        const admin = await import('firebase-admin');
+        const firebaseAdmin = admin.default;
+        
+        if (firebaseAdmin.apps.length) {
+          await firebaseAdmin.auth().getUserByEmail(userEmail.toLowerCase());
+          userExistsInFirebase = true;
+          console.log(`✓ Verified user ${userEmail} exists in Firebase`);
         }
+      } catch (error) {
+        console.log(`User ${userEmail} not found in Firebase - will be handled during signup`);
+      }
+      
+      if (userExistsInFirebase) {
+        // User exists in Firebase, check if they also exist in PostgreSQL
+        const existingUser = await db.select()
+          .from(users)
+          .where(eq(users.email, userEmail.toLowerCase()))
+          .limit(1);
+        
+        if (existingUser.length > 0) {
+          // Update existing PostgreSQL user's tier
+          await db.update(users)
+            .set({ 
+              tier: validation.tier,
+              totalPages: validation.tier === 'pro' ? -1 : 20,
+              maxShotsPerScene: validation.tier === 'pro' ? -1 : 5,
+              canGenerateStoryboards: validation.tier === 'pro',
+              updatedAt: new Date()
+            })
+            .where(eq(users.email, userEmail.toLowerCase()));
 
-        console.log(`✓ Updated existing user ${userEmail} to tier: ${validation.tier}`);
+          // Also update user_quotas table for comprehensive tier synchronization
+          if (validation.tier === 'free' || validation.tier === 'pro') {
+            try {
+              const { productionQuotaManager } = await import('../lib/productionQuotaManager');
+              await productionQuotaManager.updateUserTier(userId, validation.tier);
+              console.log(`✓ Updated user_quotas table for ${userEmail} to tier: ${validation.tier}`);
+            } catch (error) {
+              console.log(`⚠️ Could not update user_quotas table:`, error);
+            }
+          }
+
+          console.log(`✓ Updated existing Firebase+PostgreSQL user ${userEmail} to tier: ${validation.tier}`);
+        } else {
+          console.log(`✓ Firebase user exists but not in PostgreSQL - will sync on next signin`);
+        }
       } else {
-        console.log(`✓ New user - tier will be set via Firebase custom claims on first signin`);
+        console.log(`✓ New user - tier will be set via Firebase custom claims during signup`);
       }
       
       // Update promo code usage count
