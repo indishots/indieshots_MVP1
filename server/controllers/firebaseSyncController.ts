@@ -20,21 +20,19 @@ export async function firebaseSync(req: Request, res: Response) {
       return res.status(400).json({ message: 'Missing required Firebase user data' });
     }
     
-    try {
-      console.log('Syncing Firebase user:', {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        provider,
-        emailVerified: firebaseUser.emailVerified
-      });
-      
-      // Get Firebase custom claims to extract tier information
-      let firebaseCustomClaims = {};
-      let tierFromFirebase = 'free';
+    console.log('Syncing Firebase user:', {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      provider,
+      emailVerified: firebaseUser.emailVerified
+    });
+    
+    // Get Firebase custom claims to extract tier information
+    let firebaseCustomClaims = {};
+    let tierFromFirebase = 'free';
     
     try {
       // Get Firebase custom claims
-      try {
       const admin = await import('firebase-admin');
       const firebaseAdmin = admin.default;
       
@@ -229,6 +227,7 @@ export async function firebaseSync(req: Request, res: Response) {
       } catch (error) {
         console.log('INDIE2025 universal check skipped (non-critical):', error);
       }
+    }
     
     // Generate JWT token for session with premium demo overrides
     const userForToken = applyPremiumDemoOverrides(user);
@@ -276,9 +275,9 @@ export async function firebaseSync(req: Request, res: Response) {
     
     console.log('✓ Sending response with user data:', { id: userData.id, email: userData.email });
     
-      res.status(200).json(responseData);
-    } catch (error) {
-      console.error('Firebase sync error:', error);
-      res.status(500).json({ message: 'Failed to sync user data' });
-    }
+    res.status(200).json(responseData);
+  } catch (error) {
+    console.error('Firebase sync error:', error);
+    res.status(500).json({ message: 'Failed to sync user data' });
+  }
 }
