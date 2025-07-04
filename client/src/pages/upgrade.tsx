@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, X, Crown, Zap, Image, Infinity } from 'lucide-react';
+import { CheckCircle, X, Crown, Zap, Image, Infinity, FileText, Camera, Headphones, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
@@ -175,17 +175,17 @@ export default function Upgrade() {
 
       {/* Current Usage Display */}
       {currentTier === 'free' && (
-        <Card className="mb-8 border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+        <Card className="mb-8 border-indigo-200 bg-indigo-50 dark:bg-indigo-950/20 dark:border-indigo-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-amber-600" />
+            <CardTitle className="flex items-center gap-2 text-indigo-800 dark:text-indigo-200">
+              <FileText className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
               Current Usage
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="flex justify-between text-sm mb-2">
+                <div className="flex justify-between text-sm mb-2 text-gray-700 dark:text-gray-300">
                   <span>Pages Used</span>
                   <span>{usage.pagesUsed || 0}/{usage.totalPages || 5} pages</span>
                 </div>
@@ -195,7 +195,7 @@ export default function Upgrade() {
                 />
               </div>
               {(statusData as any)?.needsUpgrade?.forMorePages && (
-                <p className="text-sm text-amber-600">
+                <p className="text-sm text-indigo-700 dark:text-indigo-300">
                   You're approaching your page limit. Upgrade to Pro for unlimited pages.
                 </p>
               )}
@@ -311,45 +311,92 @@ export default function Upgrade() {
                 </tr>
               </thead>
               <tbody className="space-y-2">
-                <tr className="border-b">
-                  <td className="p-2">Pages per month</td>
-                  <td className="text-center p-2">5</td>
-                  <td className="text-center p-2">
-                    <Infinity className="h-4 w-4 mx-auto" />
+                <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td className="p-3 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-indigo-600" />
+                    Pages per month
+                  </td>
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
+                      5 📄
+                    </span>
+                  </td>
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 rounded text-sm text-indigo-700 dark:text-indigo-300">
+                      <Infinity className="h-4 w-4" />
+                      Unlimited ✨
+                    </span>
                   </td>
                 </tr>
-                <tr className="border-b">
-                  <td className="p-2">Shots per scene</td>
-                  <td className="text-center p-2">5</td>
-                  <td className="text-center p-2">
-                    <Infinity className="h-4 w-4 mx-auto" />
+                <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td className="p-3 flex items-center gap-2">
+                    <Camera className="h-4 w-4 text-indigo-600" />
+                    Shots per scene
+                  </td>
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-sm">
+                      5 🎬
+                    </span>
+                  </td>
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 rounded text-sm text-indigo-700 dark:text-indigo-300">
+                      <Infinity className="h-4 w-4" />
+                      Unlimited 🎭
+                    </span>
                   </td>
                 </tr>
-                <tr className="border-b">
-                  <td className="p-2">Storyboard generation</td>
-                  <td className="text-center p-2">
-                    <X className="h-4 w-4 mx-auto text-red-500" />
+                <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td className="p-3 flex items-center gap-2">
+                    <Image className="h-4 w-4 text-indigo-600" />
+                    Storyboard generation
                   </td>
-                  <td className="text-center p-2">
-                    <CheckCircle className="h-4 w-4 mx-auto text-green-600" />
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-700 dark:text-red-400">
+                      <X className="h-4 w-4" />
+                      Not included ❌
+                    </span>
+                  </td>
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded text-sm text-green-700 dark:text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      Included 🎨
+                    </span>
                   </td>
                 </tr>
-                <tr className="border-b">
-                  <td className="p-2">AI image generation</td>
-                  <td className="text-center p-2">
-                    <X className="h-4 w-4 mx-auto text-red-500" />
+                <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td className="p-3 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-indigo-600" />
+                    AI image generation
                   </td>
-                  <td className="text-center p-2">
-                    <Image className="h-4 w-4 mx-auto text-green-600" />
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-700 dark:text-red-400">
+                      <X className="h-4 w-4" />
+                      Not included ❌
+                    </span>
+                  </td>
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded text-sm text-green-700 dark:text-green-400">
+                      <Image className="h-4 w-4" />
+                      Included 🤖
+                    </span>
                   </td>
                 </tr>
-                <tr>
-                  <td className="p-2">Priority support</td>
-                  <td className="text-center p-2">
-                    <X className="h-4 w-4 mx-auto text-red-500" />
+                <tr className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td className="p-3 flex items-center gap-2">
+                    <Headphones className="h-4 w-4 text-indigo-600" />
+                    Priority support
                   </td>
-                  <td className="text-center p-2">
-                    <CheckCircle className="h-4 w-4 mx-auto text-green-600" />
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-700 dark:text-red-400">
+                      <X className="h-4 w-4" />
+                      Standard 📧
+                    </span>
+                  </td>
+                  <td className="text-center p-3">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded text-sm text-green-700 dark:text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      Priority 🚀
+                    </span>
                   </td>
                 </tr>
               </tbody>
