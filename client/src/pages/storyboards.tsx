@@ -201,10 +201,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     queryKey: [`/api/shots/${jobId}/${sceneIndex}`],
   });
   
-  // Progressive loading: fetch storyboards regularly during generation
+  // Always fetch storyboards to check for existing images
   const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
-    enabled: hasStartedGeneration, // Fetch when generation starts
+    enabled: true, // Always enabled to fetch existing storyboards
     refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
