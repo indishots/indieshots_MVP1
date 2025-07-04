@@ -60,24 +60,19 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
     return completedJob ? `/review/${completedJob.id}` : `/columns/${scriptId}`;
   };
   
-  // Get tier info from upgrade status or fallback to user object
-  // Special handling for premium demo account and INDIE2025 protected accounts
-  const protectedProAccounts = [
-    'premium@demo.com',
-    'gopichandudhulipalla@gmail.com',
-    'dhulipallagopichandu@gmail.com'
-  ];
-  const isProtectedProAccount = protectedProAccounts.includes(user?.email || '');
-  const userTier = isProtectedProAccount ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
+  // Get tier info from backend (upgrade status endpoint handles all promo code logic)
+  // Only special override for premium demo account for development purposes
+  const isPremiumDemo = user?.email === 'premium@demo.com';
+  const userTier = isPremiumDemo ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
   const isProUser = userTier === 'pro';
-  const usageData = isProtectedProAccount ? 
+  const usageData = isPremiumDemo ? 
     { totalPages: -1, usedPages: 0, maxShotsPerScene: -1, canGenerateStoryboards: true } :
     ((upgradeStatus as any)?.limits || user);
   
   // Debug logging
   console.log('Left panel tier data:', {
     email: user?.email,
-    isProtectedProAccount,
+    isPremiumDemo,
     upgradeStatusTier: (upgradeStatus as any)?.tier,
     userTier: (user as any)?.tier,
     finalTier: userTier,
@@ -86,8 +81,8 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
     usageData
   });
   
-  if (isProtectedProAccount) {
-    console.log('🔒 LEFT PANEL: Applied pro tier override for protected account:', user?.email);
+  if (isPremiumDemo) {
+    console.log('🔒 LEFT PANEL: Applied pro tier override for premium@demo.com');
   }
   
   if (!isAuthenticated && location === "/") {

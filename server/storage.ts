@@ -4,6 +4,8 @@ import {
   parseJobs,
   shots,
   scriptHealthAnalysis,
+  promoCodes,
+  promoCodeUsage,
   type User,
   type UpsertUser,
   type Script,
@@ -96,40 +98,46 @@ export class DatabaseStorage implements IStorage {
       };
     }
     
-    // INDIE2025 UNIVERSAL VALIDATION: Check if user has INDIE2025 promo code
+    // DYNAMIC PROMO CODE VALIDATION: Check if user has any active promo code (INDIE2025 or future codes)
     try {
-      const promoUsageCheck = await db.execute(`
-        SELECT pc.code FROM promo_code_usage pcu 
-        JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
-        WHERE pcu.user_email = '${user.email?.toLowerCase()}' AND pc.code = 'INDIE2025'
-      `);
-      
-      const hasINDIE2025 = promoUsageCheck && Array.isArray(promoUsageCheck) && promoUsageCheck.length > 0;
-      
-      if (hasINDIE2025 && user.tier !== 'pro') {
-        console.log(`🔧 INDIE2025 UNIVERSAL FIX: Upgrading ${user.email} from ${user.tier} to pro tier`);
+      if (user.email) {
+        const promoUsageResult = await db
+          .select({
+            code: promoCodes.code,
+            grantedTier: promoCodeUsage.grantedTier
+          })
+          .from(promoCodeUsage)
+          .innerJoin(promoCodes, eq(promoCodeUsage.promoCodeId, promoCodes.id))
+          .where(eq(promoCodeUsage.userEmail, user.email.toLowerCase()));
         
-        // Update user in database immediately
-        await this.updateUser(user.id, {
-          tier: 'pro',
-          totalPages: -1,
-          maxShotsPerScene: -1,
-          canGenerateStoryboards: true
-        });
+        const hasPromoCode = promoUsageResult && promoUsageResult.length > 0;
+        const promoTier = hasPromoCode ? promoUsageResult[0].grantedTier : null;
         
-        // Return corrected user object
-        return {
-          ...user,
-          tier: 'pro',
-          totalPages: -1,
-          maxShotsPerScene: -1,
-          canGenerateStoryboards: true
-        };
-      } else if (hasINDIE2025 && user.tier === 'pro') {
-        console.log(`✓ INDIE2025 UNIVERSAL: ${user.email} already has correct pro tier`);
+        if (hasPromoCode && promoTier === 'pro' && user.tier !== 'pro') {
+          console.log(`🔧 PROMO CODE DYNAMIC FIX: Upgrading ${user.email} from ${user.tier} to pro tier (Promo: ${promoUsageResult[0].code})`);
+          
+          // Update user in database immediately
+          await this.updateUser(user.id, {
+            tier: 'pro',
+            totalPages: -1,
+            maxShotsPerScene: -1,
+            canGenerateStoryboards: true
+          });
+          
+          // Return corrected user object
+          return {
+            ...user,
+            tier: 'pro',
+            totalPages: -1,
+            maxShotsPerScene: -1,
+            canGenerateStoryboards: true
+          };
+        } else if (hasPromoCode && promoTier === 'pro' && user.tier === 'pro') {
+          console.log(`✓ PROMO CODE DYNAMIC: ${user.email} already has correct pro tier (Promo: ${promoUsageResult[0].code})`);
+        }
       }
     } catch (error) {
-      console.log('INDIE2025 universal check skipped (non-critical):', error);
+      console.log('Dynamic promo code check skipped (non-critical):', error);
     }
     
     return user;

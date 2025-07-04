@@ -40,19 +40,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
     refetchOnMount: true,
   });
 
-  // Get accurate tier information from upgrade status
-  // Special handling for premium demo account and INDIE2025 protected accounts
-  const protectedProAccounts = [
-    'premium@demo.com',
-    'gopichandudhulipalla@gmail.com',
-    'dhulipallagopichandu@gmail.com'
-  ];
-  const isProtectedProAccount = protectedProAccounts.includes(user?.email || '');
-  const userTier = isProtectedProAccount ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
+  // Get tier information from backend (upgrade status endpoint handles all promo code logic)
+  // Only special override for premium demo account for development purposes
+  const isPremiumDemo = user?.email === 'premium@demo.com';
+  const userTier = isPremiumDemo ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
   const isProUser = userTier === 'pro';
   
-  if (isProtectedProAccount) {
-    console.log('🔒 HEADER: Applied pro tier override for protected account:', user?.email);
+  if (isPremiumDemo) {
+    console.log('🔒 HEADER: Applied pro tier override for premium@demo.com');
   }
 
   // Pages that should show the sidebar
