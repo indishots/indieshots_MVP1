@@ -35,6 +35,7 @@ import PublicFAQ from "@/pages/public-faq";
 import VerifyEmail from "@/pages/verify-email";
 import FilmAnimationsDemo from "@/pages/film-animations-demo";
 import TestPromoFlow from "@/pages/test-promo-flow";
+import ScriptHealthComingSoon from "@/pages/script-health-coming-soon";
 
 function App() {
   return (
@@ -241,6 +242,16 @@ function App() {
                     <FilmAnimationsDemo />
                   </AppLayout>
                 )} />
+              </Route>
+
+              <Route path="/script-health/:scriptId">
+                {(params) => (
+                  <ProtectedRoute component={() => (
+                    <AppLayout>
+                      <ScriptHealthComingSoon />
+                    </AppLayout>
+                  )} />
+                )}
               </Route>
 
               <Route path="/public-faq">
