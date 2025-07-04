@@ -1,12 +1,10 @@
 # Main Locust configuration file
-# This imports the image generation test classes
-
 from locust import HttpUser, task, between
 import time
 import json
 import random
 
-class ImageGenerationAPIUser(HttpUser):
+class IndieShots_LoadTestUser(HttpUser):
     wait_time = between(1, 3)
     
     def on_start(self):
@@ -92,4 +90,4 @@ class ImageGenerationAPIUser(HttpUser):
                 response.failure(f"Health check failed: {response.status_code}")
 
 # Default user class
-User = ImageGenerationAPIUser
+User = IndieShots_LoadTestUser
