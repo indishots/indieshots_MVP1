@@ -13,6 +13,32 @@ import * as path from 'path';
 
 const router = Router();
 
+// Debug endpoint to test storyboard access
+router.get('/debug/storyboard-access/:userId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const user = (req as any).user;
+    const userTier = user?.tier || 'free';
+    
+    console.log(`🔍 DEBUG: Checking storyboard access for user ${userId}`);
+    console.log(`User object:`, JSON.stringify(user, null, 2));
+    
+    const storyboardAccess = await productionQuotaManager.checkStoryboardAccess(userId, userTier);
+    const quota = await productionQuotaManager.getUserQuota(userId, userTier);
+    
+    res.json({
+      userId,
+      userTier,
+      storyboardAccess,
+      quota,
+      user: user
+    });
+  } catch (error) {
+    console.error('Debug endpoint error:', error);
+    res.status(500).json({ error: 'Debug failed' });
+  }
+});
+
 // In-memory storage for scenes and shots (replace with database in production)
 const scenesStorage = new Map<string, any>();
 const shotsStorage = new Map<string, any[]>();
@@ -306,15 +332,25 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     const user = (req as any).user;
     const userTier = user?.tier || 'free';
 
+    console.log(`🎬 STORYBOARD GENERATION REQUEST`);
+    console.log(`JobId: ${jobId}, SceneIndex: ${sceneIndex}`);
+    console.log(`User ID: ${userId}, Tier: ${userTier}`);
+    console.log(`Full user object:`, JSON.stringify(user, null, 2));
+
     // Check storyboard access with quota manager
     const storyboardAccess = await productionQuotaManager.checkStoryboardAccess(userId, userTier);
+    console.log(`Storyboard access check result:`, storyboardAccess);
+    
     if (!storyboardAccess.allowed) {
+      console.log(`❌ STORYBOARD ACCESS DENIED: ${storyboardAccess.reason}`);
       return res.status(403).json({
         message: storyboardAccess.reason,
         requiresUpgrade: true,
         feature: 'storyboards'
       });
     }
+
+    console.log(`✅ STORYBOARD ACCESS GRANTED - proceeding with generation`);
 
     // Verify user owns the job
     const parseJob = await storage.getParseJob(parseInt(jobId));
