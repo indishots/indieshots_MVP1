@@ -58,8 +58,8 @@ export default function Dashboard() {
               <div>
                 <CardTitle className="text-lg flex items-center gap-2">
                   {userTier === 'pro' ? (
-                    <span className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-pink-100 dark:from-indigo-900/30 dark:to-pink-900/30 rounded-full border border-indigo-200/50 dark:border-indigo-700/30">
-                      <Crown className="h-4 w-4 text-indigo-500 animate-pulse" />
+                    <span className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-amber-100 dark:from-indigo-900/30 dark:to-amber-900/30 rounded-full border border-indigo-200/50 dark:border-indigo-700/30">
+                      <Crown className="h-4 w-4 text-amber-500 animate-pulse" />
                       <span className="font-bold text-indigo-700 dark:text-indigo-300">Pro Plan</span>
                     </span>
                   ) : (
@@ -71,7 +71,7 @@ export default function Dashboard() {
                 </CardTitle>
                 <CardDescription>
                   {userTier === 'pro' ? (
-                    <span className="bg-gradient-to-r from-indigo-600 to-pink-600 dark:from-indigo-400 dark:to-pink-400 bg-clip-text text-transparent font-medium">
+                    <span className="bg-gradient-to-r from-indigo-600 to-amber-600 dark:from-indigo-400 dark:to-amber-400 bg-clip-text text-transparent font-medium">
                       Unlimited access
                     </span>
                   ) : (
@@ -86,12 +86,12 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {userTier === 'pro' ? (
-              <div className="text-center py-4 px-3 bg-gradient-to-br from-indigo-50 to-pink-50 dark:from-indigo-950/20 dark:to-pink-950/20 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30">
+              <div className="text-center py-4 px-3 bg-gradient-to-br from-indigo-50 to-amber-50 dark:from-indigo-950/20 dark:to-amber-950/20 rounded-lg border border-indigo-200/50 dark:border-indigo-800/30">
                 <div className="relative mb-3">
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse"></div>
-                  <Crown className="h-6 w-6 text-indigo-500 mx-auto drop-shadow-sm" />
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                  <Crown className="h-6 w-6 text-amber-500 mx-auto drop-shadow-sm" />
                 </div>
-                <p className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-pink-600 dark:from-indigo-400 dark:to-pink-400 bg-clip-text text-transparent mb-1">
+                <p className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-amber-600 dark:from-indigo-400 dark:to-amber-400 bg-clip-text text-transparent mb-1">
                   Unlimited Pages
                 </p>
                 <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium mb-3">
@@ -99,7 +99,7 @@ export default function Dashboard() {
                 </p>
                 <div className="flex justify-center space-x-1">
                   <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                   <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                 </div>
               </div>
