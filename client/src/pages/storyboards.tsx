@@ -14,7 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
 import { StoryboardUpgradeModal } from "@/components/ui/storyboard-upgrade-modal";
-import { LuxuryStoryboardAnimation } from "@/components/ui/classy-shot-animation";
+
 
 interface StoryboardsProps {
   jobId: string;
