@@ -1,6 +1,6 @@
 
-const https = require('https');
-const fs = require('fs');
+import https from 'https';
+import fs from 'fs';
 
 class PerformanceMonitor {
   constructor(targetUrl = 'https://indieshots.replit.app') {
@@ -190,7 +190,7 @@ class PerformanceMonitor {
 }
 
 // CLI Usage
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const monitor = new PerformanceMonitor();
   
   async function runTests() {
@@ -203,4 +203,4 @@ if (require.main === module) {
   runTests().catch(console.error);
 }
 
-module.exports = PerformanceMonitor;
+export default PerformanceMonitor;
