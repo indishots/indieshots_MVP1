@@ -43,72 +43,72 @@ export default function Features() {
           
           <div className="grid md:grid-cols-2 gap-8">
             {/* Feature Card 1 */}
-            <div className="group relative bg-gradient-to-br from-indigo-50/50 to-blue-50/30 border border-indigo-200/40 p-8 rounded-2xl hover:shadow-lg hover:shadow-indigo-100/50 transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute top-6 right-6 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-                <div className="w-16 h-16 bg-indigo-200 rounded-full"></div>
+            <div className="group relative bg-indigo-50/30 border border-indigo-200/30 p-8 rounded-2xl hover:shadow-md hover:shadow-indigo-100/30 transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <div className="w-16 h-16 bg-indigo-100 rounded-full"></div>
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-indigo-100">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-indigo-100/50">
                     <CheckCircle2 className="h-6 w-6 text-indigo-600" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-indigo-900 mb-3">Intelligent Scene Breakdown</h3>
-                <p className="text-indigo-700/80 leading-relaxed">
+                <h3 className="text-xl font-bold text-indigo-800 mb-3">Intelligent Scene Breakdown</h3>
+                <p className="text-indigo-700/70 leading-relaxed">
                   Our advanced analysis meticulously dissects your script, identifying scenes, characters, locations, and dialogue for meticulous shot planning.
                 </p>
               </div>
             </div>
             
             {/* Feature Card 2 */}
-            <div className="group relative bg-gradient-to-br from-emerald-50/50 to-teal-50/30 border border-emerald-200/40 p-8 rounded-2xl hover:shadow-lg hover:shadow-emerald-100/50 transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute top-6 right-6 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-                <div className="w-16 h-16 bg-emerald-200 rounded-full"></div>
+            <div className="group relative bg-indigo-50/30 border border-indigo-200/30 p-8 rounded-2xl hover:shadow-md hover:shadow-indigo-100/30 transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <div className="w-16 h-16 bg-indigo-100 rounded-full"></div>
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-emerald-100">
-                    <Globe className="h-6 w-6 text-emerald-600" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-indigo-100/50">
+                    <Globe className="h-6 w-6 text-indigo-600" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-emerald-900 mb-3">Comprehensive Shot Planning</h3>
-                <p className="text-emerald-700/80 leading-relaxed">
+                <h3 className="text-xl font-bold text-indigo-800 mb-3">Comprehensive Shot Planning</h3>
+                <p className="text-indigo-700/70 leading-relaxed">
                   Craft production-ready shot lists featuring essential fields, including detailed camera movements, lighting requirements, props, and technical specifications.
                 </p>
               </div>
             </div>
             
             {/* Feature Card 3 */}
-            <div className="group relative bg-gradient-to-br from-purple-50/50 to-pink-50/30 border border-purple-200/40 p-8 rounded-2xl hover:shadow-lg hover:shadow-purple-100/50 transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute top-6 right-6 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-                <div className="w-16 h-16 bg-purple-200 rounded-full"></div>
+            <div className="group relative bg-indigo-50/30 border border-indigo-200/30 p-8 rounded-2xl hover:shadow-md hover:shadow-indigo-100/30 transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <div className="w-16 h-16 bg-indigo-100 rounded-full"></div>
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-purple-100">
-                    <Clock className="h-6 w-6 text-purple-600" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-indigo-100/50">
+                    <Clock className="h-6 w-6 text-indigo-600" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-purple-900 mb-3">Dynamic Visual Storyboards</h3>
-                <p className="text-purple-700/80 leading-relaxed">
+                <h3 className="text-xl font-bold text-indigo-800 mb-3">Dynamic Visual Storyboards</h3>
+                <p className="text-indigo-700/70 leading-relaxed">
                   Design captivating storyboards with customizable image creation. Refine and regenerate visuals with specific prompts to perfectly match your cinematic vision.
                 </p>
               </div>
             </div>
             
             {/* Feature Card 4 */}
-            <div className="group relative bg-gradient-to-br from-amber-50/50 to-orange-50/30 border border-amber-200/40 p-8 rounded-2xl hover:shadow-lg hover:shadow-amber-100/50 transition-all duration-300 hover:-translate-y-1">
-              <div className="absolute top-6 right-6 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-                <div className="w-16 h-16 bg-amber-200 rounded-full"></div>
+            <div className="group relative bg-indigo-50/30 border border-indigo-200/30 p-8 rounded-2xl hover:shadow-md hover:shadow-indigo-100/30 transition-all duration-300 hover:-translate-y-1">
+              <div className="absolute top-6 right-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <div className="w-16 h-16 bg-indigo-100 rounded-full"></div>
               </div>
               <div className="relative z-10">
                 <div className="mb-6">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-amber-100">
-                    <Zap className="h-6 w-6 text-amber-600" />
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl shadow-sm border border-indigo-100/50">
+                    <Zap className="h-6 w-6 text-indigo-600" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-amber-900 mb-3">Seamless Export</h3>
-                <p className="text-amber-700/80 leading-relaxed">
+                <h3 className="text-xl font-bold text-indigo-800 mb-3">Seamless Export</h3>
+                <p className="text-indigo-700/70 leading-relaxed">
                   Effortlessly download production-ready shot lists and complete storyboard packages. Perfect for sharing with your crew and starting production.
                 </p>
               </div>
