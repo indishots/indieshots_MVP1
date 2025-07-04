@@ -116,15 +116,6 @@ export default function Dashboard() {
               </div>
             )}
           </CardContent>
-          <CardFooter className="pt-0 flex justify-center">
-            {userTier === 'free' && (
-              <Button variant="outline" size="sm" asChild>
-                <Link href="/upgrade">
-                  Upgrade for unlimited pages
-                </Link>
-              </Button>
-            )}
-          </CardFooter>
         </Card>
         
         <Card>
@@ -146,14 +137,23 @@ export default function Dashboard() {
               </div>
             </div>
           </CardContent>
-          <CardFooter className="pt-0 flex justify-center">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/upload">
-                Upload New Script
-              </Link>
-            </Button>
-          </CardFooter>
         </Card>
+      </div>
+
+      {/* Action Buttons Row */}
+      <div className="flex gap-4 justify-center mb-8">
+        {userTier === 'free' && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/upgrade">
+              Upgrade for unlimited pages
+            </Link>
+          </Button>
+        )}
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/upload">
+            Upload New Script
+          </Link>
+        </Button>
       </div>
       
       {/* Recent Activity */}
