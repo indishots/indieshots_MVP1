@@ -70,9 +70,9 @@ export async function firebaseSync(req: Request, res: Response) {
         providerId: firebaseUser.uid,
         emailVerified: firebaseUser.emailVerified || false,
         tier: tierFromFirebase, // Use Firebase custom claims as single source of truth
-        totalPages: tierFromFirebase === 'pro' ? -1 : 20, // Pro tier gets unlimited pages
+        totalPages: tierFromFirebase === 'pro' ? -1 : 5, // Pro tier gets unlimited pages, free tier gets 5
         usedPages: 0,
-        maxShotsPerScene: tierFromFirebase === 'pro' ? -1 : 5, // Pro tier gets unlimited shots
+        maxShotsPerScene: tierFromFirebase === 'pro' ? -1 : 5, // Pro tier gets unlimited shots, free tier gets 5
         canGenerateStoryboards: tierFromFirebase === 'pro', // Pro tier can generate storyboards
       });
       
@@ -109,7 +109,7 @@ export async function firebaseSync(req: Request, res: Response) {
       // Sync tier information from Firebase custom claims (critical for promo code users)
       if (tierFromFirebase !== user.tier) {
         updates.tier = tierFromFirebase;
-        updates.totalPages = tierFromFirebase === 'pro' ? -1 : 20;
+        updates.totalPages = tierFromFirebase === 'pro' ? -1 : 5;
         updates.maxShotsPerScene = tierFromFirebase === 'pro' ? -1 : 5;
         updates.canGenerateStoryboards = tierFromFirebase === 'pro';
         console.log(`Syncing tier from Firebase: ${user.tier} → ${tierFromFirebase}`);

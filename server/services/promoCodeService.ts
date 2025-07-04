@@ -231,7 +231,7 @@ export class PromoCodeService {
           await db.update(users)
             .set({ 
               tier: validation.tier,
-              totalPages: validation.tier === 'pro' ? -1 : 20,
+              totalPages: validation.tier === 'pro' ? -1 : 5,
               maxShotsPerScene: validation.tier === 'pro' ? -1 : 5,
               canGenerateStoryboards: validation.tier === 'pro',
               updatedAt: new Date()

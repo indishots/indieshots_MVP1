@@ -38,16 +38,23 @@ interface RequestUser {
  */
 export function generateToken(user: any): string {
   const jti = Math.random().toString(36).substring(2, 15);
+  
+  // Ensure tier is explicitly determined
+  const userTier = user.tier || 'free';
+  const isProTier = userTier === 'pro';
+  
   const payload: TokenPayload = {
     id: user.id,
     email: user.email,
-    tier: user.tier || 'free',
-    totalPages: user.totalPages || (user.tier === 'pro' ? -1 : 5),
+    tier: userTier,
+    totalPages: user.totalPages !== undefined ? user.totalPages : (isProTier ? -1 : 5),
     usedPages: user.usedPages || 0,
-    maxShotsPerScene: user.maxShotsPerScene || (user.tier === 'pro' ? -1 : 5),
-    canGenerateStoryboards: user.canGenerateStoryboards || (user.tier === 'pro'),
+    maxShotsPerScene: user.maxShotsPerScene !== undefined ? user.maxShotsPerScene : (isProTier ? -1 : 5),
+    canGenerateStoryboards: user.canGenerateStoryboards !== undefined ? user.canGenerateStoryboards : isProTier,
     jti
   };
+  
+  console.log(`[JWT] Generated token for ${user.email} with tier: ${userTier}, storyboards: ${payload.canGenerateStoryboards}`);
   
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
