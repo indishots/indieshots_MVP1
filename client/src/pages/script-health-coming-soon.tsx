@@ -116,27 +116,26 @@ export default function ScriptHealthComingSoon() {
         </div>
 
         {/* CTA Section */}
-        <Card className="bg-gradient-to-r from-indigo-600 to-amber-600 text-white border-0">
+        <Card className="bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200 dark:border-indigo-800">
           <CardContent className="text-center py-8">
-            <h2 className="text-2xl font-bold mb-4">Stay Updated</h2>
-            <p className="text-lg mb-6 text-indigo-100">
+            <h2 className="text-2xl font-bold mb-4 text-indigo-700 dark:text-indigo-300">Stay Updated</h2>
+            <p className="text-lg mb-6 text-gray-700 dark:text-gray-300">
               This powerful feature will be available soon. Continue using IndieShots for your shot list generation needs!
             </p>
             <div className="flex gap-4 justify-center">
               <Button 
-                variant="secondary" 
+                variant="outline" 
                 size="lg"
                 onClick={() => setLocation('/projects')}
-                className="bg-white text-indigo-600 hover:bg-gray-100"
+                className="border-indigo-300 text-indigo-700 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-300 dark:hover:bg-indigo-900/30"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Projects
               </Button>
               <Button 
-                variant="outline" 
                 size="lg"
                 onClick={() => setLocation('/dashboard')}
-                className="border-white text-white hover:bg-white hover:text-indigo-600"
+                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600"
               >
                 Go to Dashboard
               </Button>
