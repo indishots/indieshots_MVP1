@@ -148,17 +148,25 @@ class AuthManager {
 
       if (response.ok) {
         const userData = await response.json();
+        
+        // Special handling for premium demo account - force pro tier
+        const isPremiumDemo = userData.email === 'premium@demo.com';
+        
         this.user = {
           id: userData.id,
           email: userData.email,
           displayName: userData.displayName || userData.email?.split('@')[0] || 'User',
           provider: userData.provider || 'password',
-          tier: userData.tier,
+          tier: isPremiumDemo ? 'pro' : userData.tier,
           usedPages: userData.usedPages,
-          totalPages: userData.totalPages,
-          maxShotsPerScene: userData.maxShotsPerScene,
-          canGenerateStoryboards: userData.canGenerateStoryboards
+          totalPages: isPremiumDemo ? -1 : userData.totalPages,
+          maxShotsPerScene: isPremiumDemo ? -1 : userData.maxShotsPerScene,
+          canGenerateStoryboards: isPremiumDemo ? true : userData.canGenerateStoryboards
         };
+        
+        if (isPremiumDemo) {
+          console.log('🔒 FRONTEND: Applied pro tier override for premium@demo.com');
+        }
         this.authState = 'authenticated';
         console.log('Backend session created for:', this.user.email, 'with tier:', this.user.tier);
         
@@ -394,6 +402,20 @@ class AuthManager {
 
   updateUserData(userData: Partial<AuthUser>) {
     if (this.user) {
+      // Special handling for premium demo account - force pro tier
+      const isPremiumDemo = this.user.email === 'premium@demo.com';
+      
+      if (isPremiumDemo) {
+        userData = {
+          ...userData,
+          tier: 'pro',
+          totalPages: -1,
+          maxShotsPerScene: -1,
+          canGenerateStoryboards: true
+        };
+        console.log('🔒 FRONTEND: Applied pro tier override in updateUserData for premium@demo.com');
+      }
+      
       this.user = { ...this.user, ...userData };
       this.notifyListeners();
     }

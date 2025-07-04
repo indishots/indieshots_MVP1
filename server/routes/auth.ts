@@ -58,17 +58,23 @@ router.get('/user', authMiddleware, async (req: Request, res: Response) => {
 
     // For Firebase-only authentication, return the JWT user data directly
     // since that's the authoritative source for Firebase users
+    const isPremiumDemo = jwtUser.email === 'premium@demo.com';
+    
     const userData = {
       id: jwtUser.id || jwtUser.uid,
       uid: jwtUser.uid || jwtUser.id,
       email: jwtUser.email,
       displayName: jwtUser.displayName || jwtUser.email?.split('@')[0],
-      tier: jwtUser.tier || 'free',
-      totalPages: jwtUser.totalPages || (jwtUser.tier === 'pro' ? -1 : 5),
+      tier: isPremiumDemo ? 'pro' : (jwtUser.tier || 'free'),
+      totalPages: isPremiumDemo ? -1 : (jwtUser.totalPages || (jwtUser.tier === 'pro' ? -1 : 5)),
       usedPages: jwtUser.usedPages || 0,
-      maxShotsPerScene: jwtUser.maxShotsPerScene || (jwtUser.tier === 'pro' ? -1 : 5),
-      canGenerateStoryboards: jwtUser.canGenerateStoryboards !== undefined ? jwtUser.canGenerateStoryboards : (jwtUser.tier === 'pro')
+      maxShotsPerScene: isPremiumDemo ? -1 : (jwtUser.maxShotsPerScene || (jwtUser.tier === 'pro' ? -1 : 5)),
+      canGenerateStoryboards: isPremiumDemo ? true : (jwtUser.canGenerateStoryboards !== undefined ? jwtUser.canGenerateStoryboards : (jwtUser.tier === 'pro'))
     };
+    
+    if (isPremiumDemo) {
+      console.log('🔒 AUTH USER ENDPOINT: Applied pro tier override for premium@demo.com');
+    }
 
     console.log(`[AUTH] Returning user data - Tier: ${userData.tier}, CanGenerateStoryboards: ${userData.canGenerateStoryboards}`);
     res.json(userData);
@@ -406,18 +412,25 @@ router.get('/user', authMiddleware, async (req, res) => {
     // Get fresh tier information from PostgreSQL using Firebase UID
     const userQuota = await quotaManager.getUserQuota(tokenUser.id, tokenUser.tier);
     
+    // Special handling for premium demo account
+    const isPremiumDemo = tokenUser.email === 'premium@demo.com';
+    
     // Return user data with fresh tier information from PostgreSQL database
     const userData = {
       id: tokenUser.id,
       email: tokenUser.email,
       displayName: tokenUser.displayName,
       photoURL: tokenUser.photoURL,
-      tier: userQuota.tier,
+      tier: isPremiumDemo ? 'pro' : userQuota.tier,
       usedPages: userQuota.usedPages,
-      totalPages: userQuota.totalPages,
-      maxShotsPerScene: userQuota.maxShotsPerScene,
-      canGenerateStoryboards: userQuota.canGenerateStoryboards
+      totalPages: isPremiumDemo ? -1 : userQuota.totalPages,
+      maxShotsPerScene: isPremiumDemo ? -1 : userQuota.maxShotsPerScene,
+      canGenerateStoryboards: isPremiumDemo ? true : userQuota.canGenerateStoryboards
     };
+    
+    if (isPremiumDemo) {
+      console.log('🔒 QUOTA USER ENDPOINT: Applied pro tier override for premium@demo.com');
+    }
     
     res.json(userData);
   } catch (error) {
