@@ -40,7 +40,7 @@ fi
 echo "▶️  Starting load test..."
 artillery run artillery-config.yml \
   --output "results/load-test-${TIMESTAMP}.json" \
-  --config config.target=https://indieshots.replit.app
+  --config target=https://indieshots.replit.app
 
 # Check if results file was created
 if [ -f "results/load-test-${TIMESTAMP}.json" ]; then
