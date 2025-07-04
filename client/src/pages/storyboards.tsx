@@ -350,8 +350,28 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   
   const shots = (shotsData as any)?.shots || [];
   const allStoryboardFrames = (storyboards as any)?.storyboards || [];
+  
+  // Debug logging to see what data we're getting
+  console.log('🔍 Storyboard data check:', {
+    storyboards: storyboards,
+    allFrames: allStoryboardFrames,
+    frameCount: allStoryboardFrames.length,
+    frameDetails: allStoryboardFrames.map((frame: any, idx: number) => ({
+      index: idx,
+      hasImage: frame.hasImage,
+      hasImageData: !!frame.imageData,
+      imageDataLength: frame.imageData?.length || 0
+    }))
+  });
+  
   const storyboardFrames = allStoryboardFrames.filter((frame: any) => frame.hasImage && frame.imageData);
   const hasGeneratedImages = storyboardFrames.length > 0;
+  
+  console.log('🎯 Filtered results:', {
+    filteredCount: storyboardFrames.length,
+    hasGeneratedImages,
+    shouldShowGenerate: !hasGeneratedImages
+  });
   
   return (
     <div className="max-w-6xl mx-auto p-6">
