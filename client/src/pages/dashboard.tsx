@@ -134,14 +134,19 @@ export default function Dashboard() {
               Total scripts in your account
             </CardDescription>
           </CardHeader>
-          <CardContent className="pb-4">
-            <div className="flex items-center justify-center py-2">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-foreground mb-1">
+          <CardContent>
+            <div className="text-center py-1">
+              <div className="mb-2">
+                <div className="text-2xl font-bold text-foreground mb-1">
                   {isLoadingScripts ? "..." : Array.isArray(scripts) ? scripts.length : 0}
                 </div>
-                <div className="text-sm text-muted-foreground font-medium">
+                <div className="text-sm text-muted-foreground">
                   scripts
+                </div>
+              </div>
+              <div className="mb-2">
+                <div className="text-sm text-muted-foreground font-medium">
+                  Total in your account
                 </div>
               </div>
             </div>
