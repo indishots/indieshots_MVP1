@@ -34,39 +34,47 @@ export const CinematicShotAnimation: React.FC<CinematicShotAnimationProps> = ({
       
       {/* Main Animation Container */}
       <div className="relative z-10 flex flex-col items-center space-y-6">
-        {/* Subtle Central Element */}
+        {/* Clear Central Animation */}
         <div className="relative">
-          {/* Outer Ring */}
-          <div className="w-20 h-20 rounded-full border border-indigo-300 dark:border-indigo-600 animate-spin-slow opacity-50"></div>
-          
-          {/* Inner Ring */}
-          <div className="absolute inset-2 rounded-full border border-indigo-400 dark:border-indigo-500 animate-spin-reverse opacity-60"></div>
-          
-          {/* Core Element */}
-          <div className="absolute inset-4 rounded-full bg-gradient-to-r from-indigo-400 to-indigo-500 dark:from-indigo-500 dark:to-indigo-600 opacity-80 flex items-center justify-center shadow-lg">
-            <div className="relative">
-              <Film className="w-6 h-6 text-white animate-bounce-subtle" />
-              {/* Subtle Glow */}
-              <div className="absolute inset-0 rounded-full bg-white opacity-10 animate-ping"></div>
+          {/* Main Clapperboard */}
+          <div className="w-24 h-20 bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-700 dark:to-slate-800 rounded-lg border-2 border-indigo-400 dark:border-indigo-500 flex flex-col shadow-lg animate-bounce-subtle">
+            {/* Clapperboard Top */}
+            <div className="h-6 bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-t-md border-b-2 border-slate-600 flex items-center justify-center">
+              <div className="text-white text-xs font-bold">SHOT</div>
+            </div>
+            
+            {/* Clapperboard Body */}
+            <div className="flex-1 flex items-center justify-center">
+              <Film className="w-8 h-8 text-indigo-400 dark:text-indigo-300" />
+            </div>
+            
+            {/* Animated stripes */}
+            <div className="absolute top-0 left-0 right-0 h-6 rounded-t-md overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-slide-stripe"></div>
             </div>
           </div>
           
-          {/* Minimal Orbiting Elements */}
-          <div className="absolute inset-0 animate-orbit">
-            <div className="absolute -top-1 left-1/2 transform -translate-x-1/2">
-              <Camera className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
+          {/* Clear Rotating Ring */}
+          <div className="absolute inset-0 w-32 h-32 -m-4">
+            <div className="w-full h-full rounded-full border-2 border-dashed border-indigo-400 dark:border-indigo-500 animate-spin-slow opacity-70"></div>
+          </div>
+          
+          {/* Visible Orbiting Elements */}
+          <div className="absolute inset-0 w-32 h-32 -m-4 animate-orbit">
+            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-indigo-100 dark:bg-indigo-900 rounded-full p-2 border border-indigo-300 dark:border-indigo-600">
+              <Camera className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </div>
           </div>
           
-          <div className="absolute inset-0 animate-orbit-reverse">
-            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-              <Video className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
+          <div className="absolute inset-0 w-32 h-32 -m-4 animate-orbit-reverse">
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-indigo-100 dark:bg-indigo-900 rounded-full p-2 border border-indigo-300 dark:border-indigo-600">
+              <Video className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </div>
           </div>
           
-          <div className="absolute inset-0 animate-orbit-slow">
-            <div className="absolute top-1/2 -right-1 transform -translate-y-1/2">
-              <Clapperboard className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
+          <div className="absolute inset-0 w-32 h-32 -m-4 animate-orbit-slow">
+            <div className="absolute top-1/2 -right-2 transform -translate-y-1/2 bg-indigo-100 dark:bg-indigo-900 rounded-full p-2 border border-indigo-300 dark:border-indigo-600">
+              <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             </div>
           </div>
         </div>

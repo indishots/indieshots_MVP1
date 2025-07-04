@@ -122,6 +122,11 @@
   90% { transform: translate(-10%, 10%); }
 }
 
+@keyframes slide-stripe {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
 /* Animation Classes */
 .animate-float-slow { animation: float-slow 4s ease-in-out infinite; }
 .animate-float-delay-1 { animation: float-delay-1 3.5s ease-in-out infinite 0.5s; }
@@ -145,6 +150,7 @@
 .animate-fade-in-out { animation: fade-in-out 3s ease-in-out infinite; }
 .animate-film-strip { animation: film-strip 1.5s ease-in-out infinite; }
 .animate-grain { animation: grain 8s steps(10) infinite; }
+.animate-slide-stripe { animation: slide-stripe 2s ease-in-out infinite; }
 
 /* Background Grain Pattern */
 .bg-grain {
