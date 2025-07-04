@@ -182,12 +182,16 @@ export class PromoCodeService {
   ): Promise<boolean> {
     try {
       // Validate the promo code first
+      console.log(`🎯 PROMO CODE APPLICATION: ${code.toUpperCase()} for user ${userEmail}`);
+      
       const validation = await this.validatePromoCode(code, userEmail, ipAddress);
       
       if (!validation.isValid || !validation.promoCodeId) {
-        console.error('Cannot apply invalid promo code:', validation.errorMessage);
+        console.error(`❌ Cannot apply invalid promo code ${code.toUpperCase()}:`, validation.errorMessage);
         return false;
       }
+      
+      console.log(`✅ PROMO CODE VALIDATED: ${code.toUpperCase()} grants ${validation.tier} tier to ${userEmail}`);
       
       // Create usage record
       const usageData: InsertPromoCodeUsage = {

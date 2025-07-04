@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { generateToken } from '../auth/jwt';
 import { ensurePremiumDemoProTier, applyPremiumDemoOverrides } from '../utils/premiumDemo';
+import { PromoCodeUniversalValidator } from '../utils/promoCodeUniversalValidator';
 
 /**
  * Sync Firebase user with local database
@@ -172,6 +173,34 @@ export async function firebaseSync(req: Request, res: Response) {
       
       if (Object.keys(updates).length > 0) {
         user = await storage.updateUser(user.id, updates);
+      }
+      
+      // UNIVERSAL INDIE2025 VALIDATION: Ensure any user with INDIE2025 promo code has pro tier
+      try {
+        const promoUsageCheck = await storage.db?.execute(`
+          SELECT pc.code FROM promo_code_usage pcu 
+          JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
+          WHERE pcu.user_email = ? AND pc.code = 'INDIE2025'
+        `, [user.email.toLowerCase()]);
+        
+        const hasINDIE2025 = promoUsageCheck && promoUsageCheck.length > 0;
+        
+        if (hasINDIE2025 && user.tier !== 'pro') {
+          console.log(`🔧 INDIE2025 UNIVERSAL FIX: Upgrading ${user.email} from ${user.tier} to pro tier`);
+          
+          user = await storage.updateUser(user.id, {
+            tier: 'pro',
+            totalPages: -1,
+            maxShotsPerScene: -1,
+            canGenerateStoryboards: true
+          });
+          
+          console.log(`✅ INDIE2025 UNIVERSAL: ${user.email} now has pro tier access`);
+        } else if (hasINDIE2025 && user.tier === 'pro') {
+          console.log(`✓ INDIE2025 UNIVERSAL: ${user.email} already has correct pro tier`);
+        }
+      } catch (error) {
+        console.log('INDIE2025 universal check skipped (non-critical):', error);
       }
     }
     
