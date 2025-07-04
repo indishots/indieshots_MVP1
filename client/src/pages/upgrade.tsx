@@ -352,7 +352,6 @@ export default function Upgrade() {
                   </td>
                   <td className="text-center p-3">
                     <span className="inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-700 dark:text-red-400">
-                      <X className="h-4 w-4" />
                       Not included ❌
                     </span>
                   </td>
@@ -370,7 +369,6 @@ export default function Upgrade() {
                   </td>
                   <td className="text-center p-3">
                     <span className="inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-700 dark:text-red-400">
-                      <X className="h-4 w-4" />
                       Not included ❌
                     </span>
                   </td>
@@ -388,7 +386,6 @@ export default function Upgrade() {
                   </td>
                   <td className="text-center p-3">
                     <span className="inline-flex items-center px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-sm text-red-700 dark:text-red-400">
-                      <X className="h-4 w-4" />
                       Standard 📧
                     </span>
                   </td>
