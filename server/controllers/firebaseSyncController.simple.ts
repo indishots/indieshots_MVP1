@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { storage } from '../storage.js';
-import { generateToken } from '../auth/jwt.js';
+import { storage } from '../storage';
+import { generateToken } from '../auth/jwt';
 
 // Simple Firebase sync controller without complex nested try-catch blocks
 export const syncFirebaseUser = async (req: Request, res: Response) => {
@@ -14,8 +14,8 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
     console.log('Firebase sync for:', firebaseUser.email);
     
     // DYNAMIC PROMO CODE VALIDATION: Check if user has promo code usage
-    const { db } = await import('../db.js');
-    const { promoCodeUsage } = await import('../../shared/schema.js');
+    const { db } = await import('../db');
+    const { promoCodeUsage } = await import('../../shared/schema');
     const { eq } = await import('drizzle-orm');
     
     const hasPromoCode = await db.select()
