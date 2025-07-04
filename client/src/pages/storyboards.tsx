@@ -349,7 +349,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   }
   
   const shots = (shotsData as any)?.shots || [];
-  const storyboardFrames = (storyboards as any)?.storyboards || [];
+  const allStoryboardFrames = (storyboards as any)?.storyboards || [];
+  const storyboardFrames = allStoryboardFrames.filter((frame: any) => frame.hasImage && frame.imageData);
+  const hasGeneratedImages = storyboardFrames.length > 0;
   
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -410,7 +412,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             ))}
           </div>
         </div>
-      ) : storyboardFrames.length === 0 ? (
+      ) : !hasGeneratedImages ? (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Generate Storyboards</CardTitle>
