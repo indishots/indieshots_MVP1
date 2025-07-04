@@ -74,15 +74,13 @@ function sanitizeText(text: string): string {
     .replace(/[\u2980-\u29FF]/g, '') // Miscellaneous mathematical symbols-B
     .replace(/[\u2A00-\u2AFF]/g, '') // Supplemental mathematical operators
 
-    // Remove emojis and emoticons (extended range)
-    .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // Emoticons
-    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // Misc symbols and pictographs
-    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // Transport and map symbols
-    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // Regional indicator symbols
-    .replace(/[\u{2600}-\u{26FF}]/gu, '')   // Misc symbols
-    .replace(/[\u{2700}-\u{27BF}]/gu, '')   // Dingbats
-    .replace(/[\u{FE00}-\u{FE0F}]/gu, '')   // Variation selectors
-    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // Supplemental symbols and pictographs
+    // Remove emojis and special symbols using compatible patterns
+    .replace(/[\u2600-\u26FF]/g, '')   // Misc symbols
+    .replace(/[\u2700-\u27BF]/g, '')   // Dingbats
+    .replace(/[\uFE00-\uFE0F]/g, '')   // Variation selectors
+    .replace(/\uD83D[\uDC00-\uDFFF]/g, '') // Emoji surrogate pairs
+    .replace(/\uD83C[\uDF00-\uDFFF]/g, '') // More emoji surrogate pairs
+    .replace(/\uD83E[\uDD00-\uDFFF]/g, '') // Additional emoji ranges
 
     // Clean up multiple spaces/punctuation
     .replace(/\s+/g, ' ')
@@ -166,8 +164,8 @@ function detectProblematicCharacters(text: string): string[] {
     { pattern: /[""''„‚]/g, name: 'Smart quotes' },
     { pattern: /[–—−]/g, name: 'Special dashes' },
     { pattern: /[…]/g, name: 'Ellipsis' },
-    { pattern: /[\u{1F600}-\u{1F6FF}]/gu, name: 'Emojis' },
-    { pattern: /[\u{2600}-\u{27BF}]/gu, name: 'Symbols' },
+    { pattern: /[\u{1F600}-\u{1F6FF}]/g, name: 'Emojis' },
+    { pattern: /[\u2600-\u27BF]/g, name: 'Symbols' },
     { pattern: /["']{3,}/g, name: 'Multiple quotes' },
     { pattern: /[.]{3,}/g, name: 'Multiple dots' },
     { pattern: /[!]{3,}/g, name: 'Multiple exclamation marks' },
