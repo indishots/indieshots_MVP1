@@ -106,8 +106,11 @@ export default function Review({ id }: ReviewProps) {
                 <Calendar className="h-4 w-4" />
                 Created {new Date((script as any)?.createdAt).toLocaleDateString()}
               </span>
-              <Badge variant={(parseJob as any)?.status === 'completed' ? 'default' : 'secondary'}>
-                {(parseJob as any)?.status || 'In Progress'}
+              <Badge 
+                variant={(parseJob as any)?.status === 'completed' ? 'success' : 'secondary'}
+                className={(parseJob as any)?.status === 'completed' ? 'animate-pulse' : ''}
+              >
+                {(parseJob as any)?.status === 'completed' ? 'Parsed ✨' : (parseJob as any)?.status || 'In Progress'}
               </Badge>
             </div>
           </div>
