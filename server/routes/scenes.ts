@@ -387,70 +387,26 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     const memoryStatsBefore = characterMemoryService.getMemoryStats();
     console.log(`Character memory before generation: ${memoryStatsBefore.characterCount} characters known - [${memoryStatsBefore.characters.join(', ')}]`);
     
-    const { results, frames } = await generateStoryboards(shots);
-    
-    // Log character memory stats after generation
-    const memoryStatsAfter = characterMemoryService.getMemoryStats();
-    console.log(`Character memory after generation: ${memoryStatsAfter.characterCount} characters known - [${memoryStatsAfter.characters.join(', ')}]`);
-    if (memoryStatsAfter.characterCount > memoryStatsBefore.characterCount) {
-      const newCharacters = memoryStatsAfter.characters.filter(char => !memoryStatsBefore.characters.includes(char));
-      console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
-    }
-    
-    // Validate all shots have images - retry any missing ones
-    const updatedShots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
-    const missingImageShots = updatedShots.filter(shot => !shot.imageData || shot.imageData === '');
-    
-    if (missingImageShots.length > 0) {
-      console.log(`Found ${missingImageShots.length} shots without images, attempting individual generation...`);
-      
-      // Try to generate missing images individually
-      for (const missingShot of missingImageShots) {
-        try {
-          console.log(`Attempting to generate missing image for shot ${missingShot.shotNumberInScene}`);
-          
-          // Generate basic prompt if missing
-          const shotPrompt = missingShot.imagePromptText || 
-            `${missingShot.shotDescription || 'Scene shot'} in a ${missingShot.shotType || 'medium shot'} style`;
-          
-          // Use OpenAI to generate the image
-          const imageGeneratorModule = await import('../services/imageGenerator');
-          const imageData = await imageGeneratorModule.generateImageData(shotPrompt);
-          
-          if (imageData) {
-            await storage.updateShotImage(missingShot.id, imageData, shotPrompt);
-            console.log(`Successfully generated missing image for shot ${missingShot.shotNumberInScene}`);
-          }
-        } catch (error) {
-          console.error(`Failed to generate missing image for shot ${missingShot.shotNumberInScene}:`, error);
-        }
-      }
-    }
-    
-    // Get final shots with all images
-    const finalShots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
-    const finalStoryboards = finalShots.map(shot => ({
-      shotNumber: shot.shotNumberInScene,
-      description: shot.shotDescription,
-      shotType: shot.shotType,
-      cameraAngle: shot.lens,
-      notes: shot.notes,
-      imagePath: shot.imageData ? `data:image/png;base64,${shot.imageData}` : null,
-      prompt: shot.imagePromptText,
-      hasImage: !!shot.imageData
-    }));
-    
-    const successCount = finalStoryboards.filter(sb => sb.hasImage).length;
-    console.log(`Final generation complete: ${successCount}/${shots.length} images generated successfully`);
-
+    // Return immediately to prevent 504 timeout, then process in background
     res.json({
-      message: `Storyboards generated successfully`,
-      totalShots: shots.length,
-      generatedCount: successCount,
-      storyboardCount: finalStoryboards.length,
-      storyboards: finalStoryboards,
-      results: results
+      message: 'Storyboard generation started',
+      shotCount: shots.length,
+      status: 'processing',
+      jobId: parseInt(jobId),
+      sceneIndex: parseInt(sceneIndex)
     });
+
+    // Process images in background to avoid timeout
+    (async () => {
+      try {
+        const { results, frames } = await generateStoryboards(shots);
+        console.log(`✅ Background generation completed: ${frames.length}/${shots.length} images generated`);
+      } catch (error) {
+        console.error(`❌ Background generation failed:`, error);
+      }
+    })();
+
+    return; // Exit early to prevent timeout
   } catch (error) {
     console.error('Error generating storyboards:', error);
     res.status(500).json({ error: 'Failed to generate storyboards' });

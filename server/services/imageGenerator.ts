@@ -287,7 +287,7 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
  * Generate image and return base64 data for database storage
  * Enhanced with aggressive retry logic to ensure ALL images are generated
  */
-export async function generateImageData(prompt: string, retries: number = 10): Promise<string | null> {
+export async function generateImageData(prompt: string, retries: number = 3): Promise<string | null> {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Generating image data (attempt ${attempt}/${retries}) with prompt: ${prompt.substring(0, 100)}...`);
@@ -369,57 +369,32 @@ export async function generateImageData(prompt: string, retries: number = 10): P
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
       
-      // Handle different types of errors with aggressive retry logic
-      let waitTime = 5000; // Base wait time
+      // Simplified error handling for faster, more reliable generation
+      let waitTime = 2000; // Base wait time
       
       if (error?.status === 429 || error?.message?.includes('rate limit')) {
-        console.log(`Rate limit hit (attempt ${attempt}/${retries}), waiting longer...`);
-        waitTime = 20000 + (attempt * 10000); // Exponentially increasing wait: 30s, 40s, 50s...
+        console.log(`Rate limit hit (attempt ${attempt}/${retries}), waiting...`);
+        waitTime = 5000; // Fixed 5 second wait for rate limits
       } else if (error?.status === 400 || error?.message?.includes('content policy')) {
-        console.log(`Content policy issue (attempt ${attempt}/${retries}), cleaning prompt and retrying...`);
-        // For content policy, try with a more generic prompt
-        waitTime = 3000 * attempt;
+        console.log(`Content policy issue (attempt ${attempt}/${retries}), will try with safer prompt...`);
+        waitTime = 1000; // Short wait for content policy
       } else if (error?.message?.includes('timeout') || error?.name === 'AbortError') {
         console.log(`Request timeout (attempt ${attempt}/${retries}), retrying...`);
-        waitTime = 8000 * attempt; // Longer waits for timeouts
+        waitTime = 3000; // Fixed 3 second wait for timeouts
       } else if (error?.message?.includes('upstream') || error?.message?.includes('JSON')) {
-        console.log(`OpenAI server error detected (attempt ${attempt}/${retries}), waiting before retry...`);
-        waitTime = 15000 + (attempt * 5000); // Long waits for server errors
+        console.log(`OpenAI server error detected (attempt ${attempt}/${retries}), waiting...`);
+        waitTime = 4000; // Fixed 4 second wait for server errors
       } else if (error?.status >= 500) {
         console.log(`OpenAI server error ${error.status} (attempt ${attempt}/${retries}), waiting...`);
-        waitTime = 12000 + (attempt * 3000);
+        waitTime = 3000; // Fixed 3 second wait for server errors
       } else {
-        console.log(`Unknown error (attempt ${attempt}/${retries}), retrying with standard delay...`);
-        waitTime = 5000 * attempt;
+        console.log(`Unknown error (attempt ${attempt}/${retries}), retrying...`);
+        waitTime = 2000; // Fixed 2 second wait for unknown errors
       }
       
-      // Only give up after ALL retries are exhausted
+      // Final attempt - return failure instead of complex fallback
       if (attempt === retries) {
-        console.error(`Failed to generate image after ${retries} attempts with all error handling strategies`);
-        // Try one final fallback with ultra-safe prompt
-        try {
-          console.log('Attempting final fallback with minimal prompt...');
-          const fallbackResponse = await imageClient.images.generate({
-            model: "dall-e-3",
-            prompt: "Professional film scene, cinematic lighting, movie production still",
-            n: 1,
-            size: "1792x1024",
-            response_format: "url"
-          });
-          
-          if (fallbackResponse.data?.[0]?.url) {
-            const imageResponse = await fetch(fallbackResponse.data[0].url);
-            if (imageResponse.ok) {
-              const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
-              const base64Data = imageBuffer.toString('base64');
-              console.log('Final fallback successful!');
-              return base64Data;
-            }
-          }
-        } catch (fallbackError) {
-          console.error('Final fallback also failed:', fallbackError);
-        }
-        
+        console.error(`Failed to generate image after ${retries} attempts`);
         return 'GENERATION_FAILED';
       }
       
@@ -557,34 +532,26 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
       results.push({ shotId: `shot_${shotIndex}`, status: `error: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
 
-    // Enhanced rate limiting - longer delays to prevent OpenAI errors
+    // Streamlined rate limiting - balanced for speed and reliability
     if (shotIndex < shots.length - 1) {
-      const delayTime = 15000; // Increased to 15 seconds for maximum reliability
-      console.log(`Waiting ${delayTime/1000} seconds before next shot to prevent rate limits...`);
+      const delayTime = 3000; // Reduced to 3 seconds for faster generation
+      console.log(`Waiting ${delayTime/1000} seconds before next shot...`);
       await new Promise(resolve => setTimeout(resolve, delayTime));
     }
   }
 
-  // Multiple retry passes to ensure ALL images are generated
-  let remainingFailedShots = [...failedShots];
-  let retryPass = 1;
-  const maxRetryPasses = 5; // Up to 5 retry passes
-  
-  while (remainingFailedShots.length > 0 && retryPass <= maxRetryPasses) {
-    console.log(`🔄 Retry pass ${retryPass}/${maxRetryPasses}: Attempting to generate ${remainingFailedShots.length} remaining images...`);
+  // Single streamlined retry pass for failed shots
+  if (failedShots.length > 0) {
+    console.log(`🔄 Retry pass: Attempting to generate ${failedShots.length} failed images...`);
     
-    const stillFailedShots: any[] = [];
-    
-    for (let i = 0; i < remainingFailedShots.length; i++) {
-      const shot = remainingFailedShots[i];
-      console.log(`Retry pass ${retryPass} - Processing shot ${shot.shotNumberInScene || shot.id}`);
+    for (let i = 0; i < failedShots.length; i++) {
+      const shot = failedShots[i];
+      console.log(`Retry - Processing shot ${shot.shotNumberInScene || shot.id}`);
       
       try {
-        // Use longer delays in retry passes
+        // Short delay between retries for efficiency
         if (i > 0) {
-          const delayTime = 12000 + (retryPass * 3000); // Increasingly longer delays
-          console.log(`Waiting ${delayTime/1000}s before processing next failed shot...`);
-          await new Promise(resolve => setTimeout(resolve, delayTime));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
         
         const retryResult = await processShot(shot, shots.findIndex(s => s.id === shot.id));
@@ -593,44 +560,12 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
           if ('frame' in retryResult && retryResult.frame) {
             frames.push(retryResult.frame);
           }
-          console.log(`✅ Retry pass ${retryPass} successful for shot ${shot.shotNumberInScene || shot.id}`);
+          console.log(`✅ Retry successful for shot ${shot.shotNumberInScene || shot.id}`);
         } else {
-          console.log(`❌ Retry pass ${retryPass} failed for shot ${shot.shotNumberInScene || shot.id}: ${retryResult?.status}`);
-          stillFailedShots.push(shot);
+          console.log(`❌ Retry failed for shot ${shot.shotNumberInScene || shot.id}: ${retryResult?.status}`);
         }
       } catch (error) {
-        console.error(`Retry pass ${retryPass} error for shot ${shot.shotNumberInScene || shot.id}:`, error);
-        stillFailedShots.push(shot);
-      }
-    }
-    
-    remainingFailedShots = stillFailedShots;
-    retryPass++;
-    
-    // Wait longer between retry passes
-    if (remainingFailedShots.length > 0 && retryPass <= maxRetryPasses) {
-      const passDelay = 30000 + (retryPass * 15000); // 45s, 60s, 75s, 90s
-      console.log(`Waiting ${passDelay/1000}s before retry pass ${retryPass}...`);
-      await new Promise(resolve => setTimeout(resolve, passDelay));
-    }
-  }
-  
-  if (remainingFailedShots.length > 0) {
-    console.log(`⚠️  Final attempt: ${remainingFailedShots.length} shots still need images after ${maxRetryPasses} retry passes`);
-    // Make one final attempt with ultra-basic prompts for any remaining failed shots
-    for (const shot of remainingFailedShots) {
-      try {
-        console.log(`Final fallback attempt for shot ${shot.shotNumberInScene || shot.id}`);
-        const basicPrompt = "Professional movie scene, cinematic style, film production";
-        const imageData = await generateImageData(basicPrompt);
-        
-        if (imageData && imageData !== 'GENERATION_FAILED') {
-          const { storage } = await import('../storage');
-          await storage.updateShotImage(shot.id, imageData, basicPrompt);
-          console.log(`✅ Final fallback successful for shot ${shot.shotNumberInScene || shot.id}`);
-        }
-      } catch (error) {
-        console.error(`Final fallback failed for shot ${shot.shotNumberInScene || shot.id}:`, error);
+        console.error(`Retry error for shot ${shot.shotNumberInScene || shot.id}:`, error);
       }
     }
   }
