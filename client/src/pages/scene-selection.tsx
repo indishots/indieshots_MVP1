@@ -128,7 +128,7 @@ export default function SceneSelection({ id }: SceneSelectionProps) {
                   Scene {scene.sceneNumber || index + 1}
                 </Badge>
                 {selectedScene === index && (
-                  <Badge className="text-xs">Selected</Badge>
+                  <Badge variant="success" className="text-xs">Selected ✨</Badge>
                 )}
               </div>
               <CardTitle className="text-lg leading-tight">
