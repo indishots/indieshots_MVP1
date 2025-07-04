@@ -112,7 +112,10 @@ export async function firebaseSync(req: Request, res: Response) {
         updates.totalPages = tierFromFirebase === 'pro' ? -1 : 5;
         updates.maxShotsPerScene = tierFromFirebase === 'pro' ? -1 : 5;
         updates.canGenerateStoryboards = tierFromFirebase === 'pro';
-        console.log(`Syncing tier from Firebase: ${user.tier} → ${tierFromFirebase}`);
+        console.log(`🔄 TIER SYNC: ${user.email} - PostgreSQL tier: ${user.tier} → Firebase tier: ${tierFromFirebase}`);
+        console.log(`🔄 TIER SYNC: Setting totalPages: ${updates.totalPages}, maxShots: ${updates.maxShotsPerScene}, storyboards: ${updates.canGenerateStoryboards}`);
+      } else {
+        console.log(`✓ TIER SYNC: ${user.email} - Tiers already match: ${tierFromFirebase}`);
       }
       
       if (Object.keys(updates).length > 0) {

@@ -284,7 +284,12 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
       });
 
       console.log(`✓ Firebase user created with tier: ${userData.tier} for ${userData.email}`);
-      console.log(`✓ PostgreSQL sync will happen when user signs in`)
+      console.log(`✓ Firebase custom claims set:`, { 
+        tier: userData.tier, 
+        couponCode: userData.couponCode, 
+        provider: userData.provider 
+      });
+      console.log(`✓ PostgreSQL sync will happen when user signs in`);
 
       // Clean up OTP
       otpStore.delete(email);
