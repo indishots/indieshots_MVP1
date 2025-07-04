@@ -42,6 +42,8 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const [updatedMainImages, setUpdatedMainImages] = useState<{[key: number]: string}>({});
   const [imageLoadingStates, setImageLoadingStates] = useState<{[key: number]: boolean}>({});
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [progressiveImages, setProgressiveImages] = useState<{[key: number]: string}>({});
+  const [generationProgress, setGenerationProgress] = useState<{total: number, completed: number}>({total: 0, completed: 0});
 
   
   // Helper functions for image selection and carousel
@@ -190,34 +192,47 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     queryKey: [`/api/shots/${jobId}/${sceneIndex}`],
   });
   
-  // Only fetch storyboards after generation completes - no polling during generation
+  // Progressive loading: fetch storyboards regularly during generation
   const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
-    enabled: hasStartedGeneration && !isGenerating, // Only fetch when generation is complete
+    enabled: hasStartedGeneration, // Fetch when generation starts
+    refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
   });
 
-  // Hide loading images state when storyboards data is loaded
+  // Progressive image tracking - update UI as images become available
   useEffect(() => {
-    if (storyboards && !isLoadingStoryboards && isLoadingImages) {
-      // Small delay to ensure smooth transition
-      const timer = setTimeout(() => {
-        setIsLoadingImages(false);
-        
-        // Show success message after loading is complete
-        const pendingToast = (window as any).pendingSuccessToast;
-        if (pendingToast) {
-          toast({
-            title: "Storyboard generation complete",
-            description: "Storyboard images have been generated successfully",
-          });
-          delete (window as any).pendingSuccessToast;
+    const storyboardData = storyboards as any;
+    if (storyboardData?.storyboards && Array.isArray(storyboardData.storyboards)) {
+      const currentImages: {[key: number]: string} = {};
+      let completedCount = 0;
+      
+      storyboardData.storyboards.forEach((storyboard: any, index: number) => {
+        if (storyboard.imageData) {
+          currentImages[index] = storyboard.imageData;
+          completedCount++;
         }
-      }, 500);
-      return () => clearTimeout(timer);
+      });
+      
+      // Update progressive images state
+      setProgressiveImages(currentImages);
+      setGenerationProgress({
+        total: storyboardData.storyboards.length,
+        completed: completedCount
+      });
+      
+      // If generation is complete, stop loading state
+      if (completedCount === storyboardData.storyboards.length && isGenerating) {
+        setIsGenerating(false);
+        setIsLoadingImages(false);
+        toast({
+          title: "Storyboard generation complete",
+          description: `All ${completedCount} storyboard images generated successfully`,
+        });
+      }
     }
-  }, [storyboards, isLoadingStoryboards, isLoadingImages, toast]);
+  }, [storyboards, isGenerating, toast]);
   
   // Generate storyboards mutation
   const generateStoryboardsMutation = useMutation({
@@ -231,6 +246,12 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       
       setIsGenerating(true);
       setHasStartedGeneration(true);
+      
+      // Initialize progress tracking
+      const totalShots = (shotsData as any)?.shots?.length || 0;
+      setGenerationProgress({total: totalShots, completed: 0});
+      setProgressiveImages({});
+      
       const response = await fetch(`/api/storyboards/generate/${jobId}/${sceneIndex}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -323,15 +344,44 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       )}
 
       {/* Generate or Display Storyboards */}
-      {isGenerating || isLoadingImages ? (
+      {isGenerating ? (
         <div className="mb-6">
           <div className="mb-4">
             <h2 className="text-2xl font-semibold mb-1">Generating Storyboards</h2>
             <p className="text-muted-foreground">
-              Creating visual storyboard frames for this scene...
+              Progress: {generationProgress.completed} of {generationProgress.total} images generated
             </p>
           </div>
-          <LuxuryStoryboardAnimation message="Creating visual storyboard frames..." />
+          
+          {/* Progressive Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: generationProgress.total }, (_, idx) => (
+              <Card key={idx} className="relative">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Shot {idx + 1}</CardTitle>
+                  <CardDescription className="text-xs">
+                    {progressiveImages[idx] ? 'Generated' : 'Generating...'}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-3">
+                    {progressiveImages[idx] ? (
+                      <img
+                        src={`data:image/png;base64,${progressiveImages[idx]}`}
+                        alt={`Storyboard ${idx + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                        <span className="text-xs text-muted-foreground">Generating...</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       ) : storyboardFrames.length === 0 ? (
         <Card className="mb-6">
