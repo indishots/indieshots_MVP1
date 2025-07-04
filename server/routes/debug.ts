@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../auth/jwt';
 import { PayUService } from '../services/payuService';
+import { auth as firebaseAdmin } from '../firebase/admin';
 
 const router = Router();
 
@@ -67,6 +68,48 @@ router.get('/payu-form', authMiddleware, async (req: Request, res: Response) => 
     console.error('PayU debug error:', error);
     res.status(500).json({ 
       error: 'Failed to generate PayU form',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * POST /api/debug/fix-premium-demo
+ * Fix Firebase custom claims for premium@demo.com
+ */
+router.post('/fix-premium-demo', async (req: Request, res: Response) => {
+  try {
+    const userEmail = 'premium@demo.com';
+    
+    // Get Firebase user by email
+    const firebaseUser = await firebaseAdmin.getUserByEmail(userEmail);
+    
+    // Set custom claims for pro tier
+    await firebaseAdmin.setCustomUserClaims(firebaseUser.uid, {
+      tier: 'pro',
+      totalPages: -1,
+      maxShotsPerScene: -1,
+      canGenerateStoryboards: true
+    });
+    
+    console.log(`Fixed Firebase custom claims for ${userEmail}`);
+    
+    res.json({
+      success: true,
+      message: `Firebase custom claims updated for ${userEmail}`,
+      uid: firebaseUser.uid,
+      customClaims: {
+        tier: 'pro',
+        totalPages: -1,
+        maxShotsPerScene: -1,
+        canGenerateStoryboards: true
+      }
+    });
+
+  } catch (error) {
+    console.error('Fix premium demo error:', error);
+    res.status(500).json({ 
+      error: 'Failed to fix premium demo account',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }

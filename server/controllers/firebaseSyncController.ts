@@ -61,6 +61,14 @@ export async function firebaseSync(req: Request, res: Response) {
       
       console.log('Creating new user from Firebase:', firebaseUser.email);
       
+      // Special handling for premium demo account
+      const isDemo = firebaseUser.email === 'premium@demo.com';
+      const finalTier = isDemo ? 'pro' : tierFromFirebase;
+      
+      if (isDemo) {
+        console.log(`🔒 DEMO ACCOUNT: Creating premium@demo.com with pro tier`);
+      }
+      
       user = await storage.createUser({
         email: firebaseUser.email.toLowerCase(),
         firstName,
@@ -69,11 +77,11 @@ export async function firebaseSync(req: Request, res: Response) {
         provider,
         providerId: firebaseUser.uid,
         emailVerified: firebaseUser.emailVerified || false,
-        tier: tierFromFirebase, // Use Firebase custom claims as single source of truth
-        totalPages: tierFromFirebase === 'pro' ? -1 : 5, // Pro tier gets unlimited pages, free tier gets 5
+        tier: finalTier, // Use Firebase custom claims or force pro for demo
+        totalPages: finalTier === 'pro' ? -1 : 5, // Pro tier gets unlimited pages, free tier gets 5
         usedPages: 0,
-        maxShotsPerScene: tierFromFirebase === 'pro' ? -1 : 5, // Pro tier gets unlimited shots, free tier gets 5
-        canGenerateStoryboards: tierFromFirebase === 'pro', // Pro tier can generate storyboards
+        maxShotsPerScene: finalTier === 'pro' ? -1 : 5, // Pro tier gets unlimited shots, free tier gets 5
+        canGenerateStoryboards: finalTier === 'pro', // Pro tier can generate storyboards
       });
       
       console.log('New Firebase user created:', user.email);
@@ -106,16 +114,28 @@ export async function firebaseSync(req: Request, res: Response) {
         if (!user.lastName) updates.lastName = nameParts.slice(1).join(' ') || user.lastName;
       }
       
-      // Sync tier information from Firebase custom claims (critical for promo code users)
-      if (tierFromFirebase !== user.tier) {
-        updates.tier = tierFromFirebase;
-        updates.totalPages = tierFromFirebase === 'pro' ? -1 : 5;
-        updates.maxShotsPerScene = tierFromFirebase === 'pro' ? -1 : 5;
-        updates.canGenerateStoryboards = tierFromFirebase === 'pro';
-        console.log(`🔄 TIER SYNC: ${user.email} - PostgreSQL tier: ${user.tier} → Firebase tier: ${tierFromFirebase}`);
-        console.log(`🔄 TIER SYNC: Setting totalPages: ${updates.totalPages}, maxShots: ${updates.maxShotsPerScene}, storyboards: ${updates.canGenerateStoryboards}`);
+      // Special handling for premium demo account - preserve pro tier
+      if (firebaseUser.email === 'premium@demo.com') {
+        console.log(`🔒 DEMO ACCOUNT: Preserving pro tier for ${firebaseUser.email}`);
+        if (user.tier !== 'pro') {
+          updates.tier = 'pro';
+          updates.totalPages = -1;
+          updates.maxShotsPerScene = -1;
+          updates.canGenerateStoryboards = true;
+          console.log(`🔄 DEMO FIX: Restored pro tier for premium@demo.com`);
+        }
       } else {
-        console.log(`✓ TIER SYNC: ${user.email} - Tiers already match: ${tierFromFirebase}`);
+        // Sync tier information from Firebase custom claims (critical for promo code users)
+        if (tierFromFirebase !== user.tier) {
+          updates.tier = tierFromFirebase;
+          updates.totalPages = tierFromFirebase === 'pro' ? -1 : 5;
+          updates.maxShotsPerScene = tierFromFirebase === 'pro' ? -1 : 5;
+          updates.canGenerateStoryboards = tierFromFirebase === 'pro';
+          console.log(`🔄 TIER SYNC: ${user.email} - PostgreSQL tier: ${user.tier} → Firebase tier: ${tierFromFirebase}`);
+          console.log(`🔄 TIER SYNC: Setting totalPages: ${updates.totalPages}, maxShots: ${updates.maxShotsPerScene}, storyboards: ${updates.canGenerateStoryboards}`);
+        } else {
+          console.log(`✓ TIER SYNC: ${user.email} - Tiers already match: ${tierFromFirebase}`);
+        }
       }
       
       if (Object.keys(updates).length > 0) {

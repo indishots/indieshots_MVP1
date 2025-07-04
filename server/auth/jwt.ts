@@ -39,18 +39,25 @@ interface RequestUser {
 export function generateToken(user: any): string {
   const jti = Math.random().toString(36).substring(2, 15);
   
+  // Special handling for premium demo account - always treat as pro tier
+  const isPremiumDemo = user.email === 'premium@demo.com';
+  
   // Ensure tier is explicitly determined
-  const userTier = user.tier || 'free';
+  const userTier = isPremiumDemo ? 'pro' : (user.tier || 'free');
   const isProTier = userTier === 'pro';
+  
+  if (isPremiumDemo) {
+    console.log('🔒 JWT: Forcing pro tier for premium@demo.com');
+  }
   
   const payload: TokenPayload = {
     id: user.id,
     email: user.email,
     tier: userTier,
-    totalPages: user.totalPages !== undefined ? user.totalPages : (isProTier ? -1 : 5),
+    totalPages: isPremiumDemo ? -1 : (user.totalPages !== undefined ? user.totalPages : (isProTier ? -1 : 5)),
     usedPages: user.usedPages || 0,
-    maxShotsPerScene: user.maxShotsPerScene !== undefined ? user.maxShotsPerScene : (isProTier ? -1 : 5),
-    canGenerateStoryboards: user.canGenerateStoryboards !== undefined ? user.canGenerateStoryboards : isProTier,
+    maxShotsPerScene: isPremiumDemo ? -1 : (user.maxShotsPerScene !== undefined ? user.maxShotsPerScene : (isProTier ? -1 : 5)),
+    canGenerateStoryboards: isPremiumDemo ? true : (user.canGenerateStoryboards !== undefined ? user.canGenerateStoryboards : isProTier),
     jti
   };
   
