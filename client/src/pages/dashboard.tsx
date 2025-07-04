@@ -125,20 +125,26 @@ export default function Dashboard() {
         </Card>
         
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Scripts Uploaded</CardTitle>
-            <CardDescription>Total scripts in your account</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">Scripts Uploaded</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Total scripts in your account
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline">
-              <span className="text-3xl font-bold mr-2">
-                {isLoadingScripts ? "..." : Array.isArray(scripts) ? scripts.length : 0}
-              </span>
-              <span className="text-muted-foreground">scripts</span>
+          <CardContent className="pb-4">
+            <div className="flex items-center justify-center py-2">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground mb-1">
+                  {isLoadingScripts ? "..." : Array.isArray(scripts) ? scripts.length : 0}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium">
+                  scripts
+                </div>
+              </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button variant="outline" size="sm" asChild>
+          <CardFooter className="pt-0">
+            <Button variant="outline" size="sm" className="w-full" asChild>
               <Link href="/upload">
                 Upload New Script
               </Link>
