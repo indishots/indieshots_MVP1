@@ -124,14 +124,21 @@ function detectProblematicCharacters(text: string): string[] {
   
   const problematicChars = [];
   const problematicPatterns = [
-    { pattern: /[^\w\s\-.,!?;:()"']/g, name: 'Special characters' },
+    { pattern: /[^\x20-\x7E]/g, name: 'Non-ASCII characters' },
+    { pattern: /[\x00-\x1F\x7F-\x9F]/g, name: 'Control characters' },
+    { pattern: /[\u2000-\u206F]/g, name: 'Unicode punctuation' },
+    { pattern: /[\u2E00-\u2E7F]/g, name: 'Supplemental punctuation' },
+    { pattern: /[\u3000-\u303F]/g, name: 'CJK symbols' },
+    { pattern: /[""''„‚]/g, name: 'Smart quotes' },
+    { pattern: /[–—−]/g, name: 'Special dashes' },
+    { pattern: /[…]/g, name: 'Ellipsis' },
+    { pattern: /[\u{1F600}-\u{1F6FF}]/gu, name: 'Emojis' },
+    { pattern: /[\u{2600}-\u{27BF}]/gu, name: 'Symbols' },
     { pattern: /["']{3,}/g, name: 'Multiple quotes' },
     { pattern: /[.]{3,}/g, name: 'Multiple dots' },
     { pattern: /[!]{3,}/g, name: 'Multiple exclamation marks' },
     { pattern: /[?]{3,}/g, name: 'Multiple question marks' },
-    { pattern: /\s{3,}/g, name: 'Multiple spaces' },
-    { pattern: /[\x00-\x1F\x7F-\x9F]/g, name: 'Control characters' },
-    { pattern: /[\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F]/g, name: 'Unicode punctuation' }
+    { pattern: /\s{3,}/g, name: 'Multiple spaces' }
   ];
   
   for (const { pattern, name } of problematicPatterns) {
@@ -160,23 +167,45 @@ export function sanitizeText(text: string): string {
   }
   
   let sanitized = text
-    // Remove control characters and non-printable characters
+    // Remove ALL control characters and non-printable characters
     .replace(/[\x00-\x1F\x7F-\x9F]/g, ' ')
-    // Remove problematic Unicode characters
-    .replace(/[\u2000-\u206F\u2E00-\u2E7F\u3000-\u303F]/g, ' ')
-    // Remove special dashes, quotes, and symbols that cause issues
-    .replace(/[""'']/g, '"')  // Replace smart quotes
-    .replace(/[–—]/g, '-')    // Replace em/en dashes
-    .replace(/[…]/g, '...')   // Replace ellipsis
-    // Keep only basic characters and punctuation
-    .replace(/[^\w\s\-.,!?;:()"'\n]/g, ' ')
+    // Remove ALL Unicode punctuation and symbols that cause issues
+    .replace(/[\u2000-\u206F]/g, ' ')  // General punctuation
+    .replace(/[\u2E00-\u2E7F]/g, ' ')  // Supplemental punctuation
+    .replace(/[\u3000-\u303F]/g, ' ')  // CJK symbols
+    .replace(/[\u2010-\u201F]/g, '-')  // Various dashes to hyphen
+    .replace(/[\u2020-\u2027]/g, ' ')  // Dagger, bullet, etc.
+    .replace(/[\u2030-\u205F]/g, ' ')  // Per mille, etc.
+    // Replace smart quotes and curly quotes
+    .replace(/[""''„‚]/g, '"')
+    .replace(/['']/g, "'")
+    // Replace special dashes
+    .replace(/[–—−]/g, '-')
+    // Replace ellipsis and similar
+    .replace(/[…]/g, '...')
+    // Remove emojis and symbols
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, ' ') // Emoticons
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, ' ') // Misc symbols
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, ' ') // Transport symbols
+    .replace(/[\u{2600}-\u{26FF}]/gu, ' ')   // Misc symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, ' ')   // Dingbats
+    // Remove mathematical symbols
+    .replace(/[\u{2200}-\u{22FF}]/gu, ' ')
+    // Remove currency and other symbols
+    .replace(/[\u{20A0}-\u{20CF}]/gu, ' ')
+    // Keep ONLY ASCII letters, numbers, basic punctuation, and spaces
+    .replace(/[^\x20-\x7E]/g, ' ')
     // Clean up multiple characters
     .replace(/\s+/g, ' ') // Replace multiple spaces with single space
     .replace(/["']{2,}/g, '"') // Replace multiple quotes with single quote
     .replace(/[.]{2,}/g, '.') // Replace multiple dots with single dot
     .replace(/[!]{2,}/g, '!') // Replace multiple exclamation marks
     .replace(/[?]{2,}/g, '?') // Replace multiple question marks
+    .replace(/[-]{2,}/g, '-') // Replace multiple dashes
     .trim(); // Remove leading/trailing whitespace
+  
+  // Final validation - ensure only safe ASCII characters remain
+  sanitized = sanitized.replace(/[^\w\s\-.,!?;:()"']/g, ' ');
   
   console.log(`🔧 SANITIZATION COMPLETE: Sanitized length: ${sanitized.length}`);
   console.log(`🔧 SANITIZATION COMPLETE: First 100 chars: "${sanitized.substring(0, 100)}"`);
@@ -193,16 +222,16 @@ function buildPrompt(shot: any): string {
   
   // Sanitize and truncate all fields before building prompt
   const sanitizedShot = {
-    shotType: sanitizeText(shot.shot_type || shot.shotType || '').substring(0, 50),
-    lens: sanitizeText(shot.lens || '').substring(0, 20),
-    movement: sanitizeText(shot.movement || '').substring(0, 30),
-    location: sanitizeText(shot.location || '').substring(0, 40),
-    timeOfDay: sanitizeText(shot.time_of_day || shot.timeOfDay || '').substring(0, 20),
-    mood: sanitizeText(shot.mood_and_ambience || shot.moodAndAmbience || '').substring(0, 40),
-    lighting: sanitizeText(shot.lighting || '').substring(0, 40),
-    props: sanitizeText(shot.props || '').substring(0, 50),
-    description: sanitizeText(shot.shot_description || shot.shotDescription || '').substring(0, 200),
-    characters: sanitizeText(shot.characters || '').substring(0, 100)
+    shotType: sanitizeText(String(shot.shot_type || shot.shotType || '')).substring(0, 50),
+    lens: sanitizeText(String(shot.lens || '')).substring(0, 20),
+    movement: sanitizeText(String(shot.movement || '')).substring(0, 30),
+    location: sanitizeText(String(shot.location || '')).substring(0, 40),
+    timeOfDay: sanitizeText(String(shot.time_of_day || shot.timeOfDay || '')).substring(0, 20),
+    mood: sanitizeText(String(shot.mood_and_ambience || shot.moodAndAmbience || '')).substring(0, 40),
+    lighting: sanitizeText(String(shot.lighting || '')).substring(0, 40),
+    props: sanitizeText(String(shot.props || '')).substring(0, 50),
+    description: sanitizeText(String(shot.shot_description || shot.shotDescription || '')).substring(0, 200),
+    characters: sanitizeText(String(shot.characters || '')).substring(0, 100)
   };
   
   // Log sanitized fields for debugging
@@ -235,8 +264,14 @@ function buildPrompt(shot: any): string {
   // Always add cinematic styling
   prompt += `, professional movie scene, artistic lighting, film production quality`;
   
-  // Final sanitization and validation
-  const finalPrompt = sanitizeText(prompt);
+  // Double sanitization - first pass during build, second pass on final result
+  let finalPrompt = sanitizeText(prompt);
+  
+  // Additional cleanup for OpenAI compatibility
+  finalPrompt = finalPrompt
+    .replace(/\s+/g, ' ')  // Ensure single spaces
+    .replace(/[^\w\s\-.,!?;:()"']/g, ' ')  // Remove any remaining special chars
+    .trim();
   
   console.log(`🎬 PROMPT BUILD COMPLETE:`);
   console.log(`   - Original length: ${prompt.length} chars`);
@@ -245,7 +280,7 @@ function buildPrompt(shot: any): string {
   
   // Ensure prompt isn't too long (OpenAI DALL-E limit is 1000 chars)
   if (finalPrompt.length > 800) {
-    const truncatedPrompt = finalPrompt.substring(0, 800).trim();
+    const truncatedPrompt = sanitizeText(finalPrompt.substring(0, 800)).trim();
     console.log(`⚠️ PROMPT TRUNCATED: ${finalPrompt.length} -> ${truncatedPrompt.length} chars`);
     return truncatedPrompt;
   }
