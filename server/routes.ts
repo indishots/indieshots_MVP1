@@ -101,6 +101,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   if (process.env.NODE_ENV === 'development') {
     const debugRoutes = await import('./routes/debug');
     app.use('/api/debug', debugRoutes.default);
+    
+    // Promo user fix routes
+    const fixPromoRoutes = await import('./routes/fixPromoUsers');
+    app.use('/api/fix', fixPromoRoutes.default);
   }
   
   // Contact routes

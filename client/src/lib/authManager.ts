@@ -129,11 +129,21 @@ class AuthManager {
         console.log('Including coupon code in backend session:', this.pendingCouponCode);
       }
 
-      const response = await fetch('/api/auth/firebase-login', {
+      const response = await fetch('/api/auth/firebase-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(authData),
+        body: JSON.stringify({
+          firebaseUser: {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            emailVerified: firebaseUser.emailVerified
+          },
+          idToken: authData.idToken,
+          provider: authData.provider
+        }),
       });
 
       if (response.ok) {
