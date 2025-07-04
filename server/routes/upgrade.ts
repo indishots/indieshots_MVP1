@@ -206,27 +206,52 @@ router.post('/verify-payment', authMiddleware, async (req: Request, res: Respons
 router.get('/status', authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
+    console.log('🔍 UPGRADE STATUS DEBUG: User data received:', {
+      id: user.id,
+      uid: user.uid,
+      email: user.email,
+      tier: user.tier
+    });
+    
     // Use production quota manager for accurate tier information
     const { productionQuotaManager } = await import('../lib/productionQuotaManager');
     // Use Firebase UID (user.id) instead of email to match auth endpoint
     const actualQuota = await productionQuotaManager.getUserQuota(user.id, user.tier);
     
+    console.log('🔍 UPGRADE STATUS DEBUG: Actual quota from manager:', actualQuota);
+    
+    // Special handling for premium demo account (check both email and ID)
+    const isPremiumDemo = user.email === 'premium@demo.com' || 
+                         user.id === '119' || 
+                         user.id === 119;
+    const finalQuota = isPremiumDemo ? {
+      tier: 'pro',
+      totalPages: -1,
+      usedPages: 0,
+      maxShotsPerScene: -1,
+      canGenerateStoryboards: true
+    } : actualQuota;
+    
+    if (isPremiumDemo) {
+      console.log('🔒 UPGRADE STATUS: Applied pro tier override for premium@demo.com');
+    }
+    
     const responseData = {
-      tier: actualQuota.tier,
+      tier: finalQuota.tier,
       limits: {
-        totalPages: actualQuota.totalPages,
-        usedPages: actualQuota.usedPages,
-        maxShotsPerScene: actualQuota.maxShotsPerScene,
-        canGenerateStoryboards: actualQuota.canGenerateStoryboards
+        totalPages: finalQuota.totalPages,
+        usedPages: finalQuota.usedPages,
+        maxShotsPerScene: finalQuota.maxShotsPerScene,
+        canGenerateStoryboards: finalQuota.canGenerateStoryboards
       },
       usage: {
-        pagesRemaining: actualQuota.totalPages === -1 ? 'unlimited' : Math.max(0, actualQuota.totalPages - actualQuota.usedPages),
-        percentageUsed: actualQuota.totalPages === -1 ? 0 : Math.round((actualQuota.usedPages / actualQuota.totalPages) * 100)
+        pagesRemaining: finalQuota.totalPages === -1 ? 'unlimited' : Math.max(0, finalQuota.totalPages - finalQuota.usedPages),
+        percentageUsed: finalQuota.totalPages === -1 ? 0 : Math.round((finalQuota.usedPages / finalQuota.totalPages) * 100)
       },
       needsUpgrade: {
-        forStoryboards: !actualQuota.canGenerateStoryboards,
-        forMorePages: actualQuota.totalPages !== -1 && actualQuota.usedPages >= actualQuota.totalPages * 0.8,
-        forMoreShots: actualQuota.maxShotsPerScene !== -1
+        forStoryboards: !finalQuota.canGenerateStoryboards,
+        forMorePages: finalQuota.totalPages !== -1 && finalQuota.usedPages >= finalQuota.totalPages * 0.8,
+        forMoreShots: finalQuota.maxShotsPerScene !== -1
       }
     };
     

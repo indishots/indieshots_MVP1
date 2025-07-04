@@ -41,8 +41,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
   });
 
   // Get accurate tier information from upgrade status
-  const userTier = (upgradeStatus as any)?.tier || (user as any)?.tier || 'free';
+  // Special handling for premium demo account
+  const isPremiumDemo = user?.email === 'premium@demo.com';
+  const userTier = isPremiumDemo ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
   const isProUser = userTier === 'pro';
+  
+  if (isPremiumDemo) {
+    console.log('🔒 HEADER: Applied pro tier override for premium@demo.com');
+  }
 
   // Pages that should show the sidebar
   const sidebarPages = ['/dashboard', '/projects', '/settings', '/upload', '/columns', '/parse', '/review', '/scene-selection', '/shots', '/storyboards', '/scriptHealth', '/help'];

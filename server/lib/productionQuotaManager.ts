@@ -30,6 +30,21 @@ export const TIER_LIMITS = {
 export class ProductionQuotaManager {
   async getUserQuota(userId: string, userTier: string = 'free'): Promise<UserQuota> {
     try {
+      // Special handling for premium demo account (user ID 119)
+      const userIdString = String(userId);
+      if (userIdString === '119') {
+        console.log('🔒 QUOTA MANAGER: Applied pro tier override for premium demo account (ID: 119)');
+        return {
+          tier: 'pro',
+          totalPages: -1,
+          usedPages: 0,
+          maxShotsPerScene: -1,
+          canGenerateStoryboards: true
+        };
+      }
+      
+      console.log('🔍 QUOTA MANAGER: User ID received:', userId, 'Type:', typeof userId, 'String:', userIdString);
+      
       // Try to get existing quota from database
       const result = await db.execute(sql`
         SELECT tier, used_pages, total_pages, max_shots_per_scene, can_generate_storyboards

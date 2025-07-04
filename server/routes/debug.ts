@@ -1,117 +1,80 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../auth/jwt';
-import { PayUService } from '../services/payuService';
-import { auth as firebaseAdmin } from '../firebase/admin';
+import { storage } from '../storage';
 
 const router = Router();
 
-/**
- * GET /api/debug/payu-form
- * Debug endpoint to test PayU form generation
- */
-router.get('/payu-form', authMiddleware, async (req: Request, res: Response) => {
+// Test endpoint to verify premium@demo.com account status
+router.get('/premium-demo-status', async (req: Request, res: Response) => {
   try {
-    const user = (req as any).user;
+    const user = await storage.getUserByEmail('premium@demo.com');
+    
     if (!user) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const payuService = new PayUService();
-    
-    // Create test payment parameters
-    const paymentParams = payuService.createPaymentParams(
-      29, // $29 USD
-      user.email,
-      user.displayName || user.email.split('@')[0],
-      '', // phone - optional
-      'pro'
-    );
-
-    const paymentUrl = payuService.getPaymentUrl();
-    const paymentForm = payuService.generatePaymentForm(paymentParams, paymentUrl);
-
-    // Parse form to extract parameters for debugging
-    const formMatch = paymentForm.match(/<input[^>]+>/g);
-    const parameters: any = {};
-    
-    if (formMatch) {
-      formMatch.forEach(inputTag => {
-        const nameMatch = inputTag.match(/name="([^"]+)"/);
-        const valueMatch = inputTag.match(/value="([^"]+)"/);
-        if (nameMatch && valueMatch) {
-          parameters[nameMatch[1]] = valueMatch[1];
-        }
+      return res.json({ 
+        message: 'premium@demo.com not found in database',
+        status: 'not_found' 
       });
     }
-
-    res.json({
-      success: true,
-      paymentUrl,
-      parameters: {
-        key: parameters.key,
-        txnid: parameters.txnid,
-        amount: parameters.amount,
-        email: parameters.email,
-        firstname: parameters.firstname,
-        productinfo: parameters.productinfo,
-        surl: parameters.surl,
-        furl: parameters.furl,
-        service_provider: parameters.service_provider,
-        hashPresent: !!parameters.hash,
-        hashLength: parameters.hash ? parameters.hash.length : 0,
-        totalFields: Object.keys(parameters).length
-      },
-      formHtml: paymentForm.substring(0, 500) + '...' // First 500 chars for debugging
-    });
-
+    
+    const status = {
+      email: user.email,
+      tier: user.tier,
+      totalPages: user.totalPages,
+      maxShotsPerScene: user.maxShotsPerScene,
+      canGenerateStoryboards: user.canGenerateStoryboards,
+      updatedAt: user.updatedAt,
+      status: user.tier === 'pro' ? 'PRO_ACCOUNT' : 'FREE_ACCOUNT',
+      features: {
+        unlimitedPages: user.totalPages === -1,
+        unlimitedShots: user.maxShotsPerScene === -1,
+        storyboardGeneration: user.canGenerateStoryboards
+      }
+    };
+    
+    res.json(status);
   } catch (error) {
-    console.error('PayU debug error:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate PayU form',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('Error checking premium demo status:', error);
+    res.status(500).json({ error: 'Failed to check status' });
   }
 });
 
-/**
- * POST /api/debug/fix-premium-demo
- * Fix Firebase custom claims for premium@demo.com
- */
-router.post('/fix-premium-demo', async (req: Request, res: Response) => {
+// Test endpoint to simulate a complete signin flow
+router.post('/test-signin-flow', async (req: Request, res: Response) => {
   try {
-    const userEmail = 'premium@demo.com';
-    
-    // Get Firebase user by email
-    const firebaseUser = await firebaseAdmin.getUserByEmail(userEmail);
-    
-    // Set custom claims for pro tier
-    await firebaseAdmin.setCustomUserClaims(firebaseUser.uid, {
-      tier: 'pro',
-      totalPages: -1,
-      maxShotsPerScene: -1,
-      canGenerateStoryboards: true
+    // Step 1: Simulate Firebase sync
+    const syncResponse = await fetch('http://localhost:5000/api/auth/firebase-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firebaseUser: {
+          uid: "WbrPQSqy29Q1BnvKpmOvJZIMnZI2", 
+          email: "premium@demo.com",
+          displayName: "Premium Demo",
+          emailVerified: true
+        },
+        provider: "password"
+      })
     });
     
-    console.log(`Fixed Firebase custom claims for ${userEmail}`);
+    const syncData = await syncResponse.json();
     
     res.json({
-      success: true,
-      message: `Firebase custom claims updated for ${userEmail}`,
-      uid: firebaseUser.uid,
-      customClaims: {
-        tier: 'pro',
-        totalPages: -1,
-        maxShotsPerScene: -1,
-        canGenerateStoryboards: true
-      }
+      message: 'Complete signin flow test',
+      firebaseSync: {
+        tier: syncData.tier,
+        totalPages: syncData.totalPages,
+        maxShotsPerScene: syncData.maxShotsPerScene,
+        canGenerateStoryboards: syncData.canGenerateStoryboards
+      },
+      isPro: syncData.tier === 'pro',
+      allFeatures: syncData.tier === 'pro' && 
+                  syncData.totalPages === -1 && 
+                  syncData.maxShotsPerScene === -1 && 
+                  syncData.canGenerateStoryboards === true
     });
-
   } catch (error) {
-    console.error('Fix premium demo error:', error);
-    res.status(500).json({ 
-      error: 'Failed to fix premium demo account',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('Error testing signin flow:', error);
+    res.status(500).json({ error: 'Failed to test signin flow' });
   }
 });
 

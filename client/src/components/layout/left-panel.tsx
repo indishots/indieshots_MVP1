@@ -61,12 +61,18 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
   };
   
   // Get tier info from upgrade status or fallback to user object
-  const userTier = (upgradeStatus as any)?.tier || (user as any)?.tier || 'free';
+  // Special handling for premium demo account
+  const isPremiumDemo = user?.email === 'premium@demo.com';
+  const userTier = isPremiumDemo ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
   const isProUser = userTier === 'pro';
-  const usageData = (upgradeStatus as any)?.limits || user;
+  const usageData = isPremiumDemo ? 
+    { totalPages: -1, usedPages: 0, maxShotsPerScene: -1, canGenerateStoryboards: true } :
+    ((upgradeStatus as any)?.limits || user);
   
   // Debug logging
   console.log('Left panel tier data:', {
+    email: user?.email,
+    isPremiumDemo,
     upgradeStatusTier: (upgradeStatus as any)?.tier,
     userTier: (user as any)?.tier,
     finalTier: userTier,
@@ -74,6 +80,10 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
     upgradeStatusData: upgradeStatus,
     usageData
   });
+  
+  if (isPremiumDemo) {
+    console.log('🔒 LEFT PANEL: Applied pro tier override for premium@demo.com');
+  }
   
   if (!isAuthenticated && location === "/") {
     // Don't show left panel on home page for unauthenticated users

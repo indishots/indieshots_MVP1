@@ -12,6 +12,40 @@ router.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// Test endpoint to verify premium@demo.com status
+router.get('/debug/premium-demo-status', async (req: Request, res: Response) => {
+  try {
+    const user = await storage.getUserByEmail('premium@demo.com');
+    
+    if (!user) {
+      return res.json({ 
+        message: 'premium@demo.com not found in database',
+        status: 'not_found' 
+      });
+    }
+    
+    const status = {
+      email: user.email,
+      tier: user.tier,
+      totalPages: user.totalPages,
+      maxShotsPerScene: user.maxShotsPerScene,
+      canGenerateStoryboards: user.canGenerateStoryboards,
+      updatedAt: user.updatedAt,
+      status: user.tier === 'pro' ? 'PRO_ACCOUNT' : 'FREE_ACCOUNT',
+      features: {
+        unlimitedPages: user.totalPages === -1,
+        unlimitedShots: user.maxShotsPerScene === -1,
+        storyboardGeneration: user.canGenerateStoryboards
+      }
+    };
+    
+    res.json(status);
+  } catch (error) {
+    console.error('Error checking premium demo status:', error);
+    res.status(500).json({ error: 'Failed to check status' });
+  }
+});
+
 // Login page redirect - send HTML redirect to auth page
 router.get('/login', (req: Request, res: Response) => {
   res.send(`
