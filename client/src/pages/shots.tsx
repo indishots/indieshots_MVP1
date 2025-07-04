@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowRight, ArrowLeft, Film, Camera, Clock, Users, Video, Move, Palette, MapPin, Sun, Box, Lightbulb, MessageSquare, Heart, Volume2, FileText, Download, FileSpreadsheet, Crown } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
-import { CinematicShotAnimation } from "@/components/ui/cinematic-shot-animation";
+
 import { BufferingAnimation } from "@/components/ui/film-animations";
 import { useFilmAnimations } from "@/hooks/useFilmAnimations";
 import { useTierValidation } from "@/hooks/useTierValidation";
@@ -137,7 +137,11 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
   };
   
   if (isLoadingJob) {
-    return <CinematicShotAnimation message="Loading scene data..." />;
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center">Loading scene data...</div>
+      </div>
+    );
   }
   
   if (!selectedScene) {
@@ -533,30 +537,33 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
           
           {/* Generate Shots Section */}
           {shots.length === 0 ? (
-            isGenerating ? (
-              <div className="mb-6">
-                <CinematicShotAnimation message="Creating cinematic shots..." />
-              </div>
-            ) : (
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Generate Shots</CardTitle>
-                  <CardDescription>
-                    Create a detailed shot breakdown for this scene using AI analysis
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    onClick={() => generateShotsMutation.mutate()}
-                    disabled={isGenerating}
-                    className="w-full md:w-auto"
-                  >
-                    <Camera className="mr-2 h-4 w-4" />
-                    Generate Shots
-                  </Button>
-                </CardContent>
-              </Card>
-            )
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Generate Shots</CardTitle>
+                <CardDescription>
+                  Create a detailed shot breakdown for this scene using AI analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  onClick={() => generateShotsMutation.mutate()}
+                  disabled={isGenerating}
+                  className="w-full md:w-auto"
+                >
+                  {isGenerating ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Generating Shots...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="mr-2 h-4 w-4" />
+                      Generate Shots
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <>
               {/* Shots Table */}
