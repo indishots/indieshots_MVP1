@@ -213,28 +213,38 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
       tier: user.tier
     });
     
-    // Use production quota manager for accurate tier information
-    const { productionQuotaManager } = await import('../lib/productionQuotaManager');
-    // Use Firebase UID (user.id) instead of email to match auth endpoint
-    const actualQuota = await productionQuotaManager.getUserQuota(user.id, user.tier);
+    // DYNAMIC PROMO CODE VALIDATION: Check if user has promo code usage
+    const { db } = await import('../db.js');
+    const { promoCodeUsage } = await import('../../shared/schema.js');
+    const { eq } = await import('drizzle-orm');
     
-    console.log('🔍 UPGRADE STATUS DEBUG: Actual quota from manager:', actualQuota);
+    const hasPromoCode = await db.select()
+      .from(promoCodeUsage)
+      .where(eq(promoCodeUsage.userEmail, user.email.toLowerCase()));
     
-    // Use storage layer data which includes dynamic promo code validation
+    const shouldBeProTier = hasPromoCode.length > 0;
+    console.log('🔍 UPGRADE STATUS: Promo code check for', user.email, ':', shouldBeProTier ? 'Pro tier (has promo code)' : 'Free tier (no promo code)');
+    
     // Only special override for premium demo account for development purposes
     const isPremiumDemo = user.email === 'premium@demo.com' || 
                          user.id === '119' || 
                          user.id === 119;
-    const finalQuota = isPremiumDemo ? {
-      tier: 'pro',
-      totalPages: -1,
+    
+    // Determine final tier based on promo code usage or premium demo status
+    const finalTier = isPremiumDemo || shouldBeProTier ? 'pro' : 'free';
+    const finalQuota = {
+      tier: finalTier,
+      totalPages: finalTier === 'pro' ? -1 : 5,
       usedPages: 0,
-      maxShotsPerScene: -1,
-      canGenerateStoryboards: true
-    } : actualQuota;
+      maxShotsPerScene: finalTier === 'pro' ? -1 : 5,
+      canGenerateStoryboards: finalTier === 'pro'
+    };
     
     if (isPremiumDemo) {
       console.log('🔒 UPGRADE STATUS: Applied pro tier override for premium@demo.com');
+    }
+    if (shouldBeProTier) {
+      console.log('🔒 UPGRADE STATUS: Applied pro tier for promo code user:', user.email);
     }
     
     const responseData = {
