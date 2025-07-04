@@ -293,14 +293,15 @@ export default function Upgrade() {
       </div>
 
       {/* Feature Comparison */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">Feature Comparison</h2>
-        <p className="text-muted-foreground">See what you get with each plan</p>
-      </div>
-      
-      <div className="grid gap-4">
-        {/* Pages per month */}
-        <Card className="p-4">
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle>Feature Comparison</CardTitle>
+          <CardDescription>
+            See what you get with each plan
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Pages per month */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <FileText className="h-5 w-5 text-indigo-600" />
@@ -311,10 +312,8 @@ export default function Upgrade() {
               <span className="text-sm text-indigo-600 font-medium">Pro: ∞</span>
             </div>
           </div>
-        </Card>
 
-        {/* Shots per scene */}
-        <Card className="p-4">
+          {/* Shots per scene */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Camera className="h-5 w-5 text-indigo-600" />
@@ -325,10 +324,8 @@ export default function Upgrade() {
               <span className="text-sm text-indigo-600 font-medium">Pro: ∞</span>
             </div>
           </div>
-        </Card>
 
-        {/* Storyboards */}
-        <Card className="p-4">
+          {/* Storyboards */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Image className="h-5 w-5 text-indigo-600" />
@@ -339,10 +336,8 @@ export default function Upgrade() {
               <span className="text-sm text-green-600 font-medium">Pro: ✓</span>
             </div>
           </div>
-        </Card>
 
-        {/* AI images */}
-        <Card className="p-4">
+          {/* AI images */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Sparkles className="h-5 w-5 text-indigo-600" />
@@ -353,10 +348,8 @@ export default function Upgrade() {
               <span className="text-sm text-green-600 font-medium">Pro: ✓</span>
             </div>
           </div>
-        </Card>
 
-        {/* Support */}
-        <Card className="p-4">
+          {/* Support */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Headphones className="h-5 w-5 text-indigo-600" />
@@ -367,8 +360,8 @@ export default function Upgrade() {
               <span className="text-sm text-indigo-600 font-medium">Pro: Priority</span>
             </div>
           </div>
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* FAQ Section */}
       <div className="mt-12 text-center">
