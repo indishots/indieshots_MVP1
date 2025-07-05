@@ -6,6 +6,7 @@ import { storage } from '../storage';
 import { extractScenesFromText } from '../services/sceneProcessor';
 import { generateShotsFromScene } from '../services/shotGenerator';
 import { generateStoryboards } from '../services/imageGenerator';
+import { generateStoryboardBatch } from '../services/robustImageGenerator';
 import { characterMemoryService } from '../services/characterMemoryService';
 import { productionQuotaManager } from '../lib/productionQuotaManager';
 import * as fs from 'fs';
@@ -409,14 +410,15 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
     }
 
-    // Generate fresh storyboards and wait for ALL to complete
-    console.log(`Starting generation of ${shots.length} storyboard images with character memory integration...`);
+    // Use robust batch generation system
+    console.log(`Starting robust batch generation for ${shots.length} storyboard images...`);
     
     // Log character memory stats before generation
     const memoryStatsBefore = characterMemoryService.getMemoryStats();
     console.log(`Character memory before generation: ${memoryStatsBefore.characterCount} characters known - [${memoryStatsBefore.characters.join(', ')}]`);
     
-    const { results, frames } = await generateStoryboards(shots);
+    // Process images with complete error isolation
+    await generateStoryboardBatch(shots, parseInt(jobId));
     
     // Log character memory stats after generation
     const memoryStatsAfter = characterMemoryService.getMemoryStats();
@@ -424,49 +426,6 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     if (memoryStatsAfter.characterCount > memoryStatsBefore.characterCount) {
       const newCharacters = memoryStatsAfter.characters.filter(char => !memoryStatsBefore.characters.includes(char));
       console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
-    }
-    
-    // Log detailed results from isolated processing
-    const successfulResults = results.filter(r => r.success);
-    const failedResults = results.filter(r => !r.success);
-    
-    console.log(`🎯 Isolated Processing Results:`);
-    console.log(`✅ Successful: ${successfulResults.length}/${results.length} images generated`);
-    if (failedResults.length > 0) {
-      console.log(`❌ Failed: ${failedResults.length} images had issues:`);
-      failedResults.forEach(result => {
-        console.log(`  - Shot ${result.shotId}: ${result.error}`);
-      });
-    }
-    
-    // Validate all shots have images - retry any missing ones
-    const updatedShots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
-    const missingImageShots = updatedShots.filter(shot => !shot.imageData || shot.imageData === '');
-    
-    if (missingImageShots.length > 0) {
-      console.log(`Found ${missingImageShots.length} shots without images, attempting individual generation...`);
-      
-      // Try to generate missing images individually
-      for (const missingShot of missingImageShots) {
-        try {
-          console.log(`Attempting to generate missing image for shot ${missingShot.shotNumberInScene}`);
-          
-          // Generate basic prompt if missing
-          const shotPrompt = missingShot.imagePromptText || 
-            `${missingShot.shotDescription || 'Scene shot'} in a ${missingShot.shotType || 'medium shot'} style`;
-          
-          // Use OpenAI to generate the image
-          const imageGeneratorModule = await import('../services/imageGenerator');
-          const imageData = await imageGeneratorModule.generateImageData(shotPrompt);
-          
-          if (imageData) {
-            await storage.updateShotImage(missingShot.id, imageData, shotPrompt);
-            console.log(`Successfully generated missing image for shot ${missingShot.shotNumberInScene}`);
-          }
-        } catch (error) {
-          console.error(`Failed to generate missing image for shot ${missingShot.shotNumberInScene}:`, error);
-        }
-      }
     }
     
     // Get final shots with all images
@@ -479,19 +438,22 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       notes: shot.notes,
       imagePath: shot.imageData ? `data:image/png;base64,${shot.imageData}` : null,
       prompt: shot.imagePromptText,
-      hasImage: !!shot.imageData
+      hasImage: !!shot.imageData,
+      errorState: shot.imagePromptText?.startsWith('ERROR:') ? shot.imagePromptText : null
     }));
     
     const successCount = finalStoryboards.filter(sb => sb.hasImage).length;
-    console.log(`Final generation complete: ${successCount}/${shots.length} images generated successfully`);
+    const errorCount = finalStoryboards.filter(sb => sb.errorState).length;
+    console.log(`Robust batch generation complete: ${successCount}/${shots.length} images generated successfully, ${errorCount} errors`);
 
     res.json({
-      message: `Storyboards generated successfully`,
+      message: `Storyboards processed with robust error isolation`,
       totalShots: shots.length,
       generatedCount: successCount,
+      errorCount: errorCount,
       storyboardCount: finalStoryboards.length,
       storyboards: finalStoryboards,
-      results: results
+      success: true
     });
   } catch (error) {
     console.error('Error generating storyboards:', error);

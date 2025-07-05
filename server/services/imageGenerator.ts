@@ -203,39 +203,65 @@ async function generatePrompt(userMessage: string, retries: number = 2): Promise
 }
 
 /**
- * Generate image using DALL-E 3
+ * Generate image using DALL-E 3 with robust retry system
  */
 async function generateImage(prompt: string, filename: string): Promise<string> {
-  try {
-    const response = await imageClient.images.generate({
-      model: 'dall-e-3',
-      prompt,
-      size: '1792x1024',
-      quality: 'standard',
-      n: 1
-    });
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 2000; // 2 seconds between retries
+  
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`🎨 Image generation attempt ${attempt}/${MAX_RETRIES} for ${filename}`);
+      
+      const response = await imageClient.images.generate({
+        model: 'dall-e-3',
+        prompt,
+        size: '1792x1024',
+        quality: 'standard',
+        n: 1
+      });
 
-    const imageUrl = response.data?.[0]?.url;
-    if (!imageUrl) {
-      throw new Error('No image URL returned from DALL-E');
+      const imageUrl = response.data?.[0]?.url;
+      if (!imageUrl) {
+        throw new Error('No image URL returned from DALL-E');
+      }
+
+      // Download and save the image
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to download image: ${imageResponse.statusText}`);
+      }
+
+      const imageBuffer = await imageResponse.buffer();
+      const fullPath = path.join(IMAGE_OUTPUT_DIR, filename);
+      
+      fs.writeFileSync(fullPath, imageBuffer);
+      
+      console.log(`✅ Image generation successful for ${filename}`);
+      return `✅ Saved to ${filename}`;
+      
+    } catch (error: any) {
+      console.error(`❌ Image generation attempt ${attempt} failed for ${filename}:`, error);
+      
+      // Check if this is a content policy error or API rate limit
+      if (error.message && error.message.includes('content_policy')) {
+        console.log(`⚠️  Content policy violation detected for ${filename}, trying fallback prompt`);
+        break; // Move to fallback, don't retry
+      }
+      
+      if (attempt === MAX_RETRIES) {
+        console.error(`💥 All ${MAX_RETRIES} attempts failed for ${filename}`);
+        return `[ERROR] Image generation failed after ${MAX_RETRIES} attempts: ${error.message}`;
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
     }
-
-    // Download and save the image
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to download image: ${imageResponse.statusText}`);
-    }
-
-    const imageBuffer = await imageResponse.buffer();
-    const fullPath = path.join(IMAGE_OUTPUT_DIR, filename);
-    
-    fs.writeFileSync(fullPath, imageBuffer);
-    
-    return `✅ Saved to ${filename}`;
-  } catch (error) {
-    console.error('[ERROR] Image generation failed:', error);
-    return `[ERROR] Image generation failed: ${error}`;
   }
+  
+  // If we get here, try fallback
+  console.log(`🔄 Attempting fallback image generation for ${filename}`);
+  return await generateFallbackImage(prompt) || `[ERROR] Both primary and fallback generation failed for ${filename}`;
 }
 
 /**
@@ -243,7 +269,7 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
  */
 async function generateFallbackImage(originalPrompt: string): Promise<string | null> {
   try {
-    console.log('Attempting fallback image generation with ultra-safe prompt');
+    console.log('🔄 Attempting fallback image generation with ultra-safe prompt');
     
     // Extract basic visual elements and create a very safe prompt
     const safeFallbackPrompt = `Professional film production still of a movie scene, cinematic lighting, high quality cinematography, artistic composition, clean and safe for work content`;
