@@ -442,6 +442,26 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             ))}
           </div>
         </div>
+      ) : shots.length === 0 ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>No Shots Found</CardTitle>
+            <CardDescription>
+              This scene doesn't have any shots generated yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              You need to generate shots first before creating storyboards.
+            </p>
+            <Button 
+              onClick={() => setLocation(`/shots/${jobId}/${sceneIndex}`)}
+              className="w-full md:w-auto"
+            >
+              Generate Shots First
+            </Button>
+          </CardContent>
+        </Card>
       ) : storyboardFrames.length === 0 || storyboardFrames.filter((f: any) => f.hasImage || f.imageData).length === 0 ? (
         <Card className="mb-6">
           <CardHeader>
@@ -475,11 +495,6 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                 </Button>
               )}
             </div>
-            {shots.length === 0 && (
-              <p className="text-sm text-muted-foreground mt-2">
-                No shots available. Please generate shots first.
-              </p>
-            )}
           </CardContent>
         </Card>
       ) : (
