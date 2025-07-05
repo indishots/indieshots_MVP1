@@ -602,6 +602,8 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
 router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
   // CRITICAL: Ensure proper JSON response headers to prevent empty responses
   res.setHeader('Content-Type', 'application/json');
+  
+  let hasResponded = false;
 
   try {
     const { jobId, sceneIndex } = req.params;
@@ -616,20 +618,52 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
     // Check if user is authenticated
     if (!userId) {
       console.log(`❌ GET STORYBOARDS: Authentication failed - no user ID`);
+      hasResponded = true;
       return res.status(401).json({
         error: 'Authentication required',
         message: 'Please log in to view storyboards'
       });
     }
 
-    // Verify user owns the job
-    const parseJob = await storage.getParseJob(parseInt(jobId));
-    if (!parseJob || parseJob.userId !== userId) {
-      return res.status(404).json({ error: 'Parse job not found' });
+    // Verify user owns the job with error protection
+    let parseJob;
+    try {
+      parseJob = await storage.getParseJob(parseInt(jobId));
+    } catch (storageError) {
+      console.error('Storage error getting parse job:', storageError);
+      hasResponded = true;
+      return res.status(200).json({
+        storyboards: [],
+        success: false,
+        deploymentError: true,
+        errorMessage: 'Database error accessing parse job'
+      });
     }
 
-    // Get ALL shots from database and show their current status
-    const shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
+    if (!parseJob || parseJob.userId !== userId) {
+      hasResponded = true;
+      return res.status(404).json({ 
+        error: 'Parse job not found',
+        storyboards: [],
+        success: false
+      });
+    }
+
+    // Get ALL shots from database and show their current status with error protection
+    let shots;
+    try {
+      shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
+    } catch (storageError) {
+      console.error('Storage error getting shots:', storageError);
+      hasResponded = true;
+      return res.status(200).json({
+        storyboards: [],
+        success: false,
+        deploymentError: true,
+        errorMessage: 'Database error accessing shots'
+      });
+    }
+
     const storyboards = shots.map(shot => {
         // Check if imageData contains error strings
         const isErrorState = shot.imageData && (
@@ -664,6 +698,7 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
       'Expires': '0'
     });
 
+    hasResponded = true;
     res.json({ storyboards });
   } catch (error) {
     console.error('🚨 CRITICAL ERROR in GET storyboards route:', error);
@@ -671,15 +706,24 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
     console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
 
-    // DEPLOYMENT CRITICAL FIX: Return 200 OK with empty storyboards instead of 500
-    console.log('⚠️ Returning 200 OK with empty storyboards to prevent frontend errors...');
-
-    res.status(200).json({
-      storyboards: [],
-      success: false,
-      deploymentError: true,
-      errorMessage: error instanceof Error ? error.message : 'System error retrieving storyboards'
-    });
+    // Only respond if we haven't already sent a response
+    if (!hasResponded && !res.headersSent) {
+      console.log('⚠️ Returning 200 OK with empty storyboards to prevent frontend errors...');
+      
+      try {
+        res.status(200).json({
+          storyboards: [],
+          success: false,
+          deploymentError: true,
+          errorMessage: error instanceof Error ? error.message : 'System error retrieving storyboards'
+        });
+      } catch (responseError) {
+        console.error('💥 CRITICAL: Failed to send error response:', responseError);
+        // If even the error response fails, just log it - can't do anything else
+      }
+    } else {
+      console.log('⚠️ Response already sent, skipping error response');
+    }
   }
 });
 

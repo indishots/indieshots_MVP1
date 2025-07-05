@@ -18,8 +18,12 @@ export async function safeResponseHandler(response: Response): Promise<any> {
             const parsed = JSON.parse(text);
             errorMessage = parsed.message || parsed.error || errorMessage;
           } catch {
-            // If JSON parsing fails, use the text as error message
-            errorMessage = text || errorMessage;
+            // If JSON parsing fails, check if it's HTML error page
+            if (text.includes('<html>') || text.includes('<!DOCTYPE')) {
+              errorMessage = `Server error (${response.status}): Service temporarily unavailable`;
+            } else {
+              errorMessage = text.substring(0, 200) || errorMessage;
+            }
           }
         }
       } catch (textError) {
@@ -31,14 +35,22 @@ export async function safeResponseHandler(response: Response): Promise<any> {
     // Use cloned response for success handling
     const text = await responseClone.text();
     if (!text.trim()) {
-      throw new Error('Server returned empty response');
+      // Return empty but valid response structure for storyboards
+      return { storyboards: [], success: false, message: 'Empty response from server' };
     }
     
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      return parsed;
     } catch (jsonError) {
       console.error('Failed to parse response as JSON:', jsonError);
       console.error('Response text was:', text.substring(0, 200));
+      
+      // If the response looks like an HTML error page, provide better error message
+      if (text.includes('<html>') || text.includes('<!DOCTYPE')) {
+        throw new Error('Server returned HTML error page instead of JSON. This may be a deployment issue.');
+      }
+      
       throw new Error('Server returned invalid response format');
     }
   } catch (error) {

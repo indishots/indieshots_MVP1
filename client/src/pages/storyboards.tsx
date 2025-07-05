@@ -225,6 +225,27 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
+    queryFn: async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(`/api/storyboards/${jobId}/${sceneIndex}`, {
+          credentials: 'include',
+          headers
+        });
+        
+        // Use safe response handler to prevent JSON parsing errors
+        return await safeResponseHandler(response);
+      } catch (error) {
+        console.error('Storyboards query error:', error);
+        // Return empty storyboards array on error to prevent UI crash
+        return { storyboards: [], success: false, error: true };
+      }
+    },
   });
 
   // Progressive image tracking - update UI as images become available

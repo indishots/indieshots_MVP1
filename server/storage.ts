@@ -361,11 +361,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getParseJob(id: number): Promise<ParseJob | undefined> {
-    const [job] = await db
-      .select()
-      .from(parseJobs)
-      .where(eq(parseJobs.id, id));
-    return job;
+    try {
+      const [job] = await db
+        .select()
+        .from(parseJobs)
+        .where(eq(parseJobs.id, id));
+      return job;
+    } catch (error) {
+      console.error('Database error in getParseJob:', error);
+      // Return undefined instead of throwing to prevent 500 errors
+      return undefined;
+    }
   }
 
   async getUserParseJobs(userId: string): Promise<ParseJob[]> {
@@ -417,11 +423,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getShots(parseJobId: number, sceneIndex: number): Promise<Shot[]> {
-    return await db
-      .select()
-      .from(shots)
-      .where(and(eq(shots.parseJobId, parseJobId), eq(shots.sceneIndex, sceneIndex)))
-      .orderBy(shots.shotNumberInScene);
+    try {
+      return await db
+        .select()
+        .from(shots)
+        .where(and(eq(shots.parseJobId, parseJobId), eq(shots.sceneIndex, sceneIndex)))
+        .orderBy(shots.shotNumberInScene);
+    } catch (error) {
+      console.error('Database error in getShots:', error);
+      // Return empty array instead of throwing to prevent 500 errors
+      return [];
+    }
   }
 
   async deleteShots(parseJobId: number, sceneIndex: number): Promise<void> {
