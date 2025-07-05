@@ -6,7 +6,10 @@ function getOpenAIClient(): OpenAI {
   if (!apiKey) {
     throw new Error('OpenAI API key not found in environment variables');
   }
-  return new OpenAI({ apiKey });
+  return new OpenAI({ 
+    apiKey,
+    timeout: 60000 // 60 second timeout for shot generation
+  });
 }
 
 /**
@@ -100,39 +103,64 @@ async function gpt4Response(prompt: string): Promise<string> {
     return generateDemoShots(prompt);
   }
   
-  try {
-    // Get fresh OpenAI client with current environment variables
-    const client = getOpenAIClient();
-    
-    console.log('🔑 OpenAI API key loaded:', {
-      exists: !!apiKey,
-      length: apiKey.length,
-      prefix: apiKey.substring(0, 15) + '...'
-    });
+  // Try multiple times with different strategies
+  const maxRetries = 3;
+  const strategies = [
+    { model: 'gpt-4', max_tokens: 2000 },
+    { model: 'gpt-4', max_tokens: 1500 },
+    { model: 'gpt-4', max_tokens: 1000 }
+  ];
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const client = getOpenAIClient();
+      const strategy = strategies[attempt];
+      
+      console.log(`🔑 OpenAI API attempt ${attempt + 1}/${maxRetries}:`, {
+        exists: !!apiKey,
+        length: apiKey.length,
+        prefix: apiKey.substring(0, 15) + '...',
+        model: strategy.model,
+        max_tokens: strategy.max_tokens
+      });
 
-    const response = await client.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: 'You are a professional cinematographer and shot list expert. Always follow formatting instructions precisely.' },
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: 2000,
-      temperature: 0.3
-    });
+      const response = await client.chat.completions.create({
+        model: strategy.model,
+        messages: [
+          { role: 'system', content: 'You are a professional cinematographer and shot list expert. Always follow formatting instructions precisely.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: strategy.max_tokens,
+        temperature: 0.3
+      });
 
-    return response.choices[0].message.content?.trim() || '';
-  } catch (error: any) {
-    console.error('🚨 OpenAI API error details:', {
-      message: error.message,
-      status: error.status,
-      code: error.code,
-      type: error.type
-    });
-    
-    // Use demo shots as fallback for any API issues
-    console.log('🎬 Using demo shot generation due to API error');
-    return generateDemoShots(prompt);
+      console.log('✅ OpenAI API success on attempt', attempt + 1);
+      return response.choices[0].message.content?.trim() || '';
+      
+    } catch (error: any) {
+      console.error(`🚨 OpenAI API error on attempt ${attempt + 1}:`, {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        type: error.type
+      });
+      
+      // If it's a timeout or rate limit, wait before retrying
+      if (error.code === 'timeout' || error.status === 429) {
+        const waitTime = Math.pow(2, attempt) * 1000; // Exponential backoff
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        continue;
+      }
+      
+      // For other errors, don't retry
+      break;
+    }
   }
+  
+  // Use demo shots as fallback for any API issues
+  console.log('🎬 Using demo shot generation due to API error after all retries');
+  return generateDemoShots(prompt);
 }
 
 /**

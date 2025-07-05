@@ -6,10 +6,12 @@ import { characterMemoryService } from './characterMemoryService';
 
 const promptClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 60000 // 60 second timeout
 });
 
 const imageClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  timeout: 60000 // 60 second timeout
 });
 
 const SYSTEM_PROMPT = `You are a professional film director and AI visual artist. 

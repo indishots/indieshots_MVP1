@@ -1,8 +1,46 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { authMiddleware } from '../auth/jwt';
+import { generateShotsFromScene } from '../services/shotGenerator';
 
 const router = Router();
+
+/**
+ * POST /api/test/shot-generation
+ * Test endpoint to verify shot generation is working with OpenAI API
+ */
+router.post('/shot-generation', async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({
+        message: 'Prompt is required'
+      });
+    }
+    
+    console.log('🎬 Testing shot generation with prompt:', prompt.substring(0, 100) + '...');
+    
+    // Test shot generation directly
+    const shots = await generateShotsFromScene(prompt);
+    
+    console.log('✅ Shot generation test completed, shots generated:', shots.length);
+    
+    res.json({
+      success: true,
+      shots: shots,
+      message: `Generated ${shots.length} shots successfully`
+    });
+    
+  } catch (error) {
+    console.error('❌ Shot generation test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Shot generation test failed',
+      error: error.message
+    });
+  }
+});
 
 /**
  * POST /api/test/switch-tier
