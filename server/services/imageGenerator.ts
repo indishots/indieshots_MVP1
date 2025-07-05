@@ -285,7 +285,6 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
 
 /**
  * Generate image and return base64 data for database storage
- * Enhanced with aggressive retry logic to ensure ALL images are generated
  */
 export async function generateImageData(prompt: string, retries: number = 3): Promise<string | null> {
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -300,19 +299,13 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       console.log(`Prompt length: ${cleanedPrompt.length} characters`);
       console.log(`==============================`);
       
-      // Add timeout and better error handling
-      const response = await Promise.race([
-        imageClient.images.generate({
-          model: "dall-e-3",
-          prompt: cleanedPrompt,
-          n: 1,
-          size: "1792x1024", // Wider cinematic format
-          response_format: "url"
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Image generation timeout after 60 seconds')), 60000)
-        )
-      ]) as any;
+      const response = await imageClient.images.generate({
+        model: "dall-e-3",
+        prompt: cleanedPrompt,
+        n: 1,
+        size: "1792x1024", // Wider cinematic format
+        response_format: "url"
+      });
 
       const imageUrl = response.data?.[0]?.url;
       if (!imageUrl) {
@@ -340,66 +333,33 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
       const base64Data = imageBuffer.toString('base64');
       
-      // Validate base64 data is not corrupted
-      if (base64Data.length < 1000) {
-        console.error(`Base64 data too short (${base64Data.length} chars), likely corrupted`);
-        if (attempt === retries) return 'GENERATION_FAILED';
-        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
-        continue;
-      }
-      
-      // Test that the base64 can be decoded properly
-      try {
-        const testBuffer = Buffer.from(base64Data, 'base64');
-        if (testBuffer.length < 1000) {
-          console.error(`Decoded image buffer too small (${testBuffer.length} bytes)`);
-          if (attempt === retries) return 'GENERATION_FAILED';
-          await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
-          continue;
-        }
-      } catch (decodeError) {
-        console.error(`Invalid base64 data generated:`, decodeError);
-        if (attempt === retries) return 'GENERATION_FAILED';
-        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
-        continue;
-      }
-      
-      console.log(`Successfully generated valid image data (attempt ${attempt}), base64 length:`, base64Data.length);
+      console.log(`Successfully generated image data (attempt ${attempt}), base64 length:`, base64Data.length);
       return base64Data;
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
       
-      // Simplified error handling for faster, more reliable generation
-      let waitTime = 2000; // Base wait time
-      
-      if (error?.status === 429 || error?.message?.includes('rate limit')) {
-        console.log(`Rate limit hit (attempt ${attempt}/${retries}), waiting...`);
-        waitTime = 5000; // Fixed 5 second wait for rate limits
-      } else if (error?.status === 400 || error?.message?.includes('content policy')) {
-        console.log(`Content policy issue (attempt ${attempt}/${retries}), will try with safer prompt...`);
-        waitTime = 1000; // Short wait for content policy
-      } else if (error?.message?.includes('timeout') || error?.name === 'AbortError') {
-        console.log(`Request timeout (attempt ${attempt}/${retries}), retrying...`);
-        waitTime = 3000; // Fixed 3 second wait for timeouts
-      } else if (error?.message?.includes('upstream') || error?.message?.includes('JSON')) {
-        console.log(`OpenAI server error detected (attempt ${attempt}/${retries}), waiting...`);
-        waitTime = 4000; // Fixed 4 second wait for server errors
-      } else if (error?.status >= 500) {
-        console.log(`OpenAI server error ${error.status} (attempt ${attempt}/${retries}), waiting...`);
-        waitTime = 3000; // Fixed 3 second wait for server errors
-      } else {
-        console.log(`Unknown error (attempt ${attempt}/${retries}), retrying...`);
-        waitTime = 2000; // Fixed 2 second wait for unknown errors
+      // Handle specific OpenAI errors
+      if (error?.status === 429) {
+        console.log('Rate limit hit, waiting longer before retry...');
+        await new Promise(resolve => setTimeout(resolve, 10000 * attempt)); // Longer wait for rate limits
+      } else if (error?.name === 'AbortError') {
+        console.log('Request timed out, retrying...');
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+      } else if (error?.message?.includes('content policy')) {
+        console.log('Content policy violation, attempting to clean prompt...');
+        // For content policy issues, return null immediately to mark as failed
+        if (attempt === retries) {
+          console.error(`Content policy violation - cannot generate image for this prompt`);
+          return 'CONTENT_POLICY_VIOLATION';
+        }
+      } else if (attempt < retries) {
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
       }
       
-      // Final attempt - return failure instead of complex fallback
       if (attempt === retries) {
         console.error(`Failed to generate image after ${retries} attempts`);
         return 'GENERATION_FAILED';
       }
-      
-      console.log(`Waiting ${waitTime/1000} seconds before retry ${attempt + 1}...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
     }
   }
   return null;
@@ -461,44 +421,8 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
   }
 }
 
-// Simple circuit breaker for OpenAI API
-let consecutiveFailures = 0;
-const MAX_CONSECUTIVE_FAILURES = 3;
-const CIRCUIT_BREAKER_TIMEOUT = 60000; // 1 minute
-let circuitBreakerOpenTime = 0;
-
-function isCircuitBreakerOpen(): boolean {
-  if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-    if (Date.now() - circuitBreakerOpenTime < CIRCUIT_BREAKER_TIMEOUT) {
-      return true;
-    } else {
-      // Reset circuit breaker after timeout
-      consecutiveFailures = 0;
-      circuitBreakerOpenTime = 0;
-      console.log('Circuit breaker reset - attempting to reconnect to OpenAI');
-    }
-  }
-  return false;
-}
-
-function recordFailure() {
-  consecutiveFailures++;
-  if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-    circuitBreakerOpenTime = Date.now();
-    console.log(`Circuit breaker opened - too many consecutive OpenAI failures (${consecutiveFailures})`);
-  }
-}
-
-function recordSuccess() {
-  if (consecutiveFailures > 0) {
-    console.log(`OpenAI service recovered - resetting failure count from ${consecutiveFailures}`);
-    consecutiveFailures = 0;
-    circuitBreakerOpenTime = 0;
-  }
-}
-
 /**
- * Generate storyboard frames for multiple shots with retry mechanism and circuit breakerm
+ * Generate storyboard frames for multiple shots with retry mechanism
  */
 export async function generateStoryboards(shots: any[]): Promise<{ results: any[]; frames: StoryboardFrame[] }> {
   const results: any[] = [];
@@ -507,7 +431,7 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
 
   console.log(`Processing ${shots.length} shots sequentially for maximum reliability`);
 
-  // First pass: process all shots sequentially with enhanced rate limiting
+  // First pass: process all shots sequentially
   for (let shotIndex = 0; shotIndex < shots.length; shotIndex++) {
     const shot = shots[shotIndex];
     console.log(`Processing shot ${shotIndex + 1}/${shots.length} (ID: ${shot.id})`);
@@ -520,9 +444,8 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
         if ('frame' in shotResult && shotResult.frame) {
           frames.push(shotResult.frame);
         }
-        console.log(`✅ Shot ${shotIndex + 1}/${shots.length} completed successfully`);
       } else {
-        console.log(`❌ Shot ${shot.shotNumberInScene || shot.id} failed, adding to retry list. Status: ${shotResult?.status}`);
+        console.log(`Shot ${shot.shotNumberInScene || shot.id} failed, adding to retry list. Status: ${shotResult?.status}`);
         failedShots.push(shot);
         results.push(shotResult || { shotId: `shot_${shotIndex}`, status: 'processing failed' });
       }
@@ -532,40 +455,37 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
       results.push({ shotId: `shot_${shotIndex}`, status: `error: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
 
-    // Streamlined rate limiting - balanced for speed and reliability
+    // Wait between shots to respect rate limits
     if (shotIndex < shots.length - 1) {
-      const delayTime = 3000; // Reduced to 3 seconds for faster generation
-      console.log(`Waiting ${delayTime/1000} seconds before next shot...`);
-      await new Promise(resolve => setTimeout(resolve, delayTime));
+      console.log(`Waiting 5 seconds before next shot...`);
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
   }
 
-  // Single streamlined retry pass for failed shots
+  // Second pass: retry failed shots individually with longer delays
   if (failedShots.length > 0) {
-    console.log(`🔄 Retry pass: Attempting to generate ${failedShots.length} failed images...`);
+    console.log(`Retrying ${failedShots.length} failed shots individually...`);
     
     for (let i = 0; i < failedShots.length; i++) {
       const shot = failedShots[i];
-      console.log(`Retry - Processing shot ${shot.shotNumberInScene || shot.id}`);
+      console.log(`Retry attempt for shot ${shot.shotNumberInScene || shot.id}`);
       
       try {
-        // Short delay between retries for efficiency
-        if (i > 0) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-        
         const retryResult = await processShot(shot, shots.findIndex(s => s.id === shot.id));
         
-        if (retryResult && retryResult.status.includes('stored in database')) {
-          if ('frame' in retryResult && retryResult.frame) {
-            frames.push(retryResult.frame);
-          }
-          console.log(`✅ Retry successful for shot ${shot.shotNumberInScene || shot.id}`);
+        if ('frame' in retryResult && retryResult.frame) {
+          frames.push(retryResult.frame);
+          console.log(`Retry successful for shot ${shot.shotNumberInScene || shot.id}`);
         } else {
-          console.log(`❌ Retry failed for shot ${shot.shotNumberInScene || shot.id}: ${retryResult?.status}`);
+          console.log(`Retry failed for shot ${shot.shotNumberInScene || shot.id}: ${retryResult.status}`);
         }
       } catch (error) {
         console.error(`Retry error for shot ${shot.shotNumberInScene || shot.id}:`, error);
+      }
+      
+      // Longer delay between retries
+      if (i < failedShots.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 8000));
       }
     }
   }

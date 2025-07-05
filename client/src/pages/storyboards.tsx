@@ -197,43 +197,18 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   });
   
   // Fetch shots for this scene
-  const { data: shotsData, isLoading: isLoadingShots, error: shotsError } = useQuery({
+  const { data: shotsData, isLoading: isLoadingShots } = useQuery({
     queryKey: [`/api/shots/${jobId}/${sceneIndex}`],
   });
-
-  // Log shots query results
-  useEffect(() => {
-    console.log('💥 Shots Query Debug:', {
-      jobId,
-      sceneIndex,
-      isLoadingShots,
-      shotsData,
-      shotsError,
-      shotsArray: (shotsData as any)?.shots || [],
-      shotsCount: (shotsData as any)?.shots?.length || 0
-    });
-  }, [jobId, sceneIndex, isLoadingShots, shotsData, shotsError]);
   
   // Progressive loading: fetch storyboards regularly during generation
-  const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards, error: storyboardError } = useQuery({
+  const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
-    enabled: !!jobId && !!sceneIndex, // Always enabled to check for existing storyboards
+    enabled: hasStartedGeneration, // Fetch when generation starts
     refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
   });
-
-  // Log storyboard query results
-  useEffect(() => {
-    console.log('🎬 Storyboard Query Debug:', {
-      jobId,
-      sceneIndex,
-      isLoadingStoryboards,
-      storyboards,
-      storyboardError,
-      queryEnabled: !!jobId && !!sceneIndex
-    });
-  }, [jobId, sceneIndex, isLoadingStoryboards, storyboards, storyboardError]);
 
   // Progressive image tracking - update UI as images become available
   useEffect(() => {
@@ -256,18 +231,14 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         completed: completedCount
       });
       
-      // If we have any completed images at all, stop the generating state
-      if (completedCount > 0) {
+      // If generation is complete, stop loading state
+      if (completedCount === storyboardData.storyboards.length && isGenerating) {
         setIsGenerating(false);
         setIsLoadingImages(false);
-        
-        // Only show completion toast if all images are done and we were previously generating
-        if (completedCount === storyboardData.storyboards.length && isGenerating) {
-          toast({
-            title: "Storyboard generation complete",
-            description: `All ${completedCount} storyboard images generated successfully`,
-          });
-        }
+        toast({
+          title: "Storyboard generation complete",
+          description: `All ${completedCount} storyboard images generated successfully`,
+        });
       }
     }
   }, [storyboards, isGenerating, toast]);
@@ -320,27 +291,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     onError: (error: Error) => {
       // Don't show error toast for upgrade requirements
       if (error.message !== 'upgrade_required') {
-        let errorMessage = error.message;
-        let errorTitle = "Storyboard generation failed";
-        
-        // Provide user-friendly error messages for common issues
-        if (error.message.includes('upstream') || error.message.includes('JSON')) {
-          errorTitle = "OpenAI service temporarily unavailable";
-          errorMessage = "The AI image generation service is experiencing issues. Please wait a few minutes and try again.";
-        } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-          errorTitle = "Service busy";
-          errorMessage = "The AI service is currently handling many requests. Please wait a moment and try again.";
-        } else if (error.message.includes('content policy')) {
-          errorTitle = "Content restriction";
-          errorMessage = "Some content couldn't be generated due to safety guidelines. Try rephrasing your scene descriptions.";
-        } else if (error.message.includes('timeout')) {
-          errorTitle = "Request timeout";
-          errorMessage = "Image generation took too long. Please try again with simpler scene descriptions.";
-        }
-        
         toast({
-          title: errorTitle,
-          description: errorMessage,
+          title: "Storyboard generation failed",
+          description: error.message,
           variant: "destructive",
         });
       }
@@ -399,26 +352,6 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         </div>
       )}
 
-      {/* Debug info - always show for now */}
-      {true && (
-        <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
-          <div>Debug Info:</div>
-          <div>jobId: {jobId}, sceneIndex: {sceneIndex}</div>
-          <div>isGenerating: {isGenerating.toString()}</div>
-          <div>shots.length: {shots.length}</div>
-          <div>isLoadingShots: {isLoadingShots.toString()}</div>
-          <div>shotsError: {shotsError ? JSON.stringify(shotsError) : 'None'}</div>
-          <div>storyboardFrames.length: {storyboardFrames.length}</div>
-          <div>hasStartedGeneration: {hasStartedGeneration.toString()}</div>
-          <div>storyboardFrames with images: {storyboardFrames.filter((f: any) => f.hasImage).length}</div>
-          <div>storyboardFrames with imageData: {storyboardFrames.filter((f: any) => f.imageData).length}</div>
-          <div>isLoadingStoryboards: {isLoadingStoryboards.toString()}</div>
-          <div>storyboardError: {storyboardError ? JSON.stringify(storyboardError) : 'None'}</div>
-          <div>Condition check - should show images: {!(storyboardFrames.length === 0 || storyboardFrames.filter((f: any) => f.hasImage || f.imageData).length === 0).toString()}</div>
-          <div>Raw storyboard data: {storyboards ? JSON.stringify(storyboards, null, 2).substring(0, 300) + '...' : 'No data yet'}</div>
-        </div>
-      )}
-
       {/* Generate or Display Storyboards */}
       {isGenerating ? (
         <div className="mb-6">
@@ -459,27 +392,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             ))}
           </div>
         </div>
-      ) : shots.length === 0 ? (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>No Shots Found</CardTitle>
-            <CardDescription>
-              This scene doesn't have any shots generated yet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              You need to generate shots first before creating storyboards.
-            </p>
-            <Button 
-              onClick={() => setLocation(`/shots/${jobId}/${sceneIndex}`)}
-              className="w-full md:w-auto"
-            >
-              Generate Shots First
-            </Button>
-          </CardContent>
-        </Card>
-      ) : storyboardFrames.length === 0 || storyboardFrames.filter((f: any) => f.hasImage || f.imageData).length === 0 ? (
+      ) : storyboardFrames.length === 0 ? (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Generate Storyboards</CardTitle>
@@ -512,6 +425,11 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                 </Button>
               )}
             </div>
+            {shots.length === 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                No shots available. Please generate shots first.
+              </p>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -588,7 +506,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             console.error(`Failed to load image ${idx}`, {
                               hasImageData: !!frame.imageData,
                               dataLength: frame.imageData?.length || 0,
-                              dataPreview: frame.imageData ? frame.imageData.substring(0, 50) : 'no data',
+                              dataPreview: frame.imageData?.substring(0, 50) || 'no data',
                               generatedAt: frame.imageGeneratedAt
                             });
                           }}
