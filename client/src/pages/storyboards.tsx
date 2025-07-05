@@ -202,13 +202,25 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   });
   
   // Progressive loading: fetch storyboards regularly during generation
-  const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
+  const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards, error: storyboardError } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
     enabled: !!jobId && !!sceneIndex, // Always enabled to check for existing storyboards
     refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
   });
+
+  // Log storyboard query results
+  useEffect(() => {
+    console.log('🎬 Storyboard Query Debug:', {
+      jobId,
+      sceneIndex,
+      isLoadingStoryboards,
+      storyboards,
+      storyboardError,
+      queryEnabled: !!jobId && !!sceneIndex
+    });
+  }, [jobId, sceneIndex, isLoadingStoryboards, storyboards, storyboardError]);
 
   // Progressive image tracking - update UI as images become available
   useEffect(() => {
@@ -374,8 +386,8 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         </div>
       )}
 
-      {/* Debug info */}
-      {process.env.NODE_ENV === 'development' && (
+      {/* Debug info - always show for now */}
+      {true && (
         <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
           <div>Debug Info:</div>
           <div>isGenerating: {isGenerating.toString()}</div>
@@ -383,7 +395,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
           <div>hasStartedGeneration: {hasStartedGeneration.toString()}</div>
           <div>storyboardFrames with images: {storyboardFrames.filter((f: any) => f.hasImage).length}</div>
           <div>storyboardFrames with imageData: {storyboardFrames.filter((f: any) => f.imageData).length}</div>
-          <div>Raw storyboard data: {storyboards ? JSON.stringify(storyboards, null, 2).substring(0, 500) + '...' : 'No data yet'}</div>
+          <div>isLoadingStoryboards: {isLoadingStoryboards.toString()}</div>
+          <div>storyboardError: {storyboardError ? JSON.stringify(storyboardError) : 'None'}</div>
+          <div>Condition check - should show images: {!(storyboardFrames.length === 0 || storyboardFrames.filter((f: any) => f.hasImage || f.imageData).length === 0).toString()}</div>
+          <div>Raw storyboard data: {storyboards ? JSON.stringify(storyboards, null, 2).substring(0, 300) + '...' : 'No data yet'}</div>
         </div>
       )}
 
