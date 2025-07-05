@@ -197,9 +197,22 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   });
   
   // Fetch shots for this scene
-  const { data: shotsData, isLoading: isLoadingShots } = useQuery({
+  const { data: shotsData, isLoading: isLoadingShots, error: shotsError } = useQuery({
     queryKey: [`/api/shots/${jobId}/${sceneIndex}`],
   });
+
+  // Log shots query results
+  useEffect(() => {
+    console.log('💥 Shots Query Debug:', {
+      jobId,
+      sceneIndex,
+      isLoadingShots,
+      shotsData,
+      shotsError,
+      shotsArray: (shotsData as any)?.shots || [],
+      shotsCount: (shotsData as any)?.shots?.length || 0
+    });
+  }, [jobId, sceneIndex, isLoadingShots, shotsData, shotsError]);
   
   // Progressive loading: fetch storyboards regularly during generation
   const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards, error: storyboardError } = useQuery({
@@ -390,7 +403,11 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       {true && (
         <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
           <div>Debug Info:</div>
+          <div>jobId: {jobId}, sceneIndex: {sceneIndex}</div>
           <div>isGenerating: {isGenerating.toString()}</div>
+          <div>shots.length: {shots.length}</div>
+          <div>isLoadingShots: {isLoadingShots.toString()}</div>
+          <div>shotsError: {shotsError ? JSON.stringify(shotsError) : 'None'}</div>
           <div>storyboardFrames.length: {storyboardFrames.length}</div>
           <div>hasStartedGeneration: {hasStartedGeneration.toString()}</div>
           <div>storyboardFrames with images: {storyboardFrames.filter((f: any) => f.hasImage).length}</div>
