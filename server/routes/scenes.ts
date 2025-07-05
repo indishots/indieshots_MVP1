@@ -30,13 +30,13 @@ router.get('/debug/storyboard-access/:userId', authMiddleware, async (req: Reque
     const { userId } = req.params;
     const user = (req as any).user;
     const userTier = user?.tier || 'free';
-    
+
     console.log(`🔍 DEBUG: Checking storyboard access for user ${userId}`);
     console.log(`User object:`, JSON.stringify(user, null, 2));
-    
+
     const storyboardAccess = await productionQuotaManager.checkStoryboardAccess(userId, userTier);
     const quota = await productionQuotaManager.getUserQuota(userId, userTier);
-    
+
     res.json({
       userId,
       userTier,
@@ -55,7 +55,7 @@ router.get('/debug/auth-test', async (req: Request, res: Response) => {
   try {
     console.log('🔍 AUTH DEBUG: Headers:', JSON.stringify(req.headers, null, 2));
     console.log('🔍 AUTH DEBUG: Cookies:', JSON.stringify(req.cookies, null, 2));
-    
+
     res.json({
       message: 'Auth debug endpoint reached',
       headers: req.headers,
@@ -105,10 +105,10 @@ router.get('/jobs/:jobId', authMiddleware, async (req: Request, res: Response) =
     // Extract scenes from the script content
     if (script.content) {
       const scenes = await extractScenesFromText(script.content);
-      
+
       // Store scenes in memory
       scenesStorage.set(scenesKey, scenes);
-      
+
       return res.json({ scenes });
     } else {
       return res.status(400).json({ error: 'Script content not available' });
@@ -129,11 +129,11 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidation
     const userId = (req as any).user?.uid || (req as any).user?.id;
 
     console.log(`Shot generation - jobId: ${jobId}, userId: ${userId}`);
-    
+
     // Get the parse job
     const parseJob = await storage.getParseJob(parseInt(jobId));
     console.log(`Parse job found:`, parseJob ? `ID ${parseJob.id}, userId ${parseJob.userId}` : 'null');
-    
+
     if (!parseJob || parseJob.userId !== userId) {
       console.log(`Access denied - parseJob exists: ${!!parseJob}, userIds match: ${parseJob?.userId === userId}`);
       return res.status(404).json({ error: 'Parse job not found' });
@@ -160,7 +160,7 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidation
       );
     } catch (error: any) {
       console.error('🚨 Shot generation failed:', error.message);
-      
+
       // Check if it's an OpenAI API key issue
       if (error.message.includes('Invalid OpenAI API key') || error.message.includes('API key') || error.message.includes('Incorrect API key')) {
         return res.status(503).json({ 
@@ -170,7 +170,7 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidation
           userMessage: 'AI shot generation is temporarily unavailable. Please try again in a few minutes.'
         });
       }
-      
+
       // For other API errors
       return res.status(503).json({ 
         error: 'Shot generation service temporarily unavailable',
@@ -195,10 +195,10 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidation
     const user = (req as any).user;
     const userTier = user?.tier || 'free';
     const userQuota = await productionQuotaManager.getUserQuota(userId, userTier);
-    
+
     let finalShots = shots;
     let tierLimitWarning = null;
-    
+
     if (userQuota.tier === 'free' && shots.length > userQuota.maxShotsPerScene) {
       // Limit shots for free tier users but still store them
       finalShots = shots.slice(0, userQuota.maxShotsPerScene);
@@ -239,14 +239,14 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidation
     // Delete existing shots for this scene and create new ones
     console.log(`About to delete existing shots for job ${jobId}, scene ${sceneIndex}`);
     await storage.deleteShots(parseInt(jobId), parseInt(sceneIndex));
-    
+
     console.log(`About to create ${shotsToStore.length} shots:`, shotsToStore.map(s => ({ 
       parseJobId: s.parseJobId, 
       sceneIndex: s.sceneIndex, 
       userId: s.userId,
       shotDescription: s.shotDescription 
     })));
-    
+
     const createdShots = await storage.createShots(shotsToStore);
     console.log(`Created ${createdShots.length} shots in database`);
 
@@ -274,11 +274,11 @@ router.get('/shots/:jobId', authMiddleware, tierValidationMiddleware, async (req
     const userId = (req as any).user?.uid || (req as any).user?.id;
 
     console.log(`GET all shots - jobId: ${jobId}, userId: ${userId}`);
-    
+
     // Verify user owns the job
     const parseJob = await storage.getParseJob(parseInt(jobId));
     console.log(`Parse job found:`, parseJob ? `ID ${parseJob.id}, userId ${parseJob.userId}` : 'null');
-    
+
     if (!parseJob || parseJob.userId !== userId) {
       console.log(`Access denied - parseJob exists: ${!!parseJob}, userIds match: ${parseJob?.userId === userId}`);
       return res.status(404).json({ error: 'Parse job not found' });
@@ -286,7 +286,7 @@ router.get('/shots/:jobId', authMiddleware, tierValidationMiddleware, async (req
 
     // Get all shots from all scenes for this job
     const allShots = [];
-    
+
     // Handle fullParseData which might already be an object or a string
     let parsedData;
     if (typeof parseJob.fullParseData === 'string') {
@@ -299,18 +299,18 @@ router.get('/shots/:jobId', authMiddleware, tierValidationMiddleware, async (req
     } else {
       parsedData = parseJob.fullParseData;
     }
-    
+
     const scenes = parsedData?.scenes || [];
     console.log(`Found ${scenes.length} scenes in fullParseData`);
-    
+
     for (let sceneIndex = 0; sceneIndex < scenes.length; sceneIndex++) {
       const sceneShots = await storage.getShots(parseInt(jobId), sceneIndex);
       console.log(`Scene ${sceneIndex}: found ${sceneShots.length} shots`);
       allShots.push(...sceneShots);
     }
-    
+
     console.log(`GET all shots - parseJobId: ${jobId}, found ${allShots.length} total shots`);
-    
+
     res.json(allShots);
   } catch (error) {
     console.error('Error getting all shots:', error);
@@ -328,11 +328,11 @@ router.get('/shots/:jobId/:sceneIndex', authMiddleware, tierValidationMiddleware
     const userId = (req as any).user?.uid || (req as any).user?.id;
 
     console.log(`GET shots - jobId: ${jobId}, userId: ${userId}`);
-    
+
     // Verify user owns the job
     const parseJob = await storage.getParseJob(parseInt(jobId));
     console.log(`Parse job found:`, parseJob ? `ID ${parseJob.id}, userId ${parseJob.userId}` : 'null');
-    
+
     if (!parseJob || parseJob.userId !== userId) {
       console.log(`Access denied - parseJob exists: ${!!parseJob}, userIds match: ${parseJob?.userId === userId}`);
       return res.status(404).json({ error: 'Parse job not found' });
@@ -340,7 +340,7 @@ router.get('/shots/:jobId/:sceneIndex', authMiddleware, tierValidationMiddleware
 
     // Get shots from database instead of memory
     const shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
-    
+
     console.log(`GET shots - parseJobId: ${jobId}, sceneIndex: ${sceneIndex}, found ${shots.length} shots`);
     console.log('First shot sample:', shots[0]);
 
@@ -359,10 +359,10 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
   // CRITICAL: Ensure proper JSON response headers to prevent empty responses
   res.setHeader('Content-Type', 'application/json');
   res.setTimeout(0); // Disable timeout for storyboard generation
-  
+
   // DEPLOYMENT CRITICAL: Wrap EVERYTHING in try-catch to prevent any 500 errors
   let hasResponded = false;
-  
+
   try {
     // Additional safety check - if response is already sent, don't continue
     if (res.headersSent) {
@@ -402,7 +402,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
         reason: userTier === 'pro' ? 'Access granted' : 'Quota manager unavailable - please upgrade to pro'
       };
     }
-    
+
     if (!storyboardAccess.allowed) {
       console.log(`❌ STORYBOARD ACCESS DENIED: ${storyboardAccess.reason}`);
       hasResponded = true;
@@ -429,7 +429,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
         storyboards: []
       });
     }
-    
+
     if (!parseJob || parseJob.userId !== userId) {
       hasResponded = true;
       return res.status(404).json({ error: 'Parse job not found' });
@@ -449,7 +449,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
         storyboards: []
       });
     }
-    
+
     if (!shots || shots.length === 0) {
       hasResponded = true;
       return res.status(404).json({ error: 'No shots found. Please generate shots first.' });
@@ -457,7 +457,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
 
     // Check if this is a force regeneration (clear existing images)
     const forceRegenerate = req.body.forceRegenerate;
-    
+
     if (forceRegenerate) {
       console.log(`Force regenerating storyboards for scene ${sceneIndex} - clearing existing image data`);
       // Instead of deleting/recreating, just clear the image data fields
@@ -466,14 +466,14 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
           await storage.updateShotImage(shot.id, "", "");
         }
       }
-      
+
       // Refresh shots data to get cleared records
       shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
     }
 
     // Use robust batch generation system with complete error isolation
     console.log(`Starting robust batch generation for ${shots.length} storyboard images...`);
-    
+
     // Log character memory stats before generation
     let memoryStatsBefore;
     try {
@@ -483,7 +483,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       console.error('Character memory service unavailable:', memoryError);
       memoryStatsBefore = { characterCount: 0, characters: [] };
     }
-    
+
     // Process images with DEPLOYMENT-SAFE error isolation - NEVER throw exceptions
     try {
       console.log('🚀 Starting deployment-safe batch generation...');
@@ -494,7 +494,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       console.error('Error type:', typeof batchError);
       console.error('Error message:', batchError instanceof Error ? batchError.message : String(batchError));
       console.error('Stack trace:', batchError instanceof Error ? batchError.stack : 'No stack trace');
-      
+
       // In deployment, mark all shots as failed to prevent hanging UI
       console.log('🔧 Marking all shots as failed to prevent UI hanging...');
       try {
@@ -507,7 +507,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
         // Even if marking fails, continue to return response
       }
     }
-    
+
     // Log character memory stats after generation
     try {
       const memoryStatsAfter = characterMemoryService.getMemoryStats();
@@ -519,7 +519,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     } catch (memoryError) {
       console.error('Character memory service error during stats logging:', memoryError);
     }
-    
+
     // Get final shots with all images - with error handling
     let finalShots;
     try {
@@ -533,7 +533,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
         storyboards: []
       });
     }
-    
+
     const finalStoryboards = finalShots.map(shot => ({
       shotNumber: shot.shotNumberInScene,
       description: shot.shotDescription,
@@ -545,14 +545,14 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       hasImage: !!shot.imageData,
       errorState: shot.imagePromptText?.startsWith('ERROR:') ? shot.imagePromptText : null
     }));
-    
+
     const successCount = finalStoryboards.filter(sb => sb.hasImage).length;
     const errorCount = finalStoryboards.filter(sb => sb.errorState).length;
     console.log(`Robust batch generation complete: ${successCount}/${shots.length} images generated successfully, ${errorCount} errors`);
 
     // Mark that we're about to respond
     hasResponded = true;
-    
+
     res.json({
       message: `Storyboards processed with robust error isolation`,
       totalShots: shots.length,
@@ -568,11 +568,11 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     console.error('Error constructor:', error?.constructor?.name);
     console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
-    
+
     // Only respond if we haven't already sent a response
     if (!hasResponded && !res.headersSent) {
       console.log('⚠️ Returning 200 OK with error state to prevent frontend hanging...');
-      
+
       try {
         res.status(200).json({
           message: 'Storyboard generation encountered errors but system remains stable',
@@ -602,7 +602,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
 router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
   // CRITICAL: Ensure proper JSON response headers to prevent empty responses
   res.setHeader('Content-Type', 'application/json');
-  
+
   try {
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
@@ -638,12 +638,12 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
           shot.imageData === 'PROCESSING_ERROR' ||
           shot.imageData === 'STORAGE_FAILED'
         );
-        
+
         // For error states, pass through the error string directly
         // For successful images, create proper base64 data URL
         const imagePath = isErrorState ? shot.imageData : 
                          (shot.imageData && shot.imageData.length > 100) ? `data:image/png;base64,${shot.imageData}` : null;
-        
+
         return {
           shotNumber: shot.shotNumberInScene,
           description: shot.shotDescription,
@@ -663,17 +663,17 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
       'Pragma': 'no-cache',
       'Expires': '0'
     });
-    
+
     res.json({ storyboards });
   } catch (error) {
     console.error('🚨 CRITICAL ERROR in GET storyboards route:', error);
     console.error('Error type:', typeof error);
     console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
-    
+
     // DEPLOYMENT CRITICAL FIX: Return 200 OK with empty storyboards instead of 500
     console.log('⚠️ Returning 200 OK with empty storyboards to prevent frontend errors...');
-    
+
     res.status(200).json({
       storyboards: [],
       success: false,
@@ -711,12 +711,12 @@ router.get('/storyboards/:jobId/:sceneIndex/download', authMiddleware, async (re
       // Create ZIP file with all images from database
       const archiver = await import('archiver');
       const archive = archiver.default('zip', { zlib: { level: 9 } });
-      
+
       res.setHeader('Content-Type', 'application/zip');
       res.setHeader('Content-Disposition', `attachment; filename="storyboards_scene${sceneIndex}.zip"`);
-      
+
       archive.pipe(res);
-      
+
       // Add each storyboard image to the ZIP
       for (let i = 0; i < shotsWithImages.length; i++) {
         const shot = shotsWithImages[i];
@@ -727,7 +727,7 @@ router.get('/storyboards/:jobId/:sceneIndex/download', authMiddleware, async (re
           });
         }
       }
-      
+
       archive.finalize();
     } else {
       // Return metadata for individual downloads
@@ -737,7 +737,7 @@ router.get('/storyboards/:jobId/:sceneIndex/download', authMiddleware, async (re
         downloadUrl: `/api/storyboards/${jobId}/${sceneIndex}/image/${index}`,
         imagePath: shot.imageData ? 'stored in database' : null
       }));
-      
+
       res.json({ downloads: downloadLinks });
     }
   } catch (error) {
@@ -779,7 +779,7 @@ router.get('/storyboards/:jobId/:sceneIndex/image/:imageIndex', authMiddleware, 
     res.setHeader('Expires', '0');
     const timestamp = shot.updatedAt ? new Date(shot.updatedAt).getTime() : Date.now();
     res.setHeader('Content-Disposition', `attachment; filename="shot_${shot.shotNumberInScene}_${timestamp}.png"`);
-    
+
     res.send(imageBuffer);
   } catch (error) {
     console.error('Error downloading image:', error);
@@ -820,12 +820,12 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     // Get shots from database
     const shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
     console.log(`Found ${shots.length} total shots`);
-    
+
     // Find shot by storyboard index (shots with images ordered by shotNumberInScene)
     const shotsWithImages = shots.filter(shot => shot.imageData && shot.imageData.length > 0).sort((a, b) => a.shotNumberInScene - b.shotNumberInScene);
     const storyboardIndex = parseInt(shotId);
     const shot = shotsWithImages[storyboardIndex];
-    
+
     console.log(`Looking for storyboard index ${shotId} in ${shotsWithImages.length} shots with images`);
     console.log(`Shots with images:`, shotsWithImages.map(s => ({ id: s.id, shotNumber: s.shotNumberInScene, hasImage: !!s.imageData })));
     console.log(`Requesting storyboard index: ${storyboardIndex}, available indices: 0-${shotsWithImages.length - 1}`);
@@ -841,12 +841,12 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
         }
       });
     }
-    
+
     if (!shot.imageData || shot.imageData.length === 0) {
       console.log(`Shot found but has no image data: ${shot.id}`);
       return res.status(400).json({ error: `Shot ${shot.id} has no image data to regenerate` });
     }
-    
+
     console.log(`Found shot: ${shot.id}, shotNumber: ${shot.shotNumberInScene}`);
 
     // Recreate the exact same prompt format as original storyboard generation
@@ -861,53 +861,53 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
       const lighting = shotData.lighting || '';
       const props = shotData.props || '';
       const colorTemp = shotData.colourTemp || '';
-      
+
       let prompt = `In a ${mood.toLowerCase()}, ${shotType.toLowerCase()}, capture ${description}`;
-      
+
       if (location) prompt += ` in ${location.toLowerCase()}`;
       if (timeOfDay) prompt += ` at ${timeOfDay.toLowerCase()}`;
       if (lens) prompt += `, using a ${movement.toLowerCase()} ${lens} lens`;
       if (lighting) prompt += `, with ${lighting.toLowerCase()}`;
       if (props) prompt += `, featuring ${props.toLowerCase()}`;
       if (colorTemp) prompt += `, ${colorTemp.toLowerCase()} color temperature`;
-      
+
       return prompt + '.';
     };
-    
+
     // Use stored prompt if available, otherwise recreate using original logic
     let basePrompt = shot.imagePromptText;
     if (!basePrompt) {
       basePrompt = createPrompt(shot);
     }
-    
+
     // Intelligent retry logic based on error type
     let modifiedPrompt;
     const { errorType, intelligentRetry } = req.body;
-    
+
     if (intelligentRetry && errorType) {
       console.log(`🧠 Intelligent retry for error type: ${errorType}`);
-      
+
       if (errorType === 'CONTENT_POLICY_ERROR') {
         // Ultra-safe prompt for content policy violations
         const shotType = shot.shotType || 'medium shot';
         const basicSetting = shot.location?.includes('border') ? 'mountain landscape' : (shot.location || 'indoor setting');
-        
+
         modifiedPrompt = `Professional film ${shotType.toLowerCase()} showing characters in ${basicSetting}, cinematic lighting, clean movie production scene, safe for work content`;
         console.log(`🛡️ Content policy safe prompt: ${modifiedPrompt}`);
-        
+
       } else if (errorType === 'GENERATION_ERROR') {
         // Simplified prompt for generation failures
         const shotType = shot.shotType || 'medium shot';
         const action = shot.shotDescription?.replace(/weapon|gun|rifle|grenade|blood|violence|death|kill/gi, 'action') || 'scene';
-        
+
         modifiedPrompt = `${shotType.toLowerCase()} of ${action}, professional filmmaking, cinematic composition`;
         console.log(`⚡ Simplified prompt: ${modifiedPrompt}`);
-        
+
       } else if (errorType === 'PROCESSING_ERROR' || errorType === 'STORAGE_FAILED') {
         // Basic prompt for technical failures
         modifiedPrompt = `Professional film scene, cinematic lighting, movie production quality`;
         console.log(`🔧 Basic technical prompt: ${modifiedPrompt}`);
-        
+
       } else {
         // Fallback to original logic
         modifiedPrompt = basePrompt;
@@ -917,7 +917,7 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
       const shotType = shot.shotType || 'medium shot';
       const location = shot.location || 'indoor location';
       const timeOfDay = shot.timeOfDay || 'day';
-      
+
       const safePrompt = `Professional ${shotType.toLowerCase()} in ${location.toLowerCase()} during ${timeOfDay.toLowerCase()}, clean movie production scene, cinematic lighting, film still`;
       modifiedPrompt = safePrompt;
     } else if (modifications === 'retry generation') {
@@ -929,19 +929,19 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
         .replace(/crime\s+scene/gi, 'investigation area')
         .replace(/violent|death|murder|kill|weapon|gun|knife/gi, 'dramatic')
         .replace(/gore|brutal|torture/gi, 'intense');
-      
+
       // Add safety qualifiers
       modifiedPrompt = `Professional cinematic scene: ${modifiedPrompt}, movie production still, artistic lighting`;
     } else {
       modifiedPrompt = `${basePrompt} ${modifications}`;
     }
-    
+
     console.log(`=== REGENERATION DEBUG ===`);
     console.log(`Original basePrompt: ${basePrompt}`);
     console.log(`User modifications: ${modifications}`);
     console.log(`Final modifiedPrompt: ${modifiedPrompt}`);
     console.log(`=========================`);
-    
+
     // Debug: Test the specific failing prompt
     if (modifiedPrompt.includes('blood-soaked') || modifiedPrompt.includes('blood soaked')) {
       console.log('WARNING: Detected blood-related content in prompt that may trigger content policy');
@@ -955,18 +955,18 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     // Use the improved image generation function with retries
     const { generateImageData } = await import('../services/imageGenerator');
     const imageData = await generateImageData(modifiedPrompt, 3); // 3 retry attempts
-    
+
     if (!imageData || imageData === 'GENERATION_ERROR' || imageData === 'CONTENT_POLICY_ERROR') {
       const errorType = imageData || 'unknown';
       console.error(`Regeneration failed: ${errorType}`);
       console.error(`Failed prompt was: ${modifiedPrompt}`);
-      
+
       // If this is a content policy issue, try one more time with an ultra-safe prompt
       if (imageData === 'CONTENT_POLICY_ERROR' || modifiedPrompt.toLowerCase().includes('blood')) {
         console.log('Attempting emergency ultra-safe regeneration...');
         const emergencyPrompt = `Professional medium shot in indoor location during day, clean movie production scene, cinematic lighting, film still, safe for work content`;
         const emergencyResult = await generateImageData(emergencyPrompt, 1);
-        
+
         if (emergencyResult && emergencyResult !== 'GENERATION_ERROR' && emergencyResult !== 'CONTENT_POLICY_ERROR') {
           console.log('Emergency regeneration successful');
           await storage.updateShotImage(shot.id, emergencyResult, emergencyPrompt);
@@ -978,7 +978,7 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
           });
         }
       }
-      
+
       throw new Error(`Failed to regenerate image: ${errorType}. The content may be too sensitive for AI image generation.`);
     }
 

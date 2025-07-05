@@ -200,9 +200,11 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       }
     },
     onError: (error: any) => {
+      console.error('Regeneration error:', error);
+      const errorMessage = error.message || 'Failed to regenerate image';
       toast({ 
         title: "Regeneration failed", 
-        description: error.message,
+        description: errorMessage,
         variant: "destructive" 
       });
     },
