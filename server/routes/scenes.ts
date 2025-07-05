@@ -497,13 +497,12 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     console.error('Error generating storyboards:', error);
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     
-    // Return more detailed error information
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    
-    res.status(500).json({ 
+    // Ensure we always return valid JSON, never HTML
+    res.status(500).json({
       error: 'Failed to generate storyboards',
-      message: errorMessage,
-      details: error instanceof Error ? error.stack : 'No additional details'
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      success: false,
+      storyboards: []
     });
   }
 });
@@ -577,7 +576,15 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
     res.json({ storyboards });
   } catch (error) {
     console.error('Error getting storyboards:', error);
-    res.status(500).json({ error: 'Failed to get storyboards' });
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Ensure we always return valid JSON, never HTML
+    res.status(500).json({
+      error: 'Failed to get storyboards',
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      success: false,
+      storyboards: []
+    });
   }
 });
 

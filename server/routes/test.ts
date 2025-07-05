@@ -22,7 +22,7 @@ router.post('/shot-generation', async (req: Request, res: Response) => {
     console.log('🎬 Testing shot generation with prompt:', prompt.substring(0, 100) + '...');
     
     // Test shot generation directly
-    const shots = await generateShotsFromScene(prompt);
+    const shots = await generateShotsFromScene(prompt, 'Test User', 1);
     
     console.log('✅ Shot generation test completed, shots generated:', shots.length);
     
@@ -32,12 +32,12 @@ router.post('/shot-generation', async (req: Request, res: Response) => {
       message: `Generated ${shots.length} shots successfully`
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Shot generation test failed:', error);
     res.status(500).json({
       success: false,
       message: 'Shot generation test failed',
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
