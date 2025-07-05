@@ -383,7 +383,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
           <div>hasStartedGeneration: {hasStartedGeneration.toString()}</div>
           <div>storyboardFrames with images: {storyboardFrames.filter((f: any) => f.hasImage).length}</div>
           <div>storyboardFrames with imageData: {storyboardFrames.filter((f: any) => f.imageData).length}</div>
-          <div>Raw storyboard data: {JSON.stringify(storyboards, null, 2).substring(0, 500)}...</div>
+          <div>Raw storyboard data: {storyboards ? JSON.stringify(storyboards, null, 2).substring(0, 500) + '...' : 'No data yet'}</div>
         </div>
       )}
 
@@ -541,7 +541,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             console.error(`Failed to load image ${idx}`, {
                               hasImageData: !!frame.imageData,
                               dataLength: frame.imageData?.length || 0,
-                              dataPreview: frame.imageData?.substring(0, 50) || 'no data',
+                              dataPreview: frame.imageData ? frame.imageData.substring(0, 50) : 'no data',
                               generatedAt: frame.imageGeneratedAt
                             });
                           }}
