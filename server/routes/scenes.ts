@@ -426,6 +426,19 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
     }
     
+    // Log detailed results from isolated processing
+    const successfulResults = results.filter(r => r.success);
+    const failedResults = results.filter(r => !r.success);
+    
+    console.log(`🎯 Isolated Processing Results:`);
+    console.log(`✅ Successful: ${successfulResults.length}/${results.length} images generated`);
+    if (failedResults.length > 0) {
+      console.log(`❌ Failed: ${failedResults.length} images had issues:`);
+      failedResults.forEach(result => {
+        console.log(`  - Shot ${result.shotId}: ${result.error}`);
+      });
+    }
+    
     // Validate all shots have images - retry any missing ones
     const updatedShots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
     const missingImageShots = updatedShots.filter(shot => !shot.imageData || shot.imageData === '');

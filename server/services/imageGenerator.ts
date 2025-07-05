@@ -424,73 +424,125 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
 /**
  * Generate storyboard frames for multiple shots with retry mechanism
  */
+/**
+ * Process individual shot with comprehensive error isolation
+ */
+async function processShotWithIsolation(shot: any, shotIndex: number, totalShots: number): Promise<{ success: boolean; shotId: string; error?: string }> {
+  const shotId = shot.shotNumberInScene?.toString() || shot.id?.toString() || `shot_${shotIndex + 1}`;
+  
+  try {
+    console.log(`[${shotIndex + 1}/${totalShots}] Processing shot ${shotId}...`);
+    
+    // Isolate each step with individual error handling
+    let prompt: string | null = null;
+    try {
+      const userMessage = buildPrompt(shot);
+      prompt = await generatePrompt(userMessage);
+    } catch (promptError) {
+      console.error(`Prompt generation failed for shot ${shotId}:`, promptError);
+      // Continue with a basic fallback prompt
+      prompt = `A cinematic shot showing ${shot.shotDescription || shot.shotType || 'a scene'}`;
+    }
+
+    if (!prompt) {
+      throw new Error('No prompt could be generated');
+    }
+
+    // Try image generation with comprehensive error handling
+    let imageData: string | null = null;
+    try {
+      imageData = await generateImageData(prompt);
+    } catch (imageError) {
+      console.error(`Image generation error for shot ${shotId}:`, imageError);
+      // Try with a simpler, safer prompt
+      try {
+        const safePrompt = `A professional film scene, cinematic lighting, movie production quality`;
+        imageData = await generateImageData(safePrompt);
+        console.log(`Fallback image generation succeeded for shot ${shotId}`);
+      } catch (fallbackError) {
+        console.error(`Even fallback generation failed for shot ${shotId}:`, fallbackError);
+        imageData = 'GENERATION_FAILED';
+      }
+    }
+
+    // Store result in database regardless of success/failure
+    try {
+      const { storage } = await import('../storage');
+      if (imageData && imageData !== 'GENERATION_FAILED' && imageData !== 'CONTENT_POLICY_VIOLATION') {
+        await storage.updateShotImage(shot.id, imageData, prompt);
+        console.log(`✅ Shot ${shotId} - Image generated and stored successfully`);
+        return { success: true, shotId };
+      } else {
+        // Store failure marker so frontend knows this shot failed
+        const failureMarker = imageData === 'CONTENT_POLICY_VIOLATION' ? 'CONTENT_POLICY_ERROR' : 'GENERATION_ERROR';
+        await storage.updateShotImage(shot.id, failureMarker, prompt || 'No prompt generated');
+        console.log(`❌ Shot ${shotId} - Marked as failed: ${failureMarker}`);
+        return { success: false, shotId, error: failureMarker };
+      }
+    } catch (storageError) {
+      console.error(`Database storage failed for shot ${shotId}:`, storageError);
+      return { success: false, shotId, error: 'STORAGE_FAILED' };
+    }
+
+  } catch (error) {
+    console.error(`Complete failure processing shot ${shotId}:`, error);
+    // Still try to mark in database as failed
+    try {
+      const { storage } = await import('../storage');
+      await storage.updateShotImage(shot.id, 'PROCESSING_ERROR', 'Error during processing');
+    } catch (storageError) {
+      console.error(`Could not even mark shot ${shotId} as failed in database:`, storageError);
+    }
+    return { success: false, shotId, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 export async function generateStoryboards(shots: any[]): Promise<{ results: any[]; frames: StoryboardFrame[] }> {
   const results: any[] = [];
   const frames: StoryboardFrame[] = [];
-  const failedShots: any[] = [];
+  let successCount = 0;
+  let failureCount = 0;
 
-  console.log(`Processing ${shots.length} shots sequentially for maximum reliability`);
+  console.log(`🎬 Starting isolated generation of ${shots.length} storyboard images...`);
+  console.log(`Each image will be processed independently to ensure maximum success rate`);
 
-  // First pass: process all shots sequentially
+  // Process each shot with complete isolation - one failure won't affect others
   for (let shotIndex = 0; shotIndex < shots.length; shotIndex++) {
     const shot = shots[shotIndex];
-    console.log(`Processing shot ${shotIndex + 1}/${shots.length} (ID: ${shot.id})`);
     
     try {
-      const shotResult = await processShot(shot, shotIndex);
+      // Each shot is completely isolated
+      const result = await processShotWithIsolation(shot, shotIndex, shots.length);
       
-      if (shotResult && shotResult.status.includes('stored in database')) {
-        results.push(shotResult);
-        if ('frame' in shotResult && shotResult.frame) {
-          frames.push(shotResult.frame);
-        }
+      if (result.success) {
+        successCount++;
+        console.log(`✅ [${successCount}/${shots.length}] Shot ${result.shotId} completed successfully`);
       } else {
-        console.log(`Shot ${shot.shotNumberInScene || shot.id} failed, adding to retry list. Status: ${shotResult?.status}`);
-        failedShots.push(shot);
-        results.push(shotResult || { shotId: `shot_${shotIndex}`, status: 'processing failed' });
+        failureCount++;
+        console.log(`❌ [${failureCount} failures] Shot ${result.shotId} failed: ${result.error}`);
       }
-    } catch (error) {
-      console.error(`Error processing shot ${shot.shotNumberInScene || shot.id}:`, error);
-      failedShots.push(shot);
-      results.push({ shotId: `shot_${shotIndex}`, status: `error: ${error instanceof Error ? error.message : 'Unknown error'}` });
+      
+      results.push(result);
+      
+    } catch (isolationError) {
+      // This should never happen due to inner error handling, but just in case
+      failureCount++;
+      console.error(`Complete isolation failure for shot ${shotIndex + 1}:`, isolationError);
+      results.push({ 
+        success: false, 
+        shotId: `shot_${shotIndex + 1}`, 
+        error: 'ISOLATION_FAILURE' 
+      });
     }
 
-    // Wait between shots to respect rate limits
+    // Rate limiting delay between shots (reduced for better UX)
     if (shotIndex < shots.length - 1) {
-      console.log(`Waiting 5 seconds before next shot...`);
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
     }
   }
 
-  // Second pass: retry failed shots individually with longer delays
-  if (failedShots.length > 0) {
-    console.log(`Retrying ${failedShots.length} failed shots individually...`);
-    
-    for (let i = 0; i < failedShots.length; i++) {
-      const shot = failedShots[i];
-      console.log(`Retry attempt for shot ${shot.shotNumberInScene || shot.id}`);
-      
-      try {
-        const retryResult = await processShot(shot, shots.findIndex(s => s.id === shot.id));
-        
-        if ('frame' in retryResult && retryResult.frame) {
-          frames.push(retryResult.frame);
-          console.log(`Retry successful for shot ${shot.shotNumberInScene || shot.id}`);
-        } else {
-          console.log(`Retry failed for shot ${shot.shotNumberInScene || shot.id}: ${retryResult.status}`);
-        }
-      } catch (error) {
-        console.error(`Retry error for shot ${shot.shotNumberInScene || shot.id}:`, error);
-      }
-      
-      // Longer delay between retries
-      if (i < failedShots.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 8000));
-      }
-    }
-  }
-
-  console.log(`Completed processing: generated ${frames.length} out of ${shots.length} shots`);
+  console.log(`🎯 Generation Summary: ${successCount}/${shots.length} successful, ${failureCount} failed`);
+  console.log(`Success rate: ${Math.round((successCount / shots.length) * 100)}%`);
   
   return { results, frames };
 }

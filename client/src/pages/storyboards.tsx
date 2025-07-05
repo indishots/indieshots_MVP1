@@ -342,10 +342,28 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold mb-1">Storyboard Generation</h2>
-        <p className="text-muted-foreground">
-          Generate visual storyboards for Scene {parseInt(sceneIndex) + 1}
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-semibold mb-1">Storyboard Generation</h2>
+            <p className="text-muted-foreground">
+              Generate visual storyboards for Scene {parseInt(sceneIndex) + 1}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                refetchStoryboards();
+                toast({ title: "Refreshing storyboards..." });
+              }}
+              disabled={isGenerating}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </div>
       </div>
       
       {/* Show upgrade prompt for free tier users */}
@@ -526,7 +544,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             });
                           }}
                         />
-                      ) : frame.imagePath === 'GENERATION_ERROR' ? (
+                      ) : frame.imageData === 'GENERATION_ERROR' || frame.imagePath === 'GENERATION_ERROR' ? (
                         <div className="text-center text-red-500 space-y-2">
                           <div className="h-8 w-8 mx-auto bg-red-100 rounded flex items-center justify-center">
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -568,7 +586,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             Retry
                           </Button>
                         </div>
-                      ) : frame.imagePath === 'CONTENT_POLICY_ERROR' ? (
+                      ) : frame.imageData === 'CONTENT_POLICY_ERROR' || frame.imagePath === 'CONTENT_POLICY_ERROR' ? (
                         <div className="text-center text-orange-500 space-y-2">
                           <div className="h-8 w-8 mx-auto bg-orange-100 rounded flex items-center justify-center">
                             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -591,6 +609,40 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                                 if (response.ok) {
                                   queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
                                   toast({ title: "Retrying with safer prompt..." });
+                                } else {
+                                  toast({ title: "Retry failed", variant: "destructive" });
+                                }
+                              } catch (error) {
+                                toast({ title: "Retry failed", variant: "destructive" });
+                              }
+                            }}
+                          >
+                            Retry
+                          </Button>
+                        </div>
+                      ) : frame.imageData === 'PROCESSING_ERROR' || frame.imageData === 'STORAGE_FAILED' ? (
+                        <div className="text-center text-red-500 space-y-2">
+                          <div className="h-8 w-8 mx-auto bg-red-100 rounded flex items-center justify-center">
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <p className="text-xs">Processing error</p>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-xs px-2 py-1 h-6"
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${idx}`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ modifications: 'retry processing' })
+                                });
+                                if (response.ok) {
+                                  queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
+                                  toast({ title: "Retrying processing..." });
                                 } else {
                                   toast({ title: "Retry failed", variant: "destructive" });
                                 }
