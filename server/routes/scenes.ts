@@ -540,17 +540,32 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
 
     // Get ALL shots from database and show their current status
     const shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
-    const storyboards = shots.map(shot => ({
-        shotNumber: shot.shotNumberInScene,
-        description: shot.shotDescription,
-        shotType: shot.shotType,
-        cameraAngle: shot.lens,
-        notes: shot.notes,
-        imagePath: shot.imageData ? `data:image/png;base64,${shot.imageData}` : null,
-        imageData: shot.imageData, // Include raw base64 data for immediate display
-        prompt: shot.imagePromptText,
-        hasImage: !!shot.imageData
-      }));
+    const storyboards = shots.map(shot => {
+        // Check if imageData contains error strings
+        const isErrorState = shot.imageData && (
+          shot.imageData === 'GENERATION_ERROR' ||
+          shot.imageData === 'CONTENT_POLICY_ERROR' ||
+          shot.imageData === 'PROCESSING_ERROR' ||
+          shot.imageData === 'STORAGE_FAILED'
+        );
+        
+        // For error states, pass through the error string directly
+        // For successful images, create proper base64 data URL
+        const imagePath = isErrorState ? shot.imageData : 
+                         (shot.imageData && shot.imageData.length > 100) ? `data:image/png;base64,${shot.imageData}` : null;
+        
+        return {
+          shotNumber: shot.shotNumberInScene,
+          description: shot.shotDescription,
+          shotType: shot.shotType,
+          cameraAngle: shot.lens,
+          notes: shot.notes,
+          imagePath: imagePath,
+          imageData: shot.imageData, // Include raw base64 data for immediate display
+          prompt: shot.imagePromptText,
+          hasImage: shot.imageData && shot.imageData.length > 0 && !isErrorState
+        };
+      });
 
     // Prevent caching to ensure fresh data after regeneration
     res.set({
