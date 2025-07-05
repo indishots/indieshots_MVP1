@@ -1,4 +1,4 @@
 #!/bin/bash
-cd /home/runner/workspace
-echo "Starting IndieShots server..."
+cd "$(dirname "$0")"
+export NODE_ENV=development
 exec npx tsx server/index.ts

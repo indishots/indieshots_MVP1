@@ -201,10 +201,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     queryKey: [`/api/shots/${jobId}/${sceneIndex}`],
   });
   
-  // Always fetch storyboards to check for existing images
+  // Progressive loading: fetch storyboards regularly during generation
   const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
-    enabled: true, // Always enabled to fetch existing storyboards
+    enabled: hasStartedGeneration, // Fetch when generation starts
     refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
@@ -349,51 +349,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   }
   
   const shots = (shotsData as any)?.shots || [];
-  const allStoryboardFrames = (storyboards as any)?.storyboards || [];
-  
-  // Debug logging to see what data we're getting
-  console.log('🔍 Storyboard data check:', {
-    storyboards: storyboards,
-    allFrames: allStoryboardFrames,
-    frameCount: allStoryboardFrames.length,
-    frameDetails: allStoryboardFrames.map((frame: any, idx: number) => ({
-      index: idx,
-      hasImage: frame.hasImage,
-      hasImageData: !!frame.imageData,
-      imageDataLength: frame.imageData?.length || 0,
-      imagePath: frame.imagePath ? 'has imagePath' : 'no imagePath'
-    }))
-  });
-  
-  // Fix: Check for imageData OR imagePath (API returns imagePath with data URL)
-  const storyboardFrames = allStoryboardFrames.filter((frame: any) => {
-    const hasImageData = !!frame.imageData;
-    const hasImagePath = !!frame.imagePath;
-    const shouldInclude = frame.hasImage && (hasImageData || hasImagePath);
-    
-    console.log(`Frame ${allStoryboardFrames.indexOf(frame)}:`, {
-      hasImage: frame.hasImage,
-      hasImageData,
-      hasImagePath,
-      shouldInclude,
-      imageDataLength: frame.imageData?.length || 0,
-      imagePathPreview: frame.imagePath?.substring(0, 50) || 'none'
-    });
-    
-    return shouldInclude;
-  });
-  
-  const hasGeneratedImages = storyboardFrames.length > 0;
-  
-  console.log('🎯 Final filtering results:', {
-    totalFrames: allStoryboardFrames.length,
-    filteredCount: storyboardFrames.length,
-    hasGeneratedImages,
-    shouldShowGenerate: !hasGeneratedImages,
-    shouldShowGrid: hasGeneratedImages,
-    isGenerating,
-    hasStartedGeneration
-  });
+  const storyboardFrames = (storyboards as any)?.storyboards || [];
   
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -411,18 +367,6 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             feature="storyboards"
             message="Storyboard generation with AI-powered images is a Pro feature. Upgrade to create visual storyboards for your scenes."
           />
-        </div>
-      )}
-
-      {/* Debug info for troubleshooting */}
-      {allStoryboardFrames.length > 0 && (
-        <div className="mb-4 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-          <p className="text-sm">
-            <strong>Debug Info:</strong> Found {allStoryboardFrames.length} total frames, 
-            {storyboardFrames.length} with images. 
-            HasGeneratedImages: {hasGeneratedImages.toString()}, 
-            IsGenerating: {isGenerating.toString()}
-          </p>
         </div>
       )}
 
@@ -466,7 +410,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             ))}
           </div>
         </div>
-      ) : !hasGeneratedImages ? (
+      ) : storyboardFrames.length === 0 ? (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Generate Storyboards</CardTitle>
@@ -506,7 +450,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             )}
           </CardContent>
         </Card>
-      ) : hasGeneratedImages ? (
+      ) : (
         <>
           {/* Storyboard Grid */}
           <div className="mb-6">
@@ -561,10 +505,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                              setShowCarousel(true);
                            }
                          }}>
-                      {frame.hasImage && (frame.imageData || frame.imagePath) ? (
+                      {frame.hasImage && frame.imageData ? (
                         <img 
-                          src={updatedMainImages[idx] || 
-                               (frame.imageData ? `data:image/png;base64,${frame.imageData}` : frame.imagePath)}
+                          src={`data:image/png;base64,${updatedMainImages[idx] || frame.imageData}`}
                           alt={`Storyboard frame ${idx + 1}`}
                           className="w-full h-full object-cover rounded-lg"
                           key={`img-${idx}-${imageRefreshTimestamps[idx] || initialTimestamp}`}
@@ -575,29 +518,15 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               newSet.add(idx);
                               return newSet;
                             });
-                            console.log(`✅ Image ${idx} loaded successfully - HasImageData: ${!!frame.imageData}, HasImagePath: ${!!frame.imagePath}`);
+                            console.log(`Image ${idx} loaded successfully with data length:`, frame.imageData?.length, 'Generated at:', frame.imageGeneratedAt);
                           }}
-                          onError={(e) => {
-                            console.error(`❌ Failed to load image ${idx}:`, {
+                          onError={() => {
+                            console.error(`Failed to load image ${idx}`, {
                               hasImageData: !!frame.imageData,
-                              hasImagePath: !!frame.imagePath,
                               dataLength: frame.imageData?.length || 0,
-                              imagePath: frame.imagePath,
-                              isValidBase64: frame.imageData ? /^[A-Za-z0-9+/]+=*$/.test(frame.imageData) : false,
                               dataPreview: frame.imageData?.substring(0, 50) || 'no data',
-                              error: e.type
+                              generatedAt: frame.imageGeneratedAt
                             });
-                            
-                            // Try to fix corrupted base64 data
-                            if (frame.imageData && frame.imageData.length > 100) {
-                              console.log(`🔧 Attempting to fix image ${idx} base64 data...`);
-                              // Remove any invalid characters and try again
-                              const cleanedData = frame.imageData.replace(/[^A-Za-z0-9+/=]/g, '');
-                              if (cleanedData !== frame.imageData && e.target instanceof HTMLImageElement) {
-                                console.log(`🔧 Cleaned image data for ${idx}, retrying...`);
-                                e.target.src = `data:image/png;base64,${cleanedData}`;
-                              }
-                            }
                           }}
                         />
                       ) : frame.imagePath === 'GENERATION_ERROR' ? (
@@ -727,12 +656,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mr-2"></div>
                           <span>Updating image...</span>
                         </div>
-                      ) : (storyboardFrames[selectedImages[currentImageIndex]]?.imageData || storyboardFrames[selectedImages[currentImageIndex]]?.imagePath || carouselImages[selectedImages[currentImageIndex]]) ? (
+                      ) : (storyboardFrames[selectedImages[currentImageIndex]]?.imageData || carouselImages[selectedImages[currentImageIndex]]) ? (
                         <img 
-                          src={carouselImages[selectedImages[currentImageIndex]] || 
-                               (storyboardFrames[selectedImages[currentImageIndex]]?.imageData ? 
-                                `data:image/png;base64,${storyboardFrames[selectedImages[currentImageIndex]].imageData}` : 
-                                storyboardFrames[selectedImages[currentImageIndex]]?.imagePath)}
+                          src={`data:image/png;base64,${carouselImages[selectedImages[currentImageIndex]] || storyboardFrames[selectedImages[currentImageIndex]].imageData}`}
                           alt="Storyboard"
                           className="max-w-full max-h-full object-contain rounded-lg"
                           key={`carousel-${selectedImages[currentImageIndex]}-${carouselImageVersions[selectedImages[currentImageIndex]] || initialTimestamp}`}
@@ -905,78 +831,6 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             </DialogContent>
           </Dialog>
         </>
-      ) : allStoryboardFrames.length > 0 && !hasGeneratedImages ? (
-        <>
-          {/* Fallback: Show all frames even if filtering failed */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-orange-600">Debug: All Storyboard Frames</h3>
-              <Badge variant="secondary">{allStoryboardFrames.length} total frames</Badge>
-            </div>
-            
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {allStoryboardFrames.map((frame: any, idx: number) => (
-                <Card key={idx} className="relative">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">
-                      Shot {idx + 1}
-                      {frame.hasImage ? (
-                        <Badge variant="default" className="ml-2">Has Image</Badge>
-                      ) : (
-                        <Badge variant="secondary" className="ml-2">No Image</Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {frame.shotType || 'Unknown'} - {frame.cameraAngle || 'Unknown'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-3">
-                      {(frame.imageData || frame.imagePath) ? (
-                        <img 
-                          src={frame.imageData ? `data:image/png;base64,${frame.imageData}` : frame.imagePath}
-                          alt={`Storyboard frame ${idx + 1}`}
-                          className="w-full h-full object-cover rounded-lg"
-                          onError={(e) => {
-                            console.error(`Image load failed for frame ${idx}:`, {
-                              hasImageData: !!frame.imageData,
-                              hasImagePath: !!frame.imagePath,
-                              hasImage: frame.hasImage
-                            });
-                          }}
-                        />
-                      ) : (
-                        <div className="text-center text-muted-foreground">
-                          <div className="text-xs mb-2">No image data available</div>
-                          <div className="text-xs">
-                            hasImage: {frame.hasImage?.toString()}<br/>
-                            imageData: {frame.imageData ? 'present' : 'missing'}<br/>
-                            imagePath: {frame.imagePath ? 'present' : 'missing'}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      <div>Description: {frame.description || 'N/A'}</div>
-                      <div>Prompt: {frame.prompt || 'N/A'}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </>
-      ) : (
-        // Default case when no storyboard data exists
-        <Card className="mb-6">
-          <CardContent className="py-12 text-center">
-            <Image className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">No Storyboard Data Found</h3>
-            <p className="text-muted-foreground">
-              Please generate shots first, then return to create storyboards.
-            </p>
-          </CardContent>
-        </Card>
       )}
       
       {/* Navigation */}
