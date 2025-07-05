@@ -382,6 +382,8 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
           <div>storyboardFrames.length: {storyboardFrames.length}</div>
           <div>hasStartedGeneration: {hasStartedGeneration.toString()}</div>
           <div>storyboardFrames with images: {storyboardFrames.filter((f: any) => f.hasImage).length}</div>
+          <div>storyboardFrames with imageData: {storyboardFrames.filter((f: any) => f.imageData).length}</div>
+          <div>Raw storyboard data: {JSON.stringify(storyboards, null, 2).substring(0, 500)}...</div>
         </div>
       )}
 
@@ -425,7 +427,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             ))}
           </div>
         </div>
-      ) : storyboardFrames.length === 0 || storyboardFrames.filter((f: any) => f.hasImage).length === 0 ? (
+      ) : storyboardFrames.length === 0 || storyboardFrames.filter((f: any) => f.hasImage || f.imageData).length === 0 ? (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Generate Storyboards</CardTitle>
