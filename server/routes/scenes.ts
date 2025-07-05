@@ -39,6 +39,25 @@ router.get('/debug/storyboard-access/:userId', authMiddleware, async (req: Reque
   }
 });
 
+// Simple debug endpoint to check authentication without middleware
+router.get('/debug/auth-test', async (req: Request, res: Response) => {
+  try {
+    console.log('🔍 AUTH DEBUG: Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('🔍 AUTH DEBUG: Cookies:', JSON.stringify(req.cookies, null, 2));
+    
+    res.json({
+      message: 'Auth debug endpoint reached',
+      headers: req.headers,
+      cookies: req.cookies,
+      hasAuthCookie: !!req.cookies?.authToken,
+      hasSessionCookie: !!req.cookies?.['connect.sid']
+    });
+  } catch (error) {
+    console.error('Auth debug error:', error);
+    res.status(500).json({ error: 'Auth debug failed' });
+  }
+});
+
 // In-memory storage for scenes and shots (replace with database in production)
 const scenesStorage = new Map<string, any>();
 const shotsStorage = new Map<string, any[]>();
@@ -336,6 +355,16 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     console.log(`JobId: ${jobId}, SceneIndex: ${sceneIndex}`);
     console.log(`User ID: ${userId}, Tier: ${userTier}`);
     console.log(`Full user object:`, JSON.stringify(user, null, 2));
+    console.log(`Request body:`, JSON.stringify(req.body, null, 2));
+
+    // Check if user is authenticated
+    if (!userId) {
+      console.log(`❌ AUTHENTICATION FAILED: No user ID found`);
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'Please log in to generate storyboards'
+      });
+    }
 
     // Check storyboard access with quota manager
     const storyboardAccess = await productionQuotaManager.checkStoryboardAccess(userId, userTier);
@@ -453,7 +482,16 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     });
   } catch (error) {
     console.error('Error generating storyboards:', error);
-    res.status(500).json({ error: 'Failed to generate storyboards' });
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Return more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
+    res.status(500).json({ 
+      error: 'Failed to generate storyboards',
+      message: errorMessage,
+      details: error instanceof Error ? error.stack : 'No additional details'
+    });
   }
 });
 
@@ -465,6 +503,21 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
   try {
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
+    const user = (req as any).user;
+
+    console.log(`📱 GET STORYBOARDS REQUEST`);
+    console.log(`JobId: ${jobId}, SceneIndex: ${sceneIndex}`);
+    console.log(`User ID: ${userId}`);
+    console.log(`User object:`, JSON.stringify(user, null, 2));
+
+    // Check if user is authenticated
+    if (!userId) {
+      console.log(`❌ GET STORYBOARDS: Authentication failed - no user ID`);
+      return res.status(401).json({
+        error: 'Authentication required',
+        message: 'Please log in to view storyboards'
+      });
+    }
 
     // Verify user owns the job
     const parseJob = await storage.getParseJob(parseInt(jobId));
