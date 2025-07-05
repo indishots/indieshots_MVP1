@@ -14,6 +14,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
 import { StoryboardUpgradeModal } from "@/components/ui/storyboard-upgrade-modal";
+import { safeResponseHandler } from "../utils/responseUtils";
 
 
 interface StoryboardsProps {
@@ -124,14 +125,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         if (response.ok) {
           let freshData;
           try {
-            const text = await response.text();
-            if (!text.trim()) {
-              console.error('Empty response from server during regeneration fetch');
-              return;
-            }
-            freshData = JSON.parse(text);
-          } catch (jsonError) {
-            console.error('Failed to parse regeneration response as JSON:', jsonError);
+            freshData = await safeResponseHandler(response);
+          } catch (responseError) {
+            console.error('Failed to handle regeneration response:', responseError);
             return;
           }
           
@@ -309,30 +305,8 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         })
       });
       
-      if (!response.ok) {
-        let errorMessage = `Server error: ${response.status}`;
-        try {
-          const error = await response.json();
-          errorMessage = error.message || errorMessage;
-        } catch (jsonError) {
-          console.error('Failed to parse error response as JSON:', jsonError);
-          const textResponse = await response.text();
-          errorMessage = textResponse || errorMessage;
-        }
-        throw new Error(errorMessage);
-      }
-      
-      // Safely parse JSON response
-      try {
-        const text = await response.text();
-        if (!text.trim()) {
-          throw new Error('Server returned empty response');
-        }
-        return JSON.parse(text);
-      } catch (jsonError) {
-        console.error('Failed to parse response as JSON:', jsonError);
-        throw new Error('Server returned invalid response format');
-      }
+      // DEPLOYMENT FIX: Use safe response handler to prevent "body stream already read" error
+      return await safeResponseHandler(response);
     },
     onSuccess: (data) => {
       // Complete generation and show loading state for images
@@ -702,10 +676,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                                     description: "Using a safer generation approach"
                                   });
                                 } else {
-                                  const error = await response.json().catch(() => ({}));
+                                  let errorMessage = "Please try again or contact support";
+                                  try {
+                                    const error = await safeResponseHandler(response);
+                                    errorMessage = error.details || error.message || errorMessage;
+                                  } catch {
+                                    errorMessage = "Retry failed - please try again";
+                                  }
                                   toast({ 
                                     title: "Retry failed", 
-                                    description: error.details || "Please try again or contact support",
+                                    description: errorMessage,
                                     variant: "destructive" 
                                   });
                                 }
