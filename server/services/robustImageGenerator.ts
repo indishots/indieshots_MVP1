@@ -1,9 +1,12 @@
 import { OpenAI } from 'openai';
 import { storage } from '../storage';
 
+// Configure OpenAI with deployment-safe settings
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  timeout: 90000 // 90 second timeout
+  timeout: process.env.NODE_ENV === 'production' ? 60000 : 90000, // Shorter timeout in production
+  maxRetries: 2, // Reduce retries in deployment
+  dangerouslyAllowBrowser: false
 });
 
 /**

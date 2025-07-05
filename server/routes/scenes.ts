@@ -433,21 +433,27 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       memoryStatsBefore = { characterCount: 0, characters: [] };
     }
     
-    // Process images with complete error isolation - NEVER throw exceptions
+    // Process images with DEPLOYMENT-SAFE error isolation - NEVER throw exceptions
     try {
+      console.log('🚀 Starting deployment-safe batch generation...');
       await generateStoryboardBatch(shots, parseInt(jobId));
-      console.log('Batch generation completed successfully');
+      console.log('✅ Batch generation completed successfully');
     } catch (batchError) {
-      console.error('Batch generation encountered an error, but continuing:', batchError);
+      console.error('❌ DEPLOYMENT ERROR - Batch generation failed:', batchError);
+      console.error('Error type:', typeof batchError);
+      console.error('Error message:', batchError instanceof Error ? batchError.message : String(batchError));
       console.error('Stack trace:', batchError instanceof Error ? batchError.stack : 'No stack trace');
       
-      // Mark all shots as failed if the entire batch failed
+      // In deployment, mark all shots as failed to prevent hanging UI
+      console.log('🔧 Marking all shots as failed to prevent UI hanging...');
       try {
         for (const shot of shots) {
-          await storage.updateShotImage(shot.id, null, `ERROR: Batch generation failed - ${batchError instanceof Error ? batchError.message : 'Unknown error'}`);
+          await storage.updateShotImage(shot.id, null, `ERROR: Deployment issue - ${batchError instanceof Error ? batchError.message : 'System error in production'}`);
         }
+        console.log('✅ All shots marked as failed state');
       } catch (markError) {
-        console.error('Failed to mark shots as failed:', markError);
+        console.error('💥 CRITICAL: Failed to mark shots as failed:', markError);
+        // Even if marking fails, continue to return response
       }
     }
     
@@ -503,15 +509,26 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       success: true
     });
   } catch (error) {
-    console.error('Error generating storyboards:', error);
+    console.error('🚨 CRITICAL ERROR in storyboard generation route:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     
-    // Ensure we always return valid JSON, never HTML
-    res.status(500).json({
-      error: 'Failed to generate storyboards',
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
+    // DEPLOYMENT CRITICAL FIX: Always return 200 OK with error data instead of 500
+    // This prevents the frontend from hanging and allows progressive loading to continue
+    console.log('⚠️ Returning 200 OK with error state to prevent frontend hanging...');
+    
+    res.status(200).json({
+      message: 'Storyboard generation encountered errors but system remains stable',
+      totalShots: 0,
+      generatedCount: 0,
+      errorCount: 0,
+      storyboardCount: 0,
+      storyboards: [],
       success: false,
-      storyboards: []
+      deploymentError: true,
+      errorMessage: error instanceof Error ? error.message : 'Unknown system error in deployment'
     });
   }
 });
@@ -584,15 +601,19 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
     
     res.json({ storyboards });
   } catch (error) {
-    console.error('Error getting storyboards:', error);
+    console.error('🚨 CRITICAL ERROR in GET storyboards route:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     
-    // Ensure we always return valid JSON, never HTML
-    res.status(500).json({
-      error: 'Failed to get storyboards',
-      message: error instanceof Error ? error.message : 'Unknown error occurred',
+    // DEPLOYMENT CRITICAL FIX: Return 200 OK with empty storyboards instead of 500
+    console.log('⚠️ Returning 200 OK with empty storyboards to prevent frontend errors...');
+    
+    res.status(200).json({
+      storyboards: [],
       success: false,
-      storyboards: []
+      deploymentError: true,
+      errorMessage: error instanceof Error ? error.message : 'System error retrieving storyboards'
     });
   }
 });
