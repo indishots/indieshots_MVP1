@@ -418,7 +418,12 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     console.log(`Character memory before generation: ${memoryStatsBefore.characterCount} characters known - [${memoryStatsBefore.characters.join(', ')}]`);
     
     // Process images with complete error isolation
-    await generateStoryboardBatch(shots, parseInt(jobId));
+    try {
+      await generateStoryboardBatch(shots, parseInt(jobId));
+    } catch (batchError) {
+      console.error('Batch generation encountered an error, but continuing:', batchError);
+      // Don't throw - let the process continue to return whatever was generated
+    }
     
     // Log character memory stats after generation
     const memoryStatsAfter = characterMemoryService.getMemoryStats();
@@ -428,8 +433,20 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
     }
     
-    // Get final shots with all images
-    const finalShots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
+    // Get final shots with all images - with error handling
+    let finalShots;
+    try {
+      finalShots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
+    } catch (dbError) {
+      console.error('Database error when fetching final shots:', dbError);
+      return res.status(500).json({
+        error: 'Database error',
+        message: 'Failed to retrieve generated storyboards',
+        success: false,
+        storyboards: []
+      });
+    }
+    
     const finalStoryboards = finalShots.map(shot => ({
       shotNumber: shot.shotNumberInScene,
       description: shot.shotDescription,

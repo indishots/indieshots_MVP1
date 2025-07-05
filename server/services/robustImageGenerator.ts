@@ -12,18 +12,39 @@ const openai = new OpenAI({
 export async function generateStoryboardBatch(shots: any[], parseJobId: number): Promise<void> {
   console.log(`🎬 Starting robust batch generation for ${shots.length} shots`);
   
-  // Process each shot independently with complete isolation
-  const promises = shots.map(async (shot, index) => {
-    try {
-      await generateSingleShotImage(shot, parseJobId, index + 1);
-    } catch (error) {
-      console.error(`❌ Shot ${index + 1} failed independently:`, error);
-      // Individual failures don't affect the batch
+  // Process shots in smaller batches to prevent overwhelming the database
+  const BATCH_SIZE = 3;
+  for (let i = 0; i < shots.length; i += BATCH_SIZE) {
+    const batch = shots.slice(i, i + BATCH_SIZE);
+    console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(shots.length/BATCH_SIZE)} (shots ${i+1}-${Math.min(i+BATCH_SIZE, shots.length)})`);
+    
+    // Process each shot in batch independently with complete isolation
+    const promises = batch.map(async (shot, batchIndex) => {
+      const shotNumber = i + batchIndex + 1;
+      try {
+        await generateSingleShotImage(shot, parseJobId, shotNumber);
+      } catch (error) {
+        console.error(`❌ Shot ${shotNumber} failed independently:`, error);
+        // Individual failures don't affect the batch
+        
+        // Try to save error state if the original function failed
+        try {
+          await storage.updateShotImage(shot.id, null, `ERROR: ${error instanceof Error ? error.message : 'Generation failed'}`);
+        } catch (saveError) {
+          console.error(`Failed to save error state for shot ${shotNumber}:`, saveError);
+        }
+      }
+    });
+    
+    // Wait for all shots in this batch to complete
+    await Promise.allSettled(promises);
+    
+    // Small delay between batches to prevent overwhelming the API
+    if (i + BATCH_SIZE < shots.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-  });
+  }
   
-  // Wait for all shots to complete (successful or failed)
-  await Promise.allSettled(promises);
   console.log(`🎬 Batch generation completed for ${shots.length} shots`);
 }
 
@@ -66,12 +87,14 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
     }
   }
   
-  // All attempts failed - save error state
+  // All attempts failed - save error state with better error handling
   try {
-    await storage.updateShotImage(shot.id, null, `ERROR: ${lastError?.message || 'Unknown error'}`);
-    console.error(`💥 Shot ${shotNumber} - All attempts failed, saved error state`);
+    const errorMessage = `ERROR: ${lastError?.message || 'Generation failed after all retries'}`;
+    await storage.updateShotImage(shot.id, null, errorMessage);
+    console.error(`💥 Shot ${shotNumber} - All attempts failed, saved error state: ${errorMessage}`);
   } catch (dbError) {
-    console.error(`💥 Shot ${shotNumber} - Failed to save error state:`, dbError);
+    console.error(`💥 Shot ${shotNumber} - Failed to save error state to database:`, dbError);
+    // Don't throw here - we want the batch to continue
   }
 }
 
