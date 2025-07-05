@@ -164,7 +164,7 @@ function detectProblematicCharacters(text: string): string[] {
     { pattern: /[""''„‚]/g, name: 'Smart quotes' },
     { pattern: /[–—−]/g, name: 'Special dashes' },
     { pattern: /[…]/g, name: 'Ellipsis' },
-    { pattern: /[\u{1F600}-\u{1F6FF}]/g, name: 'Emojis' },
+    { pattern: /[\u{1F600}-\u{1F6FF}]/gu, name: 'Emojis' },
     { pattern: /[\u2600-\u27BF]/g, name: 'Symbols' },
     { pattern: /["']{3,}/g, name: 'Multiple quotes' },
     { pattern: /[.]{3,}/g, name: 'Multiple dots' },
