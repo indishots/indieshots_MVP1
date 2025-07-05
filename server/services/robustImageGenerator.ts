@@ -8,44 +8,82 @@ const openai = new OpenAI({
 
 /**
  * Robust batch image generation with complete error isolation
+ * This function NEVER throws exceptions - all errors are caught and handled
  */
 export async function generateStoryboardBatch(shots: any[], parseJobId: number): Promise<void> {
-  console.log(`🎬 Starting robust batch generation for ${shots.length} shots`);
-  
-  // Process shots in smaller batches to prevent overwhelming the database
-  const BATCH_SIZE = 3;
-  for (let i = 0; i < shots.length; i += BATCH_SIZE) {
-    const batch = shots.slice(i, i + BATCH_SIZE);
-    console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(shots.length/BATCH_SIZE)} (shots ${i+1}-${Math.min(i+BATCH_SIZE, shots.length)})`);
+  try {
+    console.log(`🎬 Starting robust batch generation for ${shots.length} shots`);
     
-    // Process each shot in batch independently with complete isolation
-    const promises = batch.map(async (shot, batchIndex) => {
-      const shotNumber = i + batchIndex + 1;
+    // Validate inputs
+    if (!shots || shots.length === 0) {
+      console.log('No shots to process');
+      return;
+    }
+    
+    // Process shots in smaller batches to prevent overwhelming the database
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < shots.length; i += BATCH_SIZE) {
       try {
-        await generateSingleShotImage(shot, parseJobId, shotNumber);
-      } catch (error) {
-        console.error(`❌ Shot ${shotNumber} failed independently:`, error);
-        // Individual failures don't affect the batch
+        const batch = shots.slice(i, i + BATCH_SIZE);
+        console.log(`Processing batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(shots.length/BATCH_SIZE)} (shots ${i+1}-${Math.min(i+BATCH_SIZE, shots.length)})`);
         
-        // Try to save error state if the original function failed
-        try {
-          await storage.updateShotImage(shot.id, null, `ERROR: ${error instanceof Error ? error.message : 'Generation failed'}`);
-        } catch (saveError) {
-          console.error(`Failed to save error state for shot ${shotNumber}:`, saveError);
+        // Process each shot in batch independently with complete isolation
+        const promises = batch.map(async (shot, batchIndex) => {
+          const shotNumber = i + batchIndex + 1;
+          try {
+            await generateSingleShotImage(shot, parseJobId, shotNumber);
+          } catch (error) {
+            console.error(`❌ Shot ${shotNumber} failed independently:`, error);
+            // Individual failures don't affect the batch
+            
+            // Try to save error state if the original function failed
+            try {
+              await storage.updateShotImage(shot.id, null, `ERROR: ${error instanceof Error ? error.message : 'Generation failed'}`);
+            } catch (saveError) {
+              console.error(`Failed to save error state for shot ${shotNumber}:`, saveError);
+            }
+          }
+        });
+        
+        // Wait for all shots in this batch to complete
+        await Promise.allSettled(promises);
+        
+        // Small delay between batches to prevent overwhelming the API
+        if (i + BATCH_SIZE < shots.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (batchError) {
+        console.error(`Batch ${Math.floor(i/BATCH_SIZE) + 1} failed completely:`, batchError);
+        
+        // Mark all shots in this batch as failed
+        const batch = shots.slice(i, i + BATCH_SIZE);
+        for (const shot of batch) {
+          try {
+            await storage.updateShotImage(shot.id, null, `ERROR: Batch processing failed - ${batchError instanceof Error ? batchError.message : 'Unknown error'}`);
+          } catch (markError) {
+            console.error(`Failed to mark shot ${shot.id} as failed:`, markError);
+          }
         }
       }
-    });
+    }
     
-    // Wait for all shots in this batch to complete
-    await Promise.allSettled(promises);
+    console.log(`🎬 Batch generation completed for ${shots.length} shots`);
+  } catch (topLevelError) {
+    console.error('Top-level batch generation error:', topLevelError);
+    console.error('Stack trace:', topLevelError instanceof Error ? topLevelError.stack : 'No stack trace');
     
-    // Small delay between batches to prevent overwhelming the API
-    if (i + BATCH_SIZE < shots.length) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    // Final fallback - mark all shots as failed
+    if (shots && Array.isArray(shots)) {
+      for (const shot of shots) {
+        try {
+          await storage.updateShotImage(shot.id, null, `ERROR: System error - ${topLevelError instanceof Error ? topLevelError.message : 'Unknown error'}`);
+        } catch (finalError) {
+          console.error(`Final fallback error for shot ${shot.id}:`, finalError);
+          // At this point, there's nothing more we can do
+        }
+      }
     }
   }
-  
-  console.log(`🎬 Batch generation completed for ${shots.length} shots`);
 }
 
 /**

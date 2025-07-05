@@ -7,7 +7,17 @@ import { extractScenesFromText } from '../services/sceneProcessor';
 import { generateShotsFromScene } from '../services/shotGenerator';
 import { generateStoryboards } from '../services/imageGenerator';
 import { generateStoryboardBatch } from '../services/robustImageGenerator';
-import { characterMemoryService } from '../services/characterMemoryService';
+// Import character memory service with fallback
+let characterMemoryService: any;
+try {
+  characterMemoryService = require('../services/characterMemoryService').characterMemoryService;
+} catch (importError) {
+  console.error('Character memory service unavailable:', importError);
+  // Create fallback service
+  characterMemoryService = {
+    getMemoryStats: () => ({ characterCount: 0, characters: [] })
+  };
+}
 import { productionQuotaManager } from '../lib/productionQuotaManager';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -410,27 +420,47 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
     }
 
-    // Use robust batch generation system
+    // Use robust batch generation system with complete error isolation
     console.log(`Starting robust batch generation for ${shots.length} storyboard images...`);
     
     // Log character memory stats before generation
-    const memoryStatsBefore = characterMemoryService.getMemoryStats();
-    console.log(`Character memory before generation: ${memoryStatsBefore.characterCount} characters known - [${memoryStatsBefore.characters.join(', ')}]`);
+    let memoryStatsBefore;
+    try {
+      memoryStatsBefore = characterMemoryService.getMemoryStats();
+      console.log(`Character memory before generation: ${memoryStatsBefore.characterCount} characters known - [${memoryStatsBefore.characters.join(', ')}]`);
+    } catch (memoryError) {
+      console.error('Character memory service unavailable:', memoryError);
+      memoryStatsBefore = { characterCount: 0, characters: [] };
+    }
     
-    // Process images with complete error isolation
+    // Process images with complete error isolation - NEVER throw exceptions
     try {
       await generateStoryboardBatch(shots, parseInt(jobId));
+      console.log('Batch generation completed successfully');
     } catch (batchError) {
       console.error('Batch generation encountered an error, but continuing:', batchError);
-      // Don't throw - let the process continue to return whatever was generated
+      console.error('Stack trace:', batchError instanceof Error ? batchError.stack : 'No stack trace');
+      
+      // Mark all shots as failed if the entire batch failed
+      try {
+        for (const shot of shots) {
+          await storage.updateShotImage(shot.id, null, `ERROR: Batch generation failed - ${batchError instanceof Error ? batchError.message : 'Unknown error'}`);
+        }
+      } catch (markError) {
+        console.error('Failed to mark shots as failed:', markError);
+      }
     }
     
     // Log character memory stats after generation
-    const memoryStatsAfter = characterMemoryService.getMemoryStats();
-    console.log(`Character memory after generation: ${memoryStatsAfter.characterCount} characters known - [${memoryStatsAfter.characters.join(', ')}]`);
-    if (memoryStatsAfter.characterCount > memoryStatsBefore.characterCount) {
-      const newCharacters = memoryStatsAfter.characters.filter(char => !memoryStatsBefore.characters.includes(char));
-      console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
+    try {
+      const memoryStatsAfter = characterMemoryService.getMemoryStats();
+      console.log(`Character memory after generation: ${memoryStatsAfter.characterCount} characters known - [${memoryStatsAfter.characters.join(', ')}]`);
+      if (memoryStatsAfter.characterCount > memoryStatsBefore.characterCount) {
+        const newCharacters = memoryStatsAfter.characters.filter(char => !memoryStatsBefore.characters.includes(char));
+        console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
+      }
+    } catch (memoryError) {
+      console.error('Character memory service error during stats logging:', memoryError);
     }
     
     // Get final shots with all images - with error handling
