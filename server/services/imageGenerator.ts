@@ -257,7 +257,7 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
     const imageUrl = response.data?.[0]?.url;
     if (!imageUrl) {
       console.error('No fallback image URL returned');
-      return 'GENERATION_FAILED';
+      return 'GENERATION_ERROR';
     }
 
     // Download the fallback image
@@ -269,7 +269,7 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
 
     if (!imageResponse.ok) {
       console.error(`Failed to download fallback image: ${imageResponse.statusText}`);
-      return 'GENERATION_FAILED';
+      return 'GENERATION_ERROR';
     }
 
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
@@ -279,7 +279,7 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
     return base64Data;
   } catch (error) {
     console.error('Fallback image generation failed:', error);
-    return 'GENERATION_FAILED';
+    return 'GENERATION_ERROR';
   }
 }
 
@@ -350,7 +350,7 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         // For content policy issues, return null immediately to mark as failed
         if (attempt === retries) {
           console.error(`Content policy violation - cannot generate image for this prompt`);
-          return 'CONTENT_POLICY_VIOLATION';
+          return 'CONTENT_POLICY_ERROR';
         }
       } else if (attempt < retries) {
         await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
@@ -358,7 +358,7 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       
       if (attempt === retries) {
         console.error(`Failed to generate image after ${retries} attempts`);
-        return 'GENERATION_FAILED';
+        return 'GENERATION_ERROR';
       }
     }
   }
@@ -387,12 +387,12 @@ async function processShot(shot: any, index: number): Promise<{ shotId: string; 
 
     // Generate image and get base64 data instead of saving to file
     const imageData = await generateImageData(prompt);
-    if (!imageData || imageData === 'GENERATION_FAILED' || imageData === 'CONTENT_POLICY_VIOLATION') {
+    if (!imageData || imageData === 'GENERATION_ERROR' || imageData === 'CONTENT_POLICY_ERROR') {
       console.error(`Image generation failed for shot ${shotId}: ${imageData || 'unknown error'}`);
       
       // Store the failure status in the database so frontend knows this shot failed
       const { storage } = await import('../storage');
-      const failureMarker = imageData === 'CONTENT_POLICY_VIOLATION' ? 'CONTENT_POLICY_ERROR' : 'GENERATION_ERROR';
+      const failureMarker = imageData || 'GENERATION_ERROR';
       await storage.updateShotImage(shot.id, failureMarker, prompt);
       
       return { shotId, status: `image generation failed: ${imageData || 'unknown error'}` };
@@ -482,7 +482,7 @@ async function processShotWithIsolation(shot: any, shotIndex: number, totalShots
           console.log(`Ultra-safe fallback succeeded for shot ${shotId}`);
         } catch (finalError) {
           console.error(`All fallback attempts failed for shot ${shotId}:`, finalError);
-          imageData = 'GENERATION_FAILED';
+          imageData = 'GENERATION_ERROR';
         }
       }
     }
@@ -490,19 +490,26 @@ async function processShotWithIsolation(shot: any, shotIndex: number, totalShots
     // Store result in database regardless of success/failure
     try {
       const { storage } = await import('../storage');
-      if (imageData && imageData !== 'GENERATION_FAILED' && imageData !== 'CONTENT_POLICY_VIOLATION') {
+      if (imageData && imageData !== 'GENERATION_ERROR' && imageData !== 'CONTENT_POLICY_ERROR') {
         await storage.updateShotImage(shot.id, imageData, prompt);
         console.log(`✅ Shot ${shotId} - Image generated and stored successfully`);
         return { success: true, shotId };
       } else {
         // Store failure marker so frontend knows this shot failed
-        const failureMarker = imageData === 'CONTENT_POLICY_VIOLATION' ? 'CONTENT_POLICY_ERROR' : 'GENERATION_ERROR';
+        const failureMarker = imageData || 'GENERATION_ERROR';
         await storage.updateShotImage(shot.id, failureMarker, prompt || 'No prompt generated');
         console.log(`❌ Shot ${shotId} - Marked as failed: ${failureMarker}`);
         return { success: false, shotId, error: failureMarker };
       }
     } catch (storageError) {
       console.error(`Database storage failed for shot ${shotId}:`, storageError);
+      // Try to mark this shot as having storage failure
+      try {
+        const { storage } = await import('../storage');
+        await storage.updateShotImage(shot.id, 'STORAGE_FAILED', prompt || 'Storage failed');
+      } catch (fallbackError) {
+        console.error(`Could not even mark storage failure for shot ${shotId}:`, fallbackError);
+      }
       return { success: false, shotId, error: 'STORAGE_FAILED' };
     }
 

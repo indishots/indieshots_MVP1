@@ -595,16 +595,36 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             });
                           }}
                         />
-                      ) : frame.imageData === 'GENERATION_ERROR' || frame.imagePath === 'GENERATION_ERROR' ? (
+                      ) : frame.imageData === 'GENERATION_ERROR' || frame.imagePath === 'GENERATION_ERROR' || 
+                           frame.imageData === 'CONTENT_POLICY_ERROR' || frame.imagePath === 'CONTENT_POLICY_ERROR' ||
+                           frame.imageData === 'PROCESSING_ERROR' || frame.imagePath === 'PROCESSING_ERROR' ||
+                           frame.imageData === 'STORAGE_FAILED' || frame.imagePath === 'STORAGE_FAILED' ? (
                         <div className="text-center text-red-500 space-y-2">
                           <div className="h-8 w-8 mx-auto bg-red-100 rounded flex items-center justify-center">
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            <AlertTriangle className="h-4 w-4" />
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs font-medium">Generation Failed</p>
-                            <p className="text-xs text-gray-600">Image generation encountered an error</p>
+                            {frame.imageData === 'CONTENT_POLICY_ERROR' || frame.imagePath === 'CONTENT_POLICY_ERROR' ? (
+                              <>
+                                <p className="text-xs font-medium">Content Policy Issue</p>
+                                <p className="text-xs text-gray-600">Content contains restricted elements</p>
+                              </>
+                            ) : frame.imageData === 'PROCESSING_ERROR' || frame.imagePath === 'PROCESSING_ERROR' ? (
+                              <>
+                                <p className="text-xs font-medium">Processing Error</p>
+                                <p className="text-xs text-gray-600">Error during image processing</p>
+                              </>
+                            ) : frame.imageData === 'STORAGE_FAILED' || frame.imagePath === 'STORAGE_FAILED' ? (
+                              <>
+                                <p className="text-xs font-medium">Storage Error</p>
+                                <p className="text-xs text-gray-600">Failed to save generated image</p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-xs font-medium">Generation Failed</p>
+                                <p className="text-xs text-gray-600">Image generation encountered an error</p>
+                              </>
+                            )}
                           </div>
                           <Button 
                             size="sm" 
@@ -612,12 +632,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                             className="text-xs px-2 py-1 h-6"
                             onClick={async () => {
                               try {
+                                const errorType = frame.imageData === 'CONTENT_POLICY_ERROR' || frame.imagePath === 'CONTENT_POLICY_ERROR' ? 'CONTENT_POLICY_ERROR' :
+                                                frame.imageData === 'PROCESSING_ERROR' || frame.imagePath === 'PROCESSING_ERROR' ? 'PROCESSING_ERROR' :
+                                                frame.imageData === 'STORAGE_FAILED' || frame.imagePath === 'STORAGE_FAILED' ? 'STORAGE_FAILED' : 'GENERATION_ERROR';
+                                
                                 const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${idx}`, {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   credentials: 'include',
                                   body: JSON.stringify({ 
-                                    errorType: 'GENERATION_ERROR',
+                                    errorType: errorType,
                                     intelligentRetry: true 
                                   })
                                 });
@@ -634,98 +658,6 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                                     description: error.details || "Please try again or contact support",
                                     variant: "destructive" 
                                   });
-                                }
-                              } catch (error) {
-                                toast({ title: "Retry failed", variant: "destructive" });
-                              }
-                            }}
-                          >
-                            Try Again
-                          </Button>
-                        </div>
-                      ) : frame.imageData === 'CONTENT_POLICY_ERROR' || frame.imagePath === 'CONTENT_POLICY_ERROR' ? (
-                        <div className="text-center text-orange-500 space-y-2">
-                          <div className="h-8 w-8 mx-auto bg-orange-100 rounded flex items-center justify-center">
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium">Content Policy Issue</p>
-                            <p className="text-xs text-gray-600">Content contains restricted elements</p>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-xs px-2 py-1 h-6"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${idx}`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  credentials: 'include',
-                                  body: JSON.stringify({ 
-                                    errorType: 'CONTENT_POLICY_ERROR',
-                                    intelligentRetry: true 
-                                  })
-                                });
-                                if (response.ok) {
-                                  queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
-                                  toast({ 
-                                    title: "Retrying with safer content...", 
-                                    description: "Using content-safe alternatives"
-                                  });
-                                } else {
-                                  toast({ title: "Retry failed", variant: "destructive" });
-                                }
-                              } catch (error) {
-                                toast({ title: "Retry failed", variant: "destructive" });
-                              }
-                            }}
-                          >
-                            Try Safe Version
-                          </Button>
-                        </div>
-                      ) : frame.imageData === 'PROCESSING_ERROR' || frame.imageData === 'STORAGE_FAILED' ? (
-                        <div className="text-center text-red-500 space-y-2">
-                          <div className="h-8 w-8 mx-auto bg-red-100 rounded flex items-center justify-center">
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs font-medium">
-                              {frame.imageData === 'STORAGE_FAILED' ? 'Storage Error' : 'Processing Error'}
-                            </p>
-                            <p className="text-xs text-gray-600">
-                              {frame.imageData === 'STORAGE_FAILED' 
-                                ? 'Failed to save generated image' 
-                                : 'Error during image processing'}
-                            </p>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-xs px-2 py-1 h-6"
-                            onClick={async () => {
-                              try {
-                                const response = await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${idx}`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  credentials: 'include',
-                                  body: JSON.stringify({ 
-                                    errorType: frame.imageData,
-                                    intelligentRetry: true 
-                                  })
-                                });
-                                if (response.ok) {
-                                  queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
-                                  toast({ 
-                                    title: "Retrying processing...",
-                                    description: "Attempting to resolve the issue"
-                                  });
-                                } else {
-                                  toast({ title: "Retry failed", variant: "destructive" });
                                 }
                               } catch (error) {
                                 toast({ title: "Retry failed", variant: "destructive" });

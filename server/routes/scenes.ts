@@ -839,18 +839,18 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     const { generateImageData } = await import('../services/imageGenerator');
     const imageData = await generateImageData(modifiedPrompt, 3); // 3 retry attempts
     
-    if (!imageData || imageData === 'GENERATION_FAILED' || imageData === 'CONTENT_POLICY_VIOLATION') {
+    if (!imageData || imageData === 'GENERATION_ERROR' || imageData === 'CONTENT_POLICY_ERROR') {
       const errorType = imageData || 'unknown';
       console.error(`Regeneration failed: ${errorType}`);
       console.error(`Failed prompt was: ${modifiedPrompt}`);
       
       // If this is a content policy issue, try one more time with an ultra-safe prompt
-      if (imageData === 'CONTENT_POLICY_VIOLATION' || modifiedPrompt.toLowerCase().includes('blood')) {
+      if (imageData === 'CONTENT_POLICY_ERROR' || modifiedPrompt.toLowerCase().includes('blood')) {
         console.log('Attempting emergency ultra-safe regeneration...');
         const emergencyPrompt = `Professional medium shot in indoor location during day, clean movie production scene, cinematic lighting, film still, safe for work content`;
         const emergencyResult = await generateImageData(emergencyPrompt, 1);
         
-        if (emergencyResult && emergencyResult !== 'GENERATION_FAILED' && emergencyResult !== 'CONTENT_POLICY_VIOLATION') {
+        if (emergencyResult && emergencyResult !== 'GENERATION_ERROR' && emergencyResult !== 'CONTENT_POLICY_ERROR') {
           console.log('Emergency regeneration successful');
           await storage.updateShotImage(shot.id, emergencyResult, emergencyPrompt);
           return res.json({ 
