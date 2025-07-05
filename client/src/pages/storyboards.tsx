@@ -105,13 +105,20 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       
       // Fetch fresh image data but only update carousel view
       try {
+        // Get JWT token for authentication
+        const token = localStorage.getItem('token');
+        const headers: Record<string, string> = {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const response = await fetch(`/api/storyboards/${jobId}/${sceneIndex}?_t=${Date.now()}`, {
           credentials: 'include',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+          headers
         });
         
         if (response.ok) {
@@ -273,9 +280,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       setGenerationProgress({total: totalShots, completed: 0});
       setProgressiveImages({});
       
+      // Get JWT token from localStorage for authentication
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`/api/storyboards/generate/${jobId}/${sceneIndex}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           shots: (shotsData as any)?.shots || [],
