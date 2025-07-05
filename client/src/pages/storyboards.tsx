@@ -604,7 +604,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                           </div>
                           <div className="space-y-1">
                             <p className="text-xs font-medium">Generation Failed</p>
-                            <p className="text-xs text-gray-600">AI image generation encountered an error</p>
+                            <p className="text-xs text-gray-600">Image generation encountered an error</p>
                           </div>
                           <Button 
                             size="sm" 
