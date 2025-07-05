@@ -218,7 +218,13 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       let completedCount = 0;
       
       storyboardData.storyboards.forEach((storyboard: any, index: number) => {
-        if (storyboard.imageData) {
+        // Only count as completed if it's actual image data, not error states
+        const isErrorState = storyboard.imageData === 'GENERATION_ERROR' || 
+                             storyboard.imageData === 'CONTENT_POLICY_ERROR' || 
+                             storyboard.imageData === 'PROCESSING_ERROR' || 
+                             storyboard.imageData === 'STORAGE_FAILED';
+        
+        if (storyboard.imageData && !isErrorState) {
           currentImages[index] = storyboard.imageData;
           completedCount++;
         }
