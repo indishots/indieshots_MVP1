@@ -300,7 +300,8 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
       return 'GENERATION_ERROR';
     }
 
-    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+    const arrayBuffer = await imageResponse.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
     const base64Data = imageBuffer.toString('base64');
     
     console.log('Successfully generated fallback image');
@@ -370,7 +371,8 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         continue;
       }
 
-      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      const imageBuffer = Buffer.from(arrayBuffer);
       const base64Data = imageBuffer.toString('base64');
       
       console.log(`Successfully generated image data (attempt ${attempt}), base64 length:`, base64Data.length);

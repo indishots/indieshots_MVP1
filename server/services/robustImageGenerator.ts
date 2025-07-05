@@ -252,18 +252,26 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
     
     console.log(`✅ OpenAI returned image URL, downloading...`);
     
-    // Download image with error handling
+    // Download image with error handling - deployment safe
     let imageResponse;
+    let arrayBuffer;
     try {
-      imageResponse = await fetch(imageUrl);
+      imageResponse = await fetch(imageUrl, {
+        headers: {
+          'User-Agent': 'IndieShots-Server/1.0'
+        }
+      });
       if (!imageResponse.ok) {
         throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
       }
+      
+      // Read the response body only once to prevent "body stream already read" error
+      arrayBuffer = await imageResponse.arrayBuffer();
     } catch (downloadError: any) {
       throw new Error(`Image download failed: ${downloadError.message}`);
     }
     
-    const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+    const imageBuffer = Buffer.from(arrayBuffer);
     const base64Data = imageBuffer.toString('base64');
     
     console.log(`✅ Image converted to base64 (${base64Data.length} characters)`);
@@ -291,9 +299,14 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
         
         const imageUrl = response.data?.[0]?.url;
         if (imageUrl) {
-          const imageResponse = await fetch(imageUrl);
+          const imageResponse = await fetch(imageUrl, {
+            headers: {
+              'User-Agent': 'IndieShots-Server/1.0'
+            }
+          });
           if (imageResponse.ok) {
-            const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            const arrayBuffer = await imageResponse.arrayBuffer();
+            const imageBuffer = Buffer.from(arrayBuffer);
             console.log(`✅ Safe fallback image generated successfully`);
             return imageBuffer.toString('base64');
           }
@@ -318,9 +331,14 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
         
         const imageUrl = response.data?.[0]?.url;
         if (imageUrl) {
-          const imageResponse = await fetch(imageUrl);
+          const imageResponse = await fetch(imageUrl, {
+            headers: {
+              'User-Agent': 'IndieShots-Server/1.0'
+            }
+          });
           if (imageResponse.ok) {
-            const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            const arrayBuffer = await imageResponse.arrayBuffer();
+            const imageBuffer = Buffer.from(arrayBuffer);
             console.log(`✅ Minimal fallback image generated after JSON error`);
             return imageBuffer.toString('base64');
           }
