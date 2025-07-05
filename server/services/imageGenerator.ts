@@ -145,7 +145,46 @@ function buildPrompt(shot: any): string {
 }
 
 /**
- * Generate visual prompt using GPT-4 with character memory integration
+ * Extract meaningful content from any OpenAI response format
+ */
+function extractContentFromResponse(response: any): string | null {
+  try {
+    // Standard JSON response
+    if (response?.choices?.[0]?.message?.content) {
+      return response.choices[0].message.content.trim();
+    }
+    
+    // Alternative response structures
+    if (response?.choices?.[0]?.text) {
+      return response.choices[0].text.trim();
+    }
+    
+    if (response?.data?.[0]?.text) {
+      return response.data[0].text.trim();
+    }
+    
+    // If response is a string directly
+    if (typeof response === 'string' && response.length > 10) {
+      return response.trim();
+    }
+    
+    // If response has any text content, try to extract it
+    const responseStr = JSON.stringify(response);
+    const textMatches = responseStr.match(/"(?:content|text|message)"\s*:\s*"([^"]{20,})"/);
+    if (textMatches && textMatches[1]) {
+      return textMatches[1].trim();
+    }
+    
+    console.log('No extractable content found in response structure');
+    return null;
+  } catch (error) {
+    console.error('Error extracting content from response:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate visual prompt using GPT-4 with character memory integration and robust fallbacks
  */
 async function generatePrompt(userMessage: string, retries: number = 2): Promise<string | null> {
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -165,12 +204,16 @@ async function generatePrompt(userMessage: string, retries: number = 2): Promise
         temperature: 0.7
       });
       
-      const prompt = response.choices[0].message.content?.trim();
+      // Use enhanced content extraction that handles any response format
+      const prompt = extractContentFromResponse(response);
+      
       if (prompt && prompt.length > 10) {
         console.log(`Generated character-enhanced prompt: ${prompt.substring(0, 100)}...`);
         return prompt;
       } else {
         console.log(`Generated prompt too short or empty (attempt ${attempt})`);
+        console.log('Raw response structure:', JSON.stringify(response, null, 2));
+        
         if (attempt === retries) {
           // Fallback to a basic prompt based on shot data
           const fallbackPrompt = `A cinematic shot showing ${userMessage.includes('Shot Description:') ? 
@@ -181,6 +224,16 @@ async function generatePrompt(userMessage: string, retries: number = 2): Promise
       }
     } catch (error: any) {
       console.error(`[ERROR] Prompt generation failed (attempt ${attempt}/${retries}):`, error?.message || error);
+      console.log('Full error object:', JSON.stringify(error, null, 2));
+      
+      // Try to extract useful content even from error responses
+      if (error?.response?.data) {
+        const extractedContent = extractContentFromResponse(error.response.data);
+        if (extractedContent && extractedContent.length > 10) {
+          console.log(`Extracted content from error response: ${extractedContent}`);
+          return extractedContent;
+        }
+      }
       
       if (error?.status === 429) {
         console.log('Rate limit hit for prompt generation, waiting before retry...');
@@ -203,7 +256,49 @@ async function generatePrompt(userMessage: string, retries: number = 2): Promise
 }
 
 /**
- * Generate image using DALL-E 3 with robust retry system
+ * Extract image URL from any OpenAI DALL-E response format
+ */
+function extractImageUrlFromResponse(response: any): string | null {
+  try {
+    // Standard JSON response
+    if (response?.data?.[0]?.url) {
+      return response.data[0].url;
+    }
+    
+    // Alternative response structures
+    if (response?.images?.[0]?.url) {
+      return response.images[0].url;
+    }
+    
+    if (response?.url) {
+      return response.url;
+    }
+    
+    // Search for any URL pattern in the response
+    const responseStr = JSON.stringify(response);
+    const urlMatches = responseStr.match(/https:\/\/[^"]+\.(png|jpg|jpeg)/i);
+    if (urlMatches && urlMatches[0]) {
+      console.log(`Extracted URL from response: ${urlMatches[0]}`);
+      return urlMatches[0];
+    }
+    
+    // Look for base64 image data
+    const base64Matches = responseStr.match(/"(?:data|image|b64_json)"\s*:\s*"(data:image\/[^"]+)"/);
+    if (base64Matches && base64Matches[1]) {
+      console.log('Found base64 image data in response');
+      return base64Matches[1];
+    }
+    
+    console.log('No extractable image URL found in response structure');
+    return null;
+  } catch (error) {
+    console.error('Error extracting image URL from response:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate image using DALL-E 3 with robust retry system and response parsing
  */
 async function generateImage(prompt: string, filename: string): Promise<string> {
   const MAX_RETRIES = 3;
@@ -221,13 +316,36 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
         n: 1
       });
 
-      const imageUrl = response.data?.[0]?.url;
+      console.log('DALL-E response structure:', JSON.stringify(response, null, 2));
+      
+      // Use enhanced URL extraction that handles any response format
+      const imageUrl = extractImageUrlFromResponse(response);
       if (!imageUrl) {
-        throw new Error('No image URL returned from DALL-E');
+        console.log('Raw DALL-E response:', JSON.stringify(response, null, 2));
+        throw new Error('No image URL found in DALL-E response');
       }
 
-      // Download and save the image
-      const imageResponse = await fetch(imageUrl);
+      // Handle base64 data URLs differently from regular URLs
+      if (imageUrl.startsWith('data:image/')) {
+        console.log('Processing base64 image data directly');
+        // Extract base64 data and save directly
+        const base64Data = imageUrl.split(',')[1];
+        if (base64Data) {
+          const imageBuffer = Buffer.from(base64Data, 'base64');
+          const fullPath = path.join(IMAGE_OUTPUT_DIR, filename);
+          fs.writeFileSync(fullPath, imageBuffer);
+          console.log(`✅ Image generation successful for ${filename} (base64)`);
+          return `✅ Saved to ${filename}`;
+        }
+      }
+
+      // Download and save the image from URL
+      const imageResponse = await fetch(imageUrl, {
+        headers: {
+          'User-Agent': 'IndieShots-Server/1.0'
+        }
+      });
+      
       if (!imageResponse.ok) {
         throw new Error(`Failed to download image: ${imageResponse.statusText}`);
       }
@@ -242,6 +360,27 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
       
     } catch (error: any) {
       console.error(`❌ Image generation attempt ${attempt} failed for ${filename}:`, error);
+      console.log('Full error response:', JSON.stringify(error?.response?.data || error, null, 2));
+      
+      // Try to extract useful content even from error responses
+      if (error?.response?.data) {
+        const imageUrl = extractImageUrlFromResponse(error.response.data);
+        if (imageUrl) {
+          console.log(`Found image URL in error response: ${imageUrl}`);
+          try {
+            const imageResponse = await fetch(imageUrl);
+            if (imageResponse.ok) {
+              const imageBuffer = await imageResponse.buffer();
+              const fullPath = path.join(IMAGE_OUTPUT_DIR, filename);
+              fs.writeFileSync(fullPath, imageBuffer);
+              console.log(`✅ Successfully saved image from error response for ${filename}`);
+              return `✅ Saved to ${filename}`;
+            }
+          } catch (extractError) {
+            console.error('Failed to extract image from error response:', extractError);
+          }
+        }
+      }
       
       // Check if this is a content policy error or API rate limit
       if (error.message && error.message.includes('content_policy')) {
@@ -343,12 +482,40 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       
       const response = await Promise.race([apiPromise, timeoutPromise]) as any;
 
-      const imageUrl = response?.data?.[0]?.url;
+      console.log(`DALL-E response structure (attempt ${attempt}):`, JSON.stringify(response, null, 2));
+      
+      // Use enhanced URL extraction that handles any response format
+      const imageUrl = extractImageUrlFromResponse(response);
       if (!imageUrl) {
-        console.error(`No image URL returned from OpenAI (attempt ${attempt})`);
+        console.error(`No image URL found in response (attempt ${attempt})`);
+        console.log('Full response for debugging:', JSON.stringify(response, null, 2));
+        
+        // Try to extract any useful content even from malformed responses
+        const responseStr = JSON.stringify(response);
+        if (responseStr.length > 100) {
+          console.log('Response contains data but no extractable image URL');
+          // Log useful parts of the response for debugging
+          console.log('Response keys:', Object.keys(response || {}));
+        }
+        
         if (attempt === retries) return 'GENERATION_ERROR';
         await new Promise(resolve => setTimeout(resolve, 5000 * attempt)); // Longer exponential backoff
         continue;
+      }
+
+      // Handle base64 data URLs directly
+      if (imageUrl.startsWith('data:image/')) {
+        console.log(`Processing base64 image data directly (attempt ${attempt})`);
+        const base64Data = imageUrl.split(',')[1];
+        if (base64Data && base64Data.length > 100) {
+          console.log(`Successfully extracted base64 data (attempt ${attempt}), length:`, base64Data.length);
+          return base64Data;
+        } else {
+          console.error(`Invalid base64 data in response (attempt ${attempt})`);
+          if (attempt === retries) return 'GENERATION_ERROR';
+          await new Promise(resolve => setTimeout(resolve, 5000 * attempt));
+          continue;
+        }
       }
 
       // Download the image with timeout (30 seconds)
@@ -379,6 +546,38 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       return base64Data;
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
+      console.log('Full error object for analysis:', JSON.stringify(error, null, 2));
+      
+      // Try to extract useful content even from error responses
+      if (error?.response?.data) {
+        console.log('Analyzing error response for extractable content...');
+        const imageUrl = extractImageUrlFromResponse(error.response.data);
+        if (imageUrl) {
+          console.log(`Found image URL in error response: ${imageUrl}`);
+          try {
+            if (imageUrl.startsWith('data:image/')) {
+              const base64Data = imageUrl.split(',')[1];
+              if (base64Data && base64Data.length > 100) {
+                console.log(`Successfully extracted base64 data from error response, length:`, base64Data.length);
+                return base64Data;
+              }
+            } else {
+              const imageResponse = await fetch(imageUrl, {
+                headers: { 'User-Agent': 'IndieShots-Server/1.0' }
+              });
+              if (imageResponse.ok) {
+                const arrayBuffer = await imageResponse.arrayBuffer();
+                const imageBuffer = Buffer.from(arrayBuffer);
+                const base64Data = imageBuffer.toString('base64');
+                console.log(`Successfully extracted image from error response, base64 length:`, base64Data.length);
+                return base64Data;
+              }
+            }
+          } catch (extractError) {
+            console.error('Failed to extract image from error response:', extractError);
+          }
+        }
+      }
       
       // Handle specific OpenAI errors with appropriate delays
       if (error?.status === 429) {
