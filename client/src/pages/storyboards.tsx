@@ -204,7 +204,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   // Progressive loading: fetch storyboards regularly during generation
   const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
-    enabled: hasStartedGeneration, // Fetch when generation starts
+    enabled: !!jobId && !!sceneIndex, // Always enabled to check for existing storyboards
     refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
@@ -231,14 +231,18 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         completed: completedCount
       });
       
-      // If generation is complete, stop loading state
-      if (completedCount === storyboardData.storyboards.length && isGenerating) {
+      // If we have any completed images at all, stop the generating state
+      if (completedCount > 0) {
         setIsGenerating(false);
         setIsLoadingImages(false);
-        toast({
-          title: "Storyboard generation complete",
-          description: `All ${completedCount} storyboard images generated successfully`,
-        });
+        
+        // Only show completion toast if all images are done and we were previously generating
+        if (completedCount === storyboardData.storyboards.length && isGenerating) {
+          toast({
+            title: "Storyboard generation complete",
+            description: `All ${completedCount} storyboard images generated successfully`,
+          });
+        }
       }
     }
   }, [storyboards, isGenerating, toast]);
@@ -370,6 +374,17 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         </div>
       )}
 
+      {/* Debug info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
+          <div>Debug Info:</div>
+          <div>isGenerating: {isGenerating.toString()}</div>
+          <div>storyboardFrames.length: {storyboardFrames.length}</div>
+          <div>hasStartedGeneration: {hasStartedGeneration.toString()}</div>
+          <div>storyboardFrames with images: {storyboardFrames.filter((f: any) => f.hasImage).length}</div>
+        </div>
+      )}
+
       {/* Generate or Display Storyboards */}
       {isGenerating ? (
         <div className="mb-6">
@@ -410,7 +425,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             ))}
           </div>
         </div>
-      ) : storyboardFrames.length === 0 ? (
+      ) : storyboardFrames.length === 0 || storyboardFrames.filter((f: any) => f.hasImage).length === 0 ? (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Generate Storyboards</CardTitle>
