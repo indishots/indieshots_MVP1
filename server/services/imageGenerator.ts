@@ -299,34 +299,46 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       console.log(`Prompt length: ${cleanedPrompt.length} characters`);
       console.log(`==============================`);
       
-      const response = await imageClient.images.generate({
+      // Add timeout to the API call (60 seconds)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API request timeout')), 60000);
+      });
+      
+      const apiPromise = imageClient.images.generate({
         model: "dall-e-3",
         prompt: cleanedPrompt,
         n: 1,
         size: "1792x1024", // Wider cinematic format
         response_format: "url"
       });
+      
+      const response = await Promise.race([apiPromise, timeoutPromise]) as any;
 
-      const imageUrl = response.data?.[0]?.url;
+      const imageUrl = response?.data?.[0]?.url;
       if (!imageUrl) {
         console.error(`No image URL returned from OpenAI (attempt ${attempt})`);
-        if (attempt === retries) return null;
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt)); // Exponential backoff
+        if (attempt === retries) return 'GENERATION_ERROR';
+        await new Promise(resolve => setTimeout(resolve, 5000 * attempt)); // Longer exponential backoff
         continue;
       }
 
-      // Download the image with timeout
-      const imageResponse = await fetch(imageUrl, { 
+      // Download the image with timeout (30 seconds)
+      const downloadTimeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Download timeout')), 30000);
+      });
+      
+      const downloadPromise = fetch(imageUrl, { 
         headers: {
           'User-Agent': 'IndieShots-Server/1.0'
         }
       });
-
       
-      if (!imageResponse.ok) {
-        console.error(`Failed to download image (attempt ${attempt}): ${imageResponse.statusText}`);
-        if (attempt === retries) return null;
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+      const imageResponse = await Promise.race([downloadPromise, downloadTimeout]) as any;
+      
+      if (!imageResponse?.ok) {
+        console.error(`Failed to download image (attempt ${attempt}): ${imageResponse?.statusText}`);
+        if (attempt === retries) return 'GENERATION_ERROR';
+        await new Promise(resolve => setTimeout(resolve, 5000 * attempt));
         continue;
       }
 
@@ -338,22 +350,21 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
       
-      // Handle specific OpenAI errors
+      // Handle specific OpenAI errors with appropriate delays
       if (error?.status === 429) {
-        console.log('Rate limit hit, waiting longer before retry...');
-        await new Promise(resolve => setTimeout(resolve, 10000 * attempt)); // Longer wait for rate limits
-      } else if (error?.name === 'AbortError') {
-        console.log('Request timed out, retrying...');
-        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
+        console.log('Rate limit hit, waiting before retry...');
+        await new Promise(resolve => setTimeout(resolve, 15000 * attempt)); // 15s, 30s, 45s delays
+      } else if (error?.message === 'API request timeout') {
+        console.log('API request timed out, retrying with longer delay...');
+        await new Promise(resolve => setTimeout(resolve, 10000 * attempt));
+      } else if (error?.message === 'Download timeout') {
+        console.log('Image download timed out, retrying...');
+        await new Promise(resolve => setTimeout(resolve, 5000 * attempt));
       } else if (error?.message?.includes('content policy')) {
-        console.log('Content policy violation, attempting to clean prompt...');
-        // For content policy issues, return null immediately to mark as failed
-        if (attempt === retries) {
-          console.error(`Content policy violation - cannot generate image for this prompt`);
-          return 'CONTENT_POLICY_ERROR';
-        }
+        console.log('Content policy violation detected');
+        return 'CONTENT_POLICY_ERROR';
       } else if (attempt < retries) {
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        await new Promise(resolve => setTimeout(resolve, 3000 * attempt));
       }
       
       if (attempt === retries) {
@@ -362,7 +373,7 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       }
     }
   }
-  return null;
+  return 'GENERATION_ERROR';
 }
 
 /**
@@ -564,9 +575,10 @@ export async function generateStoryboards(shots: any[]): Promise<{ results: any[
       });
     }
 
-    // Rate limiting delay between shots (reduced for better UX)
+    // Enhanced rate limiting delay between shots to improve success rates
     if (shotIndex < shots.length - 1) {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 second delay
+      console.log(`⏱️ Waiting 5 seconds before next shot to respect OpenAI rate limits...`);
+      await new Promise(resolve => setTimeout(resolve, 5000)); // Increased to 5 second delay
     }
   }
 
