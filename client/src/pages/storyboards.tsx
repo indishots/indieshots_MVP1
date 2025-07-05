@@ -235,6 +235,12 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       if (completedCount === storyboardData.storyboards.length && isGenerating) {
         setIsGenerating(false);
         setIsLoadingImages(false);
+        
+        // Force a final refresh to ensure all images are displayed
+        setTimeout(() => {
+          refetchStoryboards();
+        }, 1000);
+        
         toast({
           title: "Storyboard generation complete",
           description: `All ${completedCount} storyboard images generated successfully`,
@@ -439,6 +445,15 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Generated Storyboards</h3>
               <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => refetchStoryboards()}
+                  disabled={isLoadingStoryboards}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
