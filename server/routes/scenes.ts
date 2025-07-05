@@ -763,10 +763,40 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
       basePrompt = createPrompt(shot);
     }
     
-    // Apply content safety modifications for regeneration
+    // Intelligent retry logic based on error type
     let modifiedPrompt;
-    if (modifications === 'alternative safe prompt') {
-      // For content policy issues, create a much safer version of the prompt
+    const { errorType, intelligentRetry } = req.body;
+    
+    if (intelligentRetry && errorType) {
+      console.log(`🧠 Intelligent retry for error type: ${errorType}`);
+      
+      if (errorType === 'CONTENT_POLICY_ERROR') {
+        // Ultra-safe prompt for content policy violations
+        const shotType = shot.shotType || 'medium shot';
+        const basicSetting = shot.location?.includes('border') ? 'mountain landscape' : (shot.location || 'indoor setting');
+        
+        modifiedPrompt = `Professional film ${shotType.toLowerCase()} showing characters in ${basicSetting}, cinematic lighting, clean movie production scene, safe for work content`;
+        console.log(`🛡️ Content policy safe prompt: ${modifiedPrompt}`);
+        
+      } else if (errorType === 'GENERATION_ERROR') {
+        // Simplified prompt for generation failures
+        const shotType = shot.shotType || 'medium shot';
+        const action = shot.shotDescription?.replace(/weapon|gun|rifle|grenade|blood|violence|death|kill/gi, 'action') || 'scene';
+        
+        modifiedPrompt = `${shotType.toLowerCase()} of ${action}, professional filmmaking, cinematic composition`;
+        console.log(`⚡ Simplified prompt: ${modifiedPrompt}`);
+        
+      } else if (errorType === 'PROCESSING_ERROR' || errorType === 'STORAGE_FAILED') {
+        // Basic prompt for technical failures
+        modifiedPrompt = `Professional film scene, cinematic lighting, movie production quality`;
+        console.log(`🔧 Basic technical prompt: ${modifiedPrompt}`);
+        
+      } else {
+        // Fallback to original logic
+        modifiedPrompt = basePrompt;
+      }
+    } else if (modifications === 'alternative safe prompt') {
+      // Legacy support for existing calls
       const shotType = shot.shotType || 'medium shot';
       const location = shot.location || 'indoor location';
       const timeOfDay = shot.timeOfDay || 'day';
@@ -774,7 +804,7 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
       const safePrompt = `Professional ${shotType.toLowerCase()} in ${location.toLowerCase()} during ${timeOfDay.toLowerCase()}, clean movie production scene, cinematic lighting, film still`;
       modifiedPrompt = safePrompt;
     } else if (modifications === 'retry generation') {
-      // For retry, aggressively clean the prompt
+      // Legacy support - aggressively clean the prompt
       modifiedPrompt = basePrompt
         .replace(/blood[-\s]?soaked/gi, 'red-stained')
         .replace(/blood/gi, 'dramatic red')

@@ -454,14 +454,36 @@ async function processShotWithIsolation(shot: any, shotIndex: number, totalShots
       imageData = await generateImageData(prompt);
     } catch (imageError) {
       console.error(`Image generation error for shot ${shotId}:`, imageError);
-      // Try with a simpler, safer prompt
+      
+      // Intelligent fallback based on shot content
       try {
-        const safePrompt = `A professional film scene, cinematic lighting, movie production quality`;
-        imageData = await generateImageData(safePrompt);
-        console.log(`Fallback image generation succeeded for shot ${shotId}`);
+        let smartFallback: string;
+        const shotType = shot.shotType || 'medium shot';
+        const isAction = shot.shotDescription?.toLowerCase().includes('action') || 
+                        shot.shotDescription?.toLowerCase().includes('fight') ||
+                        shot.shotDescription?.toLowerCase().includes('chase');
+        
+        if (isAction) {
+          smartFallback = `${shotType.toLowerCase()} of dramatic action scene, professional filmmaking, cinematic composition`;
+        } else if (shot.characters && shot.characters !== 'None') {
+          smartFallback = `${shotType.toLowerCase()} showing characters in conversation, professional film production, cinematic lighting`;
+        } else {
+          smartFallback = `Professional ${shotType.toLowerCase()}, cinematic lighting, movie production quality`;
+        }
+        
+        console.log(`Trying smart fallback for shot ${shotId}: ${smartFallback}`);
+        imageData = await generateImageData(smartFallback);
+        console.log(`Smart fallback image generation succeeded for shot ${shotId}`);
       } catch (fallbackError) {
-        console.error(`Even fallback generation failed for shot ${shotId}:`, fallbackError);
-        imageData = 'GENERATION_FAILED';
+        console.error(`Smart fallback failed for shot ${shotId}, trying ultra-safe prompt:`, fallbackError);
+        try {
+          const ultraSafePrompt = `Professional film scene, cinematic lighting, movie production quality`;
+          imageData = await generateImageData(ultraSafePrompt);
+          console.log(`Ultra-safe fallback succeeded for shot ${shotId}`);
+        } catch (finalError) {
+          console.error(`All fallback attempts failed for shot ${shotId}:`, finalError);
+          imageData = 'GENERATION_FAILED';
+        }
       }
     }
 

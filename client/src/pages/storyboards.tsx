@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Image, Download, RefreshCw, ChevronLeft, ChevronRight, Edit3 } from "lucide-react";
+import { ArrowLeft, Image, Download, RefreshCw, ChevronLeft, ChevronRight, Edit3, AlertTriangle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { useAuth } from "@/components/auth/UltimateAuthProvider";
@@ -463,6 +463,57 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Generated Storyboards</h3>
               <div className="flex gap-2">
+                {(() => {
+                  const failedCount = storyboardFrames.filter((frame: any) => 
+                    frame.imageData === 'GENERATION_ERROR' || 
+                    frame.imageData === 'CONTENT_POLICY_ERROR' || 
+                    frame.imageData === 'PROCESSING_ERROR' || 
+                    frame.imageData === 'STORAGE_FAILED'
+                  ).length;
+                  
+                  return failedCount > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const failedFrames = storyboardFrames
+                            .map((frame: any, index: number) => ({ frame, index }))
+                            .filter(({ frame }: { frame: any }) => 
+                              frame.imageData === 'GENERATION_ERROR' || 
+                              frame.imageData === 'CONTENT_POLICY_ERROR' || 
+                              frame.imageData === 'PROCESSING_ERROR' || 
+                              frame.imageData === 'STORAGE_FAILED'
+                            );
+                          
+                          for (const { frame, index } of failedFrames) {
+                            await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${index}`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              credentials: 'include',
+                              body: JSON.stringify({ 
+                                errorType: frame.imageData,
+                                intelligentRetry: true 
+                              })
+                            });
+                          }
+                          
+                          queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
+                          toast({ 
+                            title: `Retrying ${failedCount} failed images...`,
+                            description: "Using intelligent error-specific approaches"
+                          });
+                        } catch (error) {
+                          toast({ title: "Bulk retry failed", variant: "destructive" });
+                        }
+                      }}
+                      className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Retry {failedCount} Failed
+                    </Button>
+                  );
+                })()}
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -551,7 +602,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </div>
-                          <p className="text-xs">Generation failed</p>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium">Generation Failed</p>
+                            <p className="text-xs text-gray-600">AI image generation encountered an error</p>
+                          </div>
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -562,13 +616,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   credentials: 'include',
-                                  body: JSON.stringify({ modifications: 'retry generation' })
+                                  body: JSON.stringify({ 
+                                    errorType: 'GENERATION_ERROR',
+                                    intelligentRetry: true 
+                                  })
                                 });
                                 if (response.ok) {
                                   queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
                                   toast({ 
-                                    title: "Retrying image generation...", 
-                                    description: "This may take a moment to process"
+                                    title: "Retrying with simplified prompt...", 
+                                    description: "Using a safer generation approach"
                                   });
                                 } else {
                                   const error = await response.json().catch(() => ({}));
@@ -583,7 +640,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               }
                             }}
                           >
-                            Retry
+                            Try Again
                           </Button>
                         </div>
                       ) : frame.imageData === 'CONTENT_POLICY_ERROR' || frame.imagePath === 'CONTENT_POLICY_ERROR' ? (
@@ -593,7 +650,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                             </svg>
                           </div>
-                          <p className="text-xs">Content policy</p>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium">Content Policy Issue</p>
+                            <p className="text-xs text-gray-600">Content contains restricted elements</p>
+                          </div>
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -604,11 +664,17 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   credentials: 'include',
-                                  body: JSON.stringify({ modifications: 'alternative safe prompt' })
+                                  body: JSON.stringify({ 
+                                    errorType: 'CONTENT_POLICY_ERROR',
+                                    intelligentRetry: true 
+                                  })
                                 });
                                 if (response.ok) {
                                   queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
-                                  toast({ title: "Retrying with safer prompt..." });
+                                  toast({ 
+                                    title: "Retrying with safer content...", 
+                                    description: "Using content-safe alternatives"
+                                  });
                                 } else {
                                   toast({ title: "Retry failed", variant: "destructive" });
                                 }
@@ -617,7 +683,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               }
                             }}
                           >
-                            Retry
+                            Try Safe Version
                           </Button>
                         </div>
                       ) : frame.imageData === 'PROCESSING_ERROR' || frame.imageData === 'STORAGE_FAILED' ? (
@@ -627,7 +693,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </div>
-                          <p className="text-xs">Processing error</p>
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium">
+                              {frame.imageData === 'STORAGE_FAILED' ? 'Storage Error' : 'Processing Error'}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {frame.imageData === 'STORAGE_FAILED' 
+                                ? 'Failed to save generated image' 
+                                : 'Error during image processing'}
+                            </p>
+                          </div>
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -638,11 +713,17 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   credentials: 'include',
-                                  body: JSON.stringify({ modifications: 'retry processing' })
+                                  body: JSON.stringify({ 
+                                    errorType: frame.imageData,
+                                    intelligentRetry: true 
+                                  })
                                 });
                                 if (response.ok) {
                                   queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
-                                  toast({ title: "Retrying processing..." });
+                                  toast({ 
+                                    title: "Retrying processing...",
+                                    description: "Attempting to resolve the issue"
+                                  });
                                 } else {
                                   toast({ title: "Retry failed", variant: "destructive" });
                                 }
@@ -651,7 +732,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               }
                             }}
                           >
-                            Retry
+                            Try Again
                           </Button>
                         </div>
                       ) : (
