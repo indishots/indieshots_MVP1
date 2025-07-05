@@ -456,7 +456,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       const memoryStatsAfter = characterMemoryService.getMemoryStats();
       console.log(`Character memory after generation: ${memoryStatsAfter.characterCount} characters known - [${memoryStatsAfter.characters.join(', ')}]`);
       if (memoryStatsAfter.characterCount > memoryStatsBefore.characterCount) {
-        const newCharacters = memoryStatsAfter.characters.filter(char => !memoryStatsBefore.characters.includes(char));
+        const newCharacters = memoryStatsAfter.characters.filter((char: string) => !memoryStatsBefore.characters.includes(char));
         console.log(`New characters discovered and stored: [${newCharacters.join(', ')}]`);
       }
     } catch (memoryError) {

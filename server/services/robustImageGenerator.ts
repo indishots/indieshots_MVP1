@@ -31,22 +31,27 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
         const promises = batch.map(async (shot, batchIndex) => {
           const shotNumber = i + batchIndex + 1;
           try {
+            console.log(`🎨 Starting generation for shot ${shotNumber}/${shots.length}`);
             await generateSingleShotImage(shot, parseJobId, shotNumber);
+            console.log(`✅ Shot ${shotNumber} completed successfully`);
           } catch (error) {
-            console.error(`❌ Shot ${shotNumber} failed independently:`, error);
-            // Individual failures don't affect the batch
+            console.error(`❌ Shot ${shotNumber} failed independently (continuing with remaining shots):`, error);
             
-            // Try to save error state if the original function failed
+            // Individual failures don't affect the batch - mark as failed and continue
             try {
               await storage.updateShotImage(shot.id, null, `ERROR: ${error instanceof Error ? error.message : 'Generation failed'}`);
+              console.log(`📝 Shot ${shotNumber} marked as failed in database, continuing with batch`);
             } catch (saveError) {
               console.error(`Failed to save error state for shot ${shotNumber}:`, saveError);
             }
           }
         });
         
-        // Wait for all shots in this batch to complete
-        await Promise.allSettled(promises);
+        // Wait for all shots in this batch to complete (successful or failed)
+        const results = await Promise.allSettled(promises);
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const failedCount = results.filter(r => r.status === 'rejected').length;
+        console.log(`Batch ${Math.floor(i/BATCH_SIZE) + 1} completed: ${successCount} successful, ${failedCount} failed - continuing to next batch`);
         
         // Small delay between batches to prevent overwhelming the API
         if (i + BATCH_SIZE < shots.length) {
@@ -130,10 +135,14 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
     const errorMessage = `ERROR: ${lastError?.message || 'Generation failed after all retries'}`;
     await storage.updateShotImage(shot.id, null, errorMessage);
     console.error(`💥 Shot ${shotNumber} - All attempts failed, saved error state: ${errorMessage}`);
+    console.log(`🔄 Shot ${shotNumber} - Marked as failed, batch will continue with remaining shots`);
   } catch (dbError) {
     console.error(`💥 Shot ${shotNumber} - Failed to save error state to database:`, dbError);
     // Don't throw here - we want the batch to continue
   }
+  
+  // Explicitly do NOT throw an exception - let the batch continue
+  console.log(`⏭️ Shot ${shotNumber} - Error handled, returning to batch processing`);
 }
 
 /**
