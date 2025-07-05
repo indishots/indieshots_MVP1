@@ -122,7 +122,19 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         });
         
         if (response.ok) {
-          const freshData = await response.json();
+          let freshData;
+          try {
+            const text = await response.text();
+            if (!text.trim()) {
+              console.error('Empty response from server during regeneration fetch');
+              return;
+            }
+            freshData = JSON.parse(text);
+          } catch (jsonError) {
+            console.error('Failed to parse regeneration response as JSON:', jsonError);
+            return;
+          }
+          
           const freshStoryboards = freshData.storyboards || [];
           
           console.log('Fresh data received:', {
@@ -298,11 +310,29 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to generate storyboards');
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const error = await response.json();
+          errorMessage = error.message || errorMessage;
+        } catch (jsonError) {
+          console.error('Failed to parse error response as JSON:', jsonError);
+          const textResponse = await response.text();
+          errorMessage = textResponse || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
       
-      return await response.json();
+      // Safely parse JSON response
+      try {
+        const text = await response.text();
+        if (!text.trim()) {
+          throw new Error('Server returned empty response');
+        }
+        return JSON.parse(text);
+      } catch (jsonError) {
+        console.error('Failed to parse response as JSON:', jsonError);
+        throw new Error('Server returned invalid response format');
+      }
     },
     onSuccess: (data) => {
       // Complete generation and show loading state for images

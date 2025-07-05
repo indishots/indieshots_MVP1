@@ -356,6 +356,10 @@ router.get('/shots/:jobId/:sceneIndex', authMiddleware, tierValidationMiddleware
  * Generate storyboards for shots in a scene
  */
 router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
+  // CRITICAL: Ensure proper JSON response headers to prevent empty responses
+  res.setHeader('Content-Type', 'application/json');
+  res.setTimeout(0); // Disable timeout for storyboard generation
+  
   try {
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
@@ -538,6 +542,9 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
  * Get storyboards for a specific scene
  */
 router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
+  // CRITICAL: Ensure proper JSON response headers to prevent empty responses
+  res.setHeader('Content-Type', 'application/json');
+  
   try {
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
