@@ -157,23 +157,42 @@ async function generateSafePrompt(shot: any): Promise<string | null> {
     const basicPrompt = buildShotPrompt(shot);
     
     // Enhance with GPT-4 for better visual description
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a professional film director creating visual prompts for image generation. 
+    let response;
+    try {
+      response = await openai.chat.completions.create({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a professional film director creating visual prompts for image generation. 
 Transform the shot description into a vivid, cinematic visual prompt suitable for DALL-E 3.
 Focus on visual composition, lighting, and mood. Keep it safe and professional.`
-        },
-        {
-          role: 'user',
-          content: basicPrompt
-        }
-      ],
-      max_tokens: 200,
-      temperature: 0.7
-    });
+          },
+          {
+            role: 'user',
+            content: basicPrompt
+          }
+        ],
+        max_tokens: 200,
+        temperature: 0.7
+      });
+    } catch (gptError: any) {
+      console.error('GPT-4 prompt enhancement failed:', {
+        type: gptError.constructor?.name,
+        message: gptError.message,
+        status: gptError.status
+      });
+      
+      // Handle non-JSON responses from GPT-4
+      if (gptError.message?.includes('JSON') || gptError.message?.includes('parse') || gptError.message?.includes('Unexpected')) {
+        console.log('GPT-4 returned non-JSON response, using basic prompt');
+        return sanitizePrompt(basicPrompt);
+      }
+      
+      // For other errors, still fall back to basic prompt
+      console.log('GPT-4 API error, using basic prompt');
+      return sanitizePrompt(basicPrompt);
+    }
     
     const enhancedPrompt = response.choices[0].message.content?.trim();
     if (enhancedPrompt && enhancedPrompt.length > 10) {
@@ -183,8 +202,11 @@ Focus on visual composition, lighting, and mood. Keep it safe and professional.`
     // Fallback to basic prompt
     return sanitizePrompt(basicPrompt);
     
-  } catch (error) {
-    console.error('Prompt generation failed, using fallback:', error);
+  } catch (error: any) {
+    console.error('Prompt generation failed completely, using fallback:', {
+      type: error.constructor?.name,
+      message: error.message
+    });
     return sanitizePrompt(buildShotPrompt(shot));
   }
 }
@@ -194,35 +216,69 @@ Focus on visual composition, lighting, and mood. Keep it safe and professional.`
  */
 async function generateImageWithRetry(prompt: string, attempt: number): Promise<string | null> {
   try {
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt: prompt,
-      size: '1792x1024',
-      quality: 'standard',
-      n: 1
-    });
+    console.log(`🎨 Attempting OpenAI image generation (attempt ${attempt})...`);
+    
+    let response;
+    try {
+      response = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt: prompt,
+        size: '1792x1024',
+        quality: 'standard',
+        n: 1
+      });
+    } catch (apiError: any) {
+      // Handle non-JSON responses from OpenAI
+      console.error(`OpenAI API error (attempt ${attempt}):`, {
+        type: apiError.constructor?.name,
+        message: apiError.message,
+        status: apiError.status,
+        code: apiError.code
+      });
+      
+      // Check if this is a non-JSON response issue
+      if (apiError.message?.includes('JSON') || apiError.message?.includes('parse') || apiError.message?.includes('Unexpected')) {
+        throw new Error(`OpenAI returned non-JSON response: ${apiError.message}`);
+      }
+      
+      // Re-throw other API errors for normal handling
+      throw apiError;
+    }
     
     const imageUrl = response.data?.[0]?.url;
     if (!imageUrl) {
-      throw new Error('No image URL returned from OpenAI');
+      throw new Error('No image URL returned from OpenAI API response');
     }
     
-    // Download image
-    const imageResponse = await fetch(imageUrl);
-    if (!imageResponse.ok) {
-      throw new Error(`Failed to download image: ${imageResponse.statusText}`);
+    console.log(`✅ OpenAI returned image URL, downloading...`);
+    
+    // Download image with error handling
+    let imageResponse;
+    try {
+      imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        throw new Error(`Failed to download image: ${imageResponse.status} ${imageResponse.statusText}`);
+      }
+    } catch (downloadError: any) {
+      throw new Error(`Image download failed: ${downloadError.message}`);
     }
     
     const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
     const base64Data = imageBuffer.toString('base64');
     
+    console.log(`✅ Image converted to base64 (${base64Data.length} characters)`);
     return base64Data;
     
   } catch (error: any) {
-    console.error(`Image generation failed (attempt ${attempt}):`, error.message);
+    console.error(`❌ Image generation failed (attempt ${attempt}):`, {
+      type: error.constructor?.name,
+      message: error.message,
+      stack: error.stack?.split('\n')[0]
+    });
     
     // For content policy errors, try with safer prompt
     if (error.message?.includes('content_policy')) {
+      console.log(`🛡️  Content policy issue detected, trying safe fallback prompt...`);
       const safePrompt = 'Professional film production still, cinematic lighting, artistic composition';
       try {
         const response = await openai.images.generate({
@@ -238,11 +294,39 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
           const imageResponse = await fetch(imageUrl);
           if (imageResponse.ok) {
             const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            console.log(`✅ Safe fallback image generated successfully`);
             return imageBuffer.toString('base64');
           }
         }
       } catch (fallbackError) {
         console.error('Fallback image generation also failed:', fallbackError);
+      }
+    }
+    
+    // For non-JSON response errors, try one more time with minimal prompt
+    if (error.message?.includes('JSON') || error.message?.includes('parse') || error.message?.includes('Unexpected')) {
+      console.log(`🔄 Non-JSON response detected, trying minimal fallback prompt...`);
+      try {
+        const minimalPrompt = 'Cinematic film still';
+        const response = await openai.images.generate({
+          model: 'dall-e-3',
+          prompt: minimalPrompt,
+          size: '1792x1024',
+          quality: 'standard',
+          n: 1
+        });
+        
+        const imageUrl = response.data?.[0]?.url;
+        if (imageUrl) {
+          const imageResponse = await fetch(imageUrl);
+          if (imageResponse.ok) {
+            const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            console.log(`✅ Minimal fallback image generated after JSON error`);
+            return imageBuffer.toString('base64');
+          }
+        }
+      } catch (minimalError) {
+        console.error('Minimal fallback also failed:', minimalError);
       }
     }
     
