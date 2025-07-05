@@ -360,7 +360,15 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
   res.setHeader('Content-Type', 'application/json');
   res.setTimeout(0); // Disable timeout for storyboard generation
   
+  // DEPLOYMENT CRITICAL: Wrap EVERYTHING in try-catch to prevent any 500 errors
+  let hasResponded = false;
+  
   try {
+    // Additional safety check - if response is already sent, don't continue
+    if (res.headersSent) {
+      console.log('⚠️ Headers already sent, skipping storyboard generation');
+      return;
+    }
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
     const user = (req as any).user;
@@ -381,12 +389,23 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
       });
     }
 
-    // Check storyboard access with quota manager
-    const storyboardAccess = await productionQuotaManager.checkStoryboardAccess(userId, userTier);
-    console.log(`Storyboard access check result:`, storyboardAccess);
+    // Check storyboard access with quota manager - with error protection
+    let storyboardAccess;
+    try {
+      storyboardAccess = await productionQuotaManager.checkStoryboardAccess(userId, userTier);
+      console.log(`Storyboard access check result:`, storyboardAccess);
+    } catch (quotaError) {
+      console.error('Quota manager error, defaulting to access granted:', quotaError);
+      // In case of quota manager failure, default to allowing access for pro users
+      storyboardAccess = {
+        allowed: userTier === 'pro',
+        reason: userTier === 'pro' ? 'Access granted' : 'Quota manager unavailable - please upgrade to pro'
+      };
+    }
     
     if (!storyboardAccess.allowed) {
       console.log(`❌ STORYBOARD ACCESS DENIED: ${storyboardAccess.reason}`);
+      hasResponded = true;
       return res.status(403).json({
         message: storyboardAccess.reason,
         requiresUpgrade: true,
@@ -396,15 +415,43 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
 
     console.log(`✅ STORYBOARD ACCESS GRANTED - proceeding with generation`);
 
-    // Verify user owns the job
-    const parseJob = await storage.getParseJob(parseInt(jobId));
+    // Verify user owns the job - with error protection
+    let parseJob;
+    try {
+      parseJob = await storage.getParseJob(parseInt(jobId));
+    } catch (storageError) {
+      console.error('Storage error getting parse job:', storageError);
+      hasResponded = true;
+      return res.status(200).json({
+        error: 'Database error',
+        message: 'Failed to access parse job',
+        success: false,
+        storyboards: []
+      });
+    }
+    
     if (!parseJob || parseJob.userId !== userId) {
+      hasResponded = true;
       return res.status(404).json({ error: 'Parse job not found' });
     }
 
-    // Get shots for the scene from database
-    let shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
+    // Get shots for the scene from database - with error protection  
+    let shots;
+    try {
+      shots = await storage.getShots(parseInt(jobId), parseInt(sceneIndex));
+    } catch (storageError) {
+      console.error('Storage error getting shots:', storageError);
+      hasResponded = true;
+      return res.status(200).json({
+        error: 'Database error',
+        message: 'Failed to access shots',
+        success: false,
+        storyboards: []
+      });
+    }
+    
     if (!shots || shots.length === 0) {
+      hasResponded = true;
       return res.status(404).json({ error: 'No shots found. Please generate shots first.' });
     }
 
@@ -503,6 +550,9 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     const errorCount = finalStoryboards.filter(sb => sb.errorState).length;
     console.log(`Robust batch generation complete: ${successCount}/${shots.length} images generated successfully, ${errorCount} errors`);
 
+    // Mark that we're about to respond
+    hasResponded = true;
+    
     res.json({
       message: `Storyboards processed with robust error isolation`,
       totalShots: shots.length,
@@ -519,21 +569,29 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
     
-    // DEPLOYMENT CRITICAL FIX: Always return 200 OK with error data instead of 500
-    // This prevents the frontend from hanging and allows progressive loading to continue
-    console.log('⚠️ Returning 200 OK with error state to prevent frontend hanging...');
-    
-    res.status(200).json({
-      message: 'Storyboard generation encountered errors but system remains stable',
-      totalShots: 0,
-      generatedCount: 0,
-      errorCount: 0,
-      storyboardCount: 0,
-      storyboards: [],
-      success: false,
-      deploymentError: true,
-      errorMessage: error instanceof Error ? error.message : 'Unknown system error in deployment'
-    });
+    // Only respond if we haven't already sent a response
+    if (!hasResponded && !res.headersSent) {
+      console.log('⚠️ Returning 200 OK with error state to prevent frontend hanging...');
+      
+      try {
+        res.status(200).json({
+          message: 'Storyboard generation encountered errors but system remains stable',
+          totalShots: 0,
+          generatedCount: 0,
+          errorCount: 0,
+          storyboardCount: 0,
+          storyboards: [],
+          success: false,
+          deploymentError: true,
+          errorMessage: error instanceof Error ? error.message : 'Unknown system error in deployment'
+        });
+      } catch (responseError) {
+        console.error('💥 CRITICAL: Failed to send error response:', responseError);
+        // If even the error response fails, just log it - can't do anything else
+      }
+    } else {
+      console.log('⚠️ Response already sent, skipping error response');
+    }
   }
 });
 
