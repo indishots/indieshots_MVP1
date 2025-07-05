@@ -369,16 +369,30 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const storyboardFrames = allStoryboardFrames.filter((frame: any) => {
     const hasImageData = !!frame.imageData;
     const hasImagePath = !!frame.imagePath;
-    return frame.hasImage && (hasImageData || hasImagePath);
+    const shouldInclude = frame.hasImage && (hasImageData || hasImagePath);
+    
+    console.log(`Frame ${allStoryboardFrames.indexOf(frame)}:`, {
+      hasImage: frame.hasImage,
+      hasImageData,
+      hasImagePath,
+      shouldInclude,
+      imageDataLength: frame.imageData?.length || 0,
+      imagePathPreview: frame.imagePath?.substring(0, 50) || 'none'
+    });
+    
+    return shouldInclude;
   });
   
   const hasGeneratedImages = storyboardFrames.length > 0;
   
-  console.log('🎯 Filtered results:', {
+  console.log('🎯 Final filtering results:', {
+    totalFrames: allStoryboardFrames.length,
     filteredCount: storyboardFrames.length,
     hasGeneratedImages,
     shouldShowGenerate: !hasGeneratedImages,
-    filteringLogic: 'Checking both imageData and imagePath'
+    shouldShowGrid: hasGeneratedImages,
+    isGenerating,
+    hasStartedGeneration
   });
   
   return (
@@ -397,6 +411,18 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             feature="storyboards"
             message="Storyboard generation with AI-powered images is a Pro feature. Upgrade to create visual storyboards for your scenes."
           />
+        </div>
+      )}
+
+      {/* Debug info for troubleshooting */}
+      {allStoryboardFrames.length > 0 && (
+        <div className="mb-4 p-4 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
+          <p className="text-sm">
+            <strong>Debug Info:</strong> Found {allStoryboardFrames.length} total frames, 
+            {storyboardFrames.length} with images. 
+            HasGeneratedImages: {hasGeneratedImages.toString()}, 
+            IsGenerating: {isGenerating.toString()}
+          </p>
         </div>
       )}
 
@@ -480,7 +506,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             )}
           </CardContent>
         </Card>
-      ) : (
+      ) : hasGeneratedImages ? (
         <>
           {/* Storyboard Grid */}
           <div className="mb-6">
@@ -879,6 +905,78 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
             </DialogContent>
           </Dialog>
         </>
+      ) : allStoryboardFrames.length > 0 && !hasGeneratedImages ? (
+        <>
+          {/* Fallback: Show all frames even if filtering failed */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-orange-600">Debug: All Storyboard Frames</h3>
+              <Badge variant="secondary">{allStoryboardFrames.length} total frames</Badge>
+            </div>
+            
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {allStoryboardFrames.map((frame: any, idx: number) => (
+                <Card key={idx} className="relative">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">
+                      Shot {idx + 1}
+                      {frame.hasImage ? (
+                        <Badge variant="default" className="ml-2">Has Image</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="ml-2">No Image</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {frame.shotType || 'Unknown'} - {frame.cameraAngle || 'Unknown'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-3">
+                      {(frame.imageData || frame.imagePath) ? (
+                        <img 
+                          src={frame.imageData ? `data:image/png;base64,${frame.imageData}` : frame.imagePath}
+                          alt={`Storyboard frame ${idx + 1}`}
+                          className="w-full h-full object-cover rounded-lg"
+                          onError={(e) => {
+                            console.error(`Image load failed for frame ${idx}:`, {
+                              hasImageData: !!frame.imageData,
+                              hasImagePath: !!frame.imagePath,
+                              hasImage: frame.hasImage
+                            });
+                          }}
+                        />
+                      ) : (
+                        <div className="text-center text-muted-foreground">
+                          <div className="text-xs mb-2">No image data available</div>
+                          <div className="text-xs">
+                            hasImage: {frame.hasImage?.toString()}<br/>
+                            imageData: {frame.imageData ? 'present' : 'missing'}<br/>
+                            imagePath: {frame.imagePath ? 'present' : 'missing'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <div>Description: {frame.description || 'N/A'}</div>
+                      <div>Prompt: {frame.prompt || 'N/A'}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : (
+        // Default case when no storyboard data exists
+        <Card className="mb-6">
+          <CardContent className="py-12 text-center">
+            <Image className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-medium mb-2">No Storyboard Data Found</h3>
+            <p className="text-muted-foreground">
+              Please generate shots first, then return to create storyboards.
+            </p>
+          </CardContent>
+        </Card>
       )}
       
       {/* Navigation */}
