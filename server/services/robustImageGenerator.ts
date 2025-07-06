@@ -348,20 +348,6 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
     
     // For other errors, let retry logic handle them - don't immediately fallback
     throw error;
-            const arrayBuffer = await imageResponse.arrayBuffer();
-            const imageBuffer = Buffer.from(arrayBuffer);
-            console.log(`✅ Minimal fallback image generated after JSON error`);
-            return imageBuffer.toString('base64');
-          }
-        }
-      } catch (minimalError) {
-        console.error('Minimal fallback also failed:', minimalError);
-        return await generateFallbackImage(prompt);
-      }
-    }
-    
-    // Final fallback if all else fails
-    return await generateFallbackImage(prompt);
   }
 }
 
