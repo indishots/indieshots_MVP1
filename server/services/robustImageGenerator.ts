@@ -145,9 +145,12 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
       lastError = error;
       console.error(`❌ Shot ${shotNumber} - Attempt ${attempt} failed:`, error.message);
       
-      // Check if it's a timeout or API issue - fail faster
-      if (error.message?.includes('timeout') || error.message?.includes('API')) {
-        console.log(`⏰ Shot ${shotNumber} - API timeout/issue detected, failing faster`);
+      // Check if it's a timeout, API access issue, or quota issue - fail faster
+      if (error.message?.includes('timeout') || 
+          error.message?.includes('API') || 
+          error.message?.includes('QUOTA_EXCEEDED') ||
+          error.message?.includes('API_ACCESS_ERROR')) {
+        console.log(`⏰ Shot ${shotNumber} - API issue detected (${error.message}), failing faster`);
         break; // Don't retry on API issues
       }
       
@@ -160,12 +163,15 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
     }
   }
   
-  // Use placeholder immediately when OpenAI is unavailable
-  console.log(`⚠️ Shot ${shotNumber} - OpenAI unavailable, using placeholder for immediate feedback`);
+  // Use placeholder when OpenAI is unavailable with specific error messaging
+  const errorType = lastError?.message?.includes('API_ACCESS_ERROR') ? 'API_ACCESS_ERROR' : 
+                   lastError?.message?.includes('QUOTA_EXCEEDED') ? 'QUOTA_EXCEEDED' : 'API_UNAVAILABLE';
+  
+  console.log(`⚠️ Shot ${shotNumber} - OpenAI ${errorType}, using placeholder for immediate feedback`);
   try {
     const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
-    await storage.updateShotImage(shot.id, placeholderImage, `API_UNAVAILABLE: ${lastError?.message || 'OpenAI API timeout'}`);
-    console.log(`📦 Shot ${shotNumber} - Placeholder saved for immediate user feedback`);
+    await storage.updateShotImage(shot.id, placeholderImage, `${errorType}: ${lastError?.message || 'OpenAI API issue'}`);
+    console.log(`📦 Shot ${shotNumber} - Placeholder saved with error type: ${errorType}`);
   } catch (dbError) {
     console.error(`💥 Shot ${shotNumber} - Failed to save placeholder:`, dbError);
   }
@@ -284,6 +290,12 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
       if (apiError.status === 429 || apiError.code === 'insufficient_quota') {
         console.log('🚫 OpenAI quota exceeded - failing immediately with quota error');
         throw new Error('QUOTA_EXCEEDED: OpenAI API quota has been exceeded');
+      }
+      
+      // Handle BadRequestError for image generation
+      if (apiError.status === 400 && apiError.type === 'image_generation_user_error') {
+        console.log('🚫 OpenAI BadRequestError - API key may not have DALL-E 3 access or prompt issue');
+        throw new Error('API_ACCESS_ERROR: OpenAI API key does not have DALL-E 3 image generation access');
       }
       
       // Let other errors bubble up for retry logic

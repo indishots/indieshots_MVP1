@@ -304,10 +304,20 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
           refetchStoryboards();
         }, 500);
         
-        toast({
-          title: "Storyboard generation complete",
-          description: `${completedCount} images generated successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
-        });
+        // Show appropriate completion message based on results
+        if (completedCount > 0) {
+          toast({
+            title: "Storyboard generation complete",
+            description: `${completedCount} images generated successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+          });
+        } else if (errorCount > 0) {
+          // All images failed - show more specific error message
+          toast({
+            title: "Storyboard generation failed",
+            description: "Unable to generate images. This may be due to OpenAI API access limitations. Please contact support if the issue persists.",
+            variant: "destructive",
+          });
+        }
       }
     }
   }, [storyboards, isGenerating, toast, progressiveImages]);
