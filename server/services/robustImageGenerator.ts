@@ -16,12 +16,20 @@ const openai = new OpenAI({
 export async function generateStoryboardBatch(shots: any[], parseJobId: number): Promise<void> {
   try {
     console.log(`🎬 Starting robust batch generation for ${shots.length} shots`);
+    console.log(`📋 Shot details:`, shots.map((s, i) => ({ index: i, id: s.id, description: s.shotDescription })));
     
     // Validate inputs
     if (!shots || shots.length === 0) {
-      console.log('No shots to process');
+      console.log('❌ No shots to process - batch generation aborted');
       return;
     }
+    
+    // Check OpenAI API key availability
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('❌ CRITICAL: OpenAI API key not found in environment variables');
+      throw new Error('OpenAI API key not configured');
+    }
+    console.log('✅ OpenAI API key is configured');
     
     // Process shots in smaller batches to prevent overwhelming the database
     const BATCH_SIZE = 3;
@@ -153,12 +161,16 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
  */
 async function generateSafePrompt(shot: any): Promise<string | null> {
   try {
+    console.log(`🎯 Generating prompt for shot:`, { id: shot.id, description: shot.shotDescription });
+    
     // Build basic prompt from shot data
     const basicPrompt = buildShotPrompt(shot);
+    console.log(`📝 Basic prompt built:`, basicPrompt);
     
     // Enhance with GPT-4 for better visual description
     let response;
     try {
+      console.log(`🤖 Calling GPT-4 for prompt enhancement...`);
       response = await openai.chat.completions.create({
         model: 'gpt-4',
         messages: [
@@ -217,9 +229,11 @@ Focus on visual composition, lighting, and mood. Keep it safe and professional.`
 async function generateImageWithRetry(prompt: string, attempt: number): Promise<string | null> {
   try {
     console.log(`🎨 Attempting OpenAI image generation (attempt ${attempt})...`);
+    console.log(`📸 Using prompt:`, prompt);
     
     let response;
     try {
+      console.log(`📡 Calling OpenAI DALL-E 3 API...`);
       response = await openai.images.generate({
         model: 'dall-e-3',
         prompt: prompt,

@@ -317,7 +317,10 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     mutationFn: async () => {
       // Check if user is free tier - show upgrade modal instead
       const userTier = (user as any)?.tier || 'free';
+      console.log('🎬 Starting storyboard generation - User tier:', userTier);
+      
       if (userTier === 'free') {
+        console.log('❌ Free tier detected - showing upgrade modal');
         setShowUpgradeModal(true);
         throw new Error('upgrade_required');
       }
@@ -327,16 +330,20 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       
       // Initialize progress tracking
       const totalShots = (shotsData as any)?.shots?.length || 0;
+      console.log(`📊 Initializing generation for ${totalShots} shots`);
       setGenerationProgress({total: totalShots, completed: 0});
       setProgressiveImages({});
       
       // Get JWT token from localStorage for authentication
       const token = localStorage.getItem('token');
+      console.log('🔐 Token exists:', !!token);
+      
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
+      console.log('🚀 Making API request to generate storyboards...');
       const response = await fetch(`/api/storyboards/generate/${jobId}/${sceneIndex}`, {
         method: 'POST',
         headers,
@@ -347,8 +354,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         })
       });
       
+      console.log('📡 Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+      
       // DEPLOYMENT FIX: Use safe response handler to prevent "body stream already read" error
-      return await safeResponseHandler(response);
+      const result = await safeResponseHandler(response);
+      console.log('✅ Response processed:', result);
+      return result;
     },
     onSuccess: (data) => {
       // Complete generation and show loading state for images
