@@ -159,7 +159,8 @@ async function gpt4Response(prompt: string): Promise<string> {
   }
   
   // Use demo shots as fallback for any API issues
-  console.log('🎬 Using demo shot generation due to API error after all retries');
+  console.log('🎬 OpenAI API unavailable - using professional demo shot generation');
+  console.log('📋 This ensures shot generation continues working even when API has issues');
   return generateDemoShots(prompt);
 }
 
