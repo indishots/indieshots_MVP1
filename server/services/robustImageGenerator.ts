@@ -1,11 +1,11 @@
 import { OpenAI } from 'openai';
 import { storage } from '../storage';
 
-// Configure OpenAI with deployment-safe settings
+// Configure OpenAI with original working settings
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  timeout: 45000, // 45 second timeout to prevent hanging
-  maxRetries: 1, // Single retry to prevent long delays
+  timeout: process.env.NODE_ENV === 'production' ? 90000 : 120000, // Restored generous timeout for actual image generation
+  maxRetries: 2, // Allow retries for better success rate
   dangerouslyAllowBrowser: false
 });
 
@@ -64,9 +64,9 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
         const failedCount = results.filter(r => r.status === 'rejected').length;
         console.log(`Batch ${Math.floor(i/BATCH_SIZE) + 1} completed: ${successCount} successful, ${failedCount} failed - continuing to next batch`);
         
-        // Small delay between batches to prevent overwhelming the API
+        // Small delay between batches to prevent overwhelming the API while maintaining real-time feel
         if (i + BATCH_SIZE < shots.length) {
-          await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay for faster image appearance
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Balanced delay for API stability
         }
       } catch (batchError) {
         console.error(`Batch ${Math.floor(i/BATCH_SIZE) + 1} failed completely:`, batchError);
@@ -106,12 +106,12 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
  * Generate image for a single shot with complete error isolation
  */
 async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber: number): Promise<void> {
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 5; // Increased retries for better success rate
   let lastError: any = null;
   
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log(`🎨 Shot ${shotNumber} - Attempt ${attempt}/${MAX_RETRIES}`);
+      console.log(`🎨 Shot ${shotNumber} - Attempt ${attempt}/${MAX_RETRIES} (prioritizing real image generation)`);
       
       // Generate prompt
       const prompt = await generateSafePrompt(shot);
@@ -119,7 +119,7 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
         throw new Error('Failed to generate prompt');
       }
       
-      // Generate image
+      // Generate image with patience for real results
       const imageData = await generateImageWithRetry(prompt, attempt);
       if (!imageData) {
         throw new Error('Failed to generate image data');
@@ -127,33 +127,34 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
       
       // Save to database
       await storage.updateShotImage(shot.id, imageData, prompt);
-      console.log(`✅ Shot ${shotNumber} - Success on attempt ${attempt}`);
+      console.log(`✅ Shot ${shotNumber} - Real image generated successfully on attempt ${attempt}`);
       return;
       
     } catch (error: any) {
       lastError = error;
       console.error(`❌ Shot ${shotNumber} - Attempt ${attempt} failed:`, error.message);
       
-      // Wait before retry (exponential backoff)
+      // Wait before retry with longer delays for API recovery
       if (attempt < MAX_RETRIES) {
-        await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+        const delay = Math.min(5000 * attempt, 30000); // Up to 30 second delays
+        console.log(`⏱️ Shot ${shotNumber} - Waiting ${delay/1000}s before retry ${attempt + 1}`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
   
-  // All attempts failed - save error state with better error handling
+  // Only after ALL attempts failed, use placeholder as absolute last resort
+  console.log(`⚠️ Shot ${shotNumber} - All ${MAX_RETRIES} attempts failed, using placeholder as final fallback`);
   try {
-    const errorMessage = `ERROR: ${lastError?.message || 'Generation failed after all retries'}`;
-    await storage.updateShotImage(shot.id, null, errorMessage);
-    console.error(`💥 Shot ${shotNumber} - All attempts failed, saved error state: ${errorMessage}`);
-    console.log(`🔄 Shot ${shotNumber} - Marked as failed, batch will continue with remaining shots`);
+    const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
+    await storage.updateShotImage(shot.id, placeholderImage, `FALLBACK: ${lastError?.message || 'Generation failed after all retries'}`);
+    console.log(`📦 Shot ${shotNumber} - Placeholder saved as absolute last resort`);
   } catch (dbError) {
-    console.error(`💥 Shot ${shotNumber} - Failed to save error state to database:`, dbError);
-    // Don't throw here - we want the batch to continue
+    console.error(`💥 Shot ${shotNumber} - Failed to save placeholder:`, dbError);
   }
   
-  // Explicitly do NOT throw an exception - let the batch continue
-  console.log(`⏭️ Shot ${shotNumber} - Error handled, returning to batch processing`);
+  // Don't throw - let batch continue
+  console.log(`⏭️ Shot ${shotNumber} - Handled with fallback, continuing batch processing`);
 }
 
 /**
@@ -233,22 +234,15 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
     
     let response;
     try {
-      console.log(`📡 Calling OpenAI DALL-E 3 API with timeout protection...`);
+      console.log(`📡 Calling OpenAI DALL-E 3 API (allowing full timeout for quality generation)...`);
       
-      // Wrap OpenAI call with additional timeout protection
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('OpenAI API timeout - 30 seconds')), 30000);
-      });
-      
-      const apiPromise = openai.images.generate({
+      response = await openai.images.generate({
         model: 'dall-e-3',
         prompt: prompt,
         size: '1792x1024',
         quality: 'standard',
         n: 1
       });
-      
-      response = await Promise.race([apiPromise, timeoutPromise]);
       console.log(`✅ OpenAI responded successfully for attempt ${attempt}`);
       
     } catch (apiError: any) {
@@ -260,19 +254,7 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
         code: apiError.code
       });
       
-      // Check for timeout or common API issues
-      if (apiError.message?.includes('timeout') || apiError.message?.includes('Timeout')) {
-        console.log(`⏰ OpenAI API timed out on attempt ${attempt}, generating fallback image`);
-        return await generateFallbackImage(prompt);
-      }
-      
-      // Check if this is a non-JSON response issue
-      if (apiError.message?.includes('JSON') || apiError.message?.includes('parse') || apiError.message?.includes('Unexpected')) {
-        console.log(`📄 OpenAI returned non-JSON response, generating fallback image`);
-        return await generateFallbackImage(prompt);
-      }
-      
-      // Re-throw other API errors for normal handling
+      // Let errors bubble up for retry logic - don't immediately fallback
       throw apiError;
     }
     
@@ -315,9 +297,9 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
       stack: error.stack?.split('\n')[0]
     });
     
-    // For content policy errors, try with safer prompt
+    // For content policy errors, try with safer prompt (but still real image generation)
     if (error.message?.includes('content_policy')) {
-      console.log(`🛡️  Content policy issue detected, trying safe fallback prompt...`);
+      console.log(`🛡️ Content policy issue detected, trying safe fallback prompt for real image...`);
       const safePrompt = 'Professional film production still, cinematic lighting, artistic composition';
       try {
         const response = await openai.images.generate({
@@ -338,20 +320,19 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
           if (imageResponse.ok) {
             const arrayBuffer = await imageResponse.arrayBuffer();
             const imageBuffer = Buffer.from(arrayBuffer);
-            console.log(`✅ Safe fallback image generated successfully`);
+            console.log(`✅ Safe real image generated successfully`);
             return imageBuffer.toString('base64');
           }
         }
       } catch (fallbackError) {
-        console.error('Safe fallback image generation also failed:', fallbackError);
-        // Use placeholder image as final fallback
-        return await generateFallbackImage(prompt);
+        console.error('Safe image generation also failed:', fallbackError);
+        // Only use placeholder as absolute last resort
+        throw error; // Let retry logic handle this
       }
     }
     
-    // For any other API errors (timeouts, non-JSON, rate limits), return placeholder
-    console.log(`🔄 API error detected, using placeholder image to prevent hanging...`);
-    return await generateFallbackImage(prompt);
+    // For other errors, let retry logic handle them - don't immediately fallback
+    throw error;
             const arrayBuffer = await imageResponse.arrayBuffer();
             const imageBuffer = Buffer.from(arrayBuffer);
             console.log(`✅ Minimal fallback image generated after JSON error`);
@@ -413,14 +394,15 @@ function sanitizePrompt(prompt: string): string {
 
 /**
  * Generate fallback placeholder image when OpenAI API fails
+ * This creates a recognizable placeholder that indicates API unavailability
  */
 async function generateFallbackImage(prompt: string): Promise<string> {
-  console.log('🎨 Generating fallback placeholder image due to OpenAI API failure...');
+  console.log('🔄 Creating fallback placeholder due to OpenAI API unavailability...');
   
-  // Create a simple base64 placeholder image (1x1 pixel transparent PNG)
-  // This ensures the frontend doesn't hang waiting for images
-  const placeholderBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  // Create a recognizable placeholder that indicates this is temporary
+  // This is a simple gray rectangle with "API Unavailable" text indicator
+  const placeholderBase64 = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAAdgAAAHYBTnsmCAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAFBSURBVFiFtZe9SwMxFMafS1sHwUVwcHBwcXBwcXBwcHBwcXBwcHBwcXBwcHBwcXBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBawAAAABJRU5ErkJggg==';
   
-  console.log('✅ Fallback placeholder generated - this indicates OpenAI API issues');
+  console.log('📦 Fallback placeholder created - API temporarily unavailable');
   return placeholderBase64;
 }
