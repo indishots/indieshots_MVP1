@@ -45,6 +45,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [progressiveImages, setProgressiveImages] = useState<{[key: number]: string}>({});
   const [generationProgress, setGenerationProgress] = useState<{total: number, completed: number}>({total: 0, completed: 0});
+  const [newlyGeneratedImages, setNewlyGeneratedImages] = useState<Set<number>>(new Set());
 
   
   // Helper functions for image selection and carousel
@@ -222,7 +223,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
     enabled: hasStartedGeneration, // Fetch when generation starts
-    refetchInterval: isGenerating ? 2000 : false, // Poll every 2 seconds during generation
+    refetchInterval: isGenerating ? 1000 : false, // Poll every 1 second during generation for faster updates
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
     queryFn: async () => {
@@ -254,17 +255,34 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     if (storyboardData?.storyboards && Array.isArray(storyboardData.storyboards)) {
       const currentImages: {[key: number]: string} = {};
       let completedCount = 0;
+      let errorCount = 0;
       
       storyboardData.storyboards.forEach((storyboard: any, index: number) => {
-        // Only count as completed if it's actual image data, not error states
+        // Check for error states
         const isErrorState = storyboard.imageData === 'GENERATION_ERROR' || 
                              storyboard.imageData === 'CONTENT_POLICY_ERROR' || 
                              storyboard.imageData === 'PROCESSING_ERROR' || 
                              storyboard.imageData === 'STORAGE_FAILED';
         
         if (storyboard.imageData && !isErrorState) {
+          // Check if this is a newly generated image
+          if (!progressiveImages[index]) {
+            console.log(`🎨 New image detected for shot ${index + 1}!`);
+            // Mark as newly generated for visual effect
+            setNewlyGeneratedImages(prev => new Set([...prev, index]));
+            // Remove the newly generated effect after 3 seconds
+            setTimeout(() => {
+              setNewlyGeneratedImages(prev => {
+                const updated = new Set(prev);
+                updated.delete(index);
+                return updated;
+              });
+            }, 3000);
+          }
           currentImages[index] = storyboard.imageData;
           completedCount++;
+        } else if (isErrorState) {
+          errorCount++;
         }
       });
       
@@ -275,23 +293,24 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         completed: completedCount
       });
       
-      // If generation is complete, stop loading state
-      if (completedCount === storyboardData.storyboards.length && isGenerating) {
+      // Check if all images are either completed or errored (generation finished)
+      const totalProcessed = completedCount + errorCount;
+      if (totalProcessed === storyboardData.storyboards.length && isGenerating) {
         setIsGenerating(false);
         setIsLoadingImages(false);
         
         // Force a final refresh to ensure all images are displayed
         setTimeout(() => {
           refetchStoryboards();
-        }, 1000);
+        }, 500);
         
         toast({
           title: "Storyboard generation complete",
-          description: `All ${completedCount} storyboard images generated successfully`,
+          description: `${completedCount} images generated successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
         });
       }
     }
-  }, [storyboards, isGenerating, toast]);
+  }, [storyboards, isGenerating, toast, progressiveImages]);
   
   // Generate storyboards mutation
   const generateStoryboardsMutation = useMutation({
@@ -436,25 +455,41 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
           {/* Progressive Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: generationProgress.total }, (_, idx) => (
-              <Card key={idx} className="relative">
+              <Card key={idx} className={`relative transition-all duration-500 ${progressiveImages[idx] ? 'ring-2 ring-green-500 ring-opacity-50' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Shot {idx + 1}</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    Shot {idx + 1}
+                    {progressiveImages[idx] && (
+                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                        Ready
+                      </Badge>
+                    )}
+                  </CardTitle>
                   <CardDescription className="text-xs">
-                    {progressiveImages[idx] ? 'Generated' : 'Generating...'}
+                    {progressiveImages[idx] ? 'Generated successfully' : 'Generating...'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-3">
+                  <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-3 relative overflow-hidden">
                     {progressiveImages[idx] ? (
-                      <img
-                        src={`data:image/png;base64,${progressiveImages[idx]}`}
-                        alt={`Storyboard ${idx + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
+                      <div className="relative w-full h-full">
+                        <img
+                          src={`data:image/png;base64,${progressiveImages[idx]}`}
+                          alt={`Storyboard ${idx + 1}`}
+                          className="w-full h-full object-cover rounded-lg animate-in fade-in duration-700 slide-in-from-bottom-2"
+                        />
+                        {/* Success overlay animation - only for newly generated images */}
+                        {newlyGeneratedImages.has(idx) && (
+                          <div className="absolute inset-0 bg-green-500 opacity-20 animate-pulse rounded-lg animate-in fade-in duration-500"></div>
+                        )}
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center gap-2">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
                         <span className="text-xs text-muted-foreground">Generating...</span>
+                        <div className="text-xs text-muted-foreground/70">
+                          {Math.floor((idx / generationProgress.total) * 100)}% queue
+                        </div>
                       </div>
                     )}
                   </div>

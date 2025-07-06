@@ -36,7 +36,7 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
           try {
             console.log(`🎨 Starting generation for shot ${shotNumber}/${shots.length}`);
             await generateSingleShotImage(shot, parseJobId, shotNumber);
-            console.log(`✅ Shot ${shotNumber} completed successfully`);
+            console.log(`✅ Shot ${shotNumber} completed successfully - image immediately available for frontend polling`);
           } catch (error) {
             console.error(`❌ Shot ${shotNumber} failed independently (continuing with remaining shots):`, error);
             
@@ -58,7 +58,7 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
         
         // Small delay between batches to prevent overwhelming the API
         if (i + BATCH_SIZE < shots.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay for faster image appearance
         }
       } catch (batchError) {
         console.error(`Batch ${Math.floor(i/BATCH_SIZE) + 1} failed completely:`, batchError);
