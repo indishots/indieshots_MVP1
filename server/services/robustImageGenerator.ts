@@ -106,12 +106,12 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
  * Generate image for a single shot with complete error isolation
  */
 async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber: number): Promise<void> {
-  const MAX_RETRIES = 5; // Increased retries for better success rate
+  const MAX_RETRIES = 2; // Reduced retries for faster feedback
   let lastError: any = null;
   
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      console.log(`🎨 Shot ${shotNumber} - Attempt ${attempt}/${MAX_RETRIES} (prioritizing real image generation)`);
+      console.log(`🎨 Shot ${shotNumber} - Attempt ${attempt}/${MAX_RETRIES} (30s timeout per attempt)`);
       
       // Generate prompt
       const prompt = await generateSafePrompt(shot);
@@ -119,7 +119,7 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
         throw new Error('Failed to generate prompt');
       }
       
-      // Generate image with patience for real results
+      // Generate image with timeout
       const imageData = await generateImageWithRetry(prompt, attempt);
       if (!imageData) {
         throw new Error('Failed to generate image data');
@@ -134,27 +134,33 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
       lastError = error;
       console.error(`❌ Shot ${shotNumber} - Attempt ${attempt} failed:`, error.message);
       
-      // Wait before retry with longer delays for API recovery
+      // Check if it's a timeout or API issue - fail faster
+      if (error.message?.includes('timeout') || error.message?.includes('API')) {
+        console.log(`⏰ Shot ${shotNumber} - API timeout/issue detected, failing faster`);
+        break; // Don't retry on API issues
+      }
+      
+      // Wait before retry with shorter delays for faster feedback
       if (attempt < MAX_RETRIES) {
-        const delay = Math.min(5000 * attempt, 30000); // Up to 30 second delays
+        const delay = 2000; // 2 second delay
         console.log(`⏱️ Shot ${shotNumber} - Waiting ${delay/1000}s before retry ${attempt + 1}`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
   
-  // Only after ALL attempts failed, use placeholder as absolute last resort
-  console.log(`⚠️ Shot ${shotNumber} - All ${MAX_RETRIES} attempts failed, using placeholder as final fallback`);
+  // Use placeholder immediately when OpenAI is unavailable
+  console.log(`⚠️ Shot ${shotNumber} - OpenAI unavailable, using placeholder for immediate feedback`);
   try {
     const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
-    await storage.updateShotImage(shot.id, placeholderImage, `FALLBACK: ${lastError?.message || 'Generation failed after all retries'}`);
-    console.log(`📦 Shot ${shotNumber} - Placeholder saved as absolute last resort`);
+    await storage.updateShotImage(shot.id, placeholderImage, `API_UNAVAILABLE: ${lastError?.message || 'OpenAI API timeout'}`);
+    console.log(`📦 Shot ${shotNumber} - Placeholder saved for immediate user feedback`);
   } catch (dbError) {
     console.error(`💥 Shot ${shotNumber} - Failed to save placeholder:`, dbError);
   }
   
   // Don't throw - let batch continue
-  console.log(`⏭️ Shot ${shotNumber} - Handled with fallback, continuing batch processing`);
+  console.log(`⏭️ Shot ${shotNumber} - Handled with placeholder, continuing processing`);
 }
 
 /**
@@ -234,15 +240,24 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
     
     let response;
     try {
-      console.log(`📡 Calling OpenAI DALL-E 3 API (allowing full timeout for quality generation)...`);
+      console.log(`📡 Calling OpenAI DALL-E 3 API with 30-second timeout...`);
       
-      response = await openai.images.generate({
-        model: 'dall-e-3',
-        prompt: prompt,
-        size: '1792x1024',
-        quality: 'standard',
-        n: 1
+      // Create a timeout promise that rejects after 30 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('OpenAI API timeout after 30 seconds')), 30000);
       });
+      
+      // Race the API call against the timeout
+      response = await Promise.race([
+        openai.images.generate({
+          model: 'dall-e-3',
+          prompt: prompt,
+          size: '1792x1024',
+          quality: 'standard',
+          n: 1
+        }),
+        timeoutPromise
+      ]);
       console.log(`✅ OpenAI responded successfully for attempt ${attempt}`);
       
     } catch (apiError: any) {
