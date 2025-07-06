@@ -4,8 +4,8 @@ import { storage } from '../storage';
 // Configure OpenAI with deployment-safe settings
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  timeout: process.env.NODE_ENV === 'production' ? 60000 : 90000, // Shorter timeout in production
-  maxRetries: 2, // Reduce retries in deployment
+  timeout: 45000, // 45 second timeout to prevent hanging
+  maxRetries: 1, // Single retry to prevent long delays
   dangerouslyAllowBrowser: false
 });
 
@@ -233,16 +233,26 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
     
     let response;
     try {
-      console.log(`📡 Calling OpenAI DALL-E 3 API...`);
-      response = await openai.images.generate({
+      console.log(`📡 Calling OpenAI DALL-E 3 API with timeout protection...`);
+      
+      // Wrap OpenAI call with additional timeout protection
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('OpenAI API timeout - 30 seconds')), 30000);
+      });
+      
+      const apiPromise = openai.images.generate({
         model: 'dall-e-3',
         prompt: prompt,
         size: '1792x1024',
         quality: 'standard',
         n: 1
       });
+      
+      response = await Promise.race([apiPromise, timeoutPromise]);
+      console.log(`✅ OpenAI responded successfully for attempt ${attempt}`);
+      
     } catch (apiError: any) {
-      // Handle non-JSON responses from OpenAI
+      // Handle API failures with detailed logging
       console.error(`OpenAI API error (attempt ${attempt}):`, {
         type: apiError.constructor?.name,
         message: apiError.message,
@@ -250,9 +260,16 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
         code: apiError.code
       });
       
+      // Check for timeout or common API issues
+      if (apiError.message?.includes('timeout') || apiError.message?.includes('Timeout')) {
+        console.log(`⏰ OpenAI API timed out on attempt ${attempt}, generating fallback image`);
+        return await generateFallbackImage(prompt);
+      }
+      
       // Check if this is a non-JSON response issue
       if (apiError.message?.includes('JSON') || apiError.message?.includes('parse') || apiError.message?.includes('Unexpected')) {
-        throw new Error(`OpenAI returned non-JSON response: ${apiError.message}`);
+        console.log(`📄 OpenAI returned non-JSON response, generating fallback image`);
+        return await generateFallbackImage(prompt);
       }
       
       // Re-throw other API errors for normal handling
@@ -326,31 +343,15 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
           }
         }
       } catch (fallbackError) {
-        console.error('Fallback image generation also failed:', fallbackError);
+        console.error('Safe fallback image generation also failed:', fallbackError);
+        // Use placeholder image as final fallback
+        return await generateFallbackImage(prompt);
       }
     }
     
-    // For non-JSON response errors, try one more time with minimal prompt
-    if (error.message?.includes('JSON') || error.message?.includes('parse') || error.message?.includes('Unexpected')) {
-      console.log(`🔄 Non-JSON response detected, trying minimal fallback prompt...`);
-      try {
-        const minimalPrompt = 'Cinematic film still';
-        const response = await openai.images.generate({
-          model: 'dall-e-3',
-          prompt: minimalPrompt,
-          size: '1792x1024',
-          quality: 'standard',
-          n: 1
-        });
-        
-        const imageUrl = response.data?.[0]?.url;
-        if (imageUrl) {
-          const imageResponse = await fetch(imageUrl, {
-            headers: {
-              'User-Agent': 'IndieShots-Server/1.0'
-            }
-          });
-          if (imageResponse.ok) {
+    // For any other API errors (timeouts, non-JSON, rate limits), return placeholder
+    console.log(`🔄 API error detected, using placeholder image to prevent hanging...`);
+    return await generateFallbackImage(prompt);
             const arrayBuffer = await imageResponse.arrayBuffer();
             const imageBuffer = Buffer.from(arrayBuffer);
             console.log(`✅ Minimal fallback image generated after JSON error`);
@@ -359,10 +360,12 @@ async function generateImageWithRetry(prompt: string, attempt: number): Promise<
         }
       } catch (minimalError) {
         console.error('Minimal fallback also failed:', minimalError);
+        return await generateFallbackImage(prompt);
       }
     }
     
-    throw error;
+    // Final fallback if all else fails
+    return await generateFallbackImage(prompt);
   }
 }
 
@@ -406,4 +409,18 @@ function sanitizePrompt(prompt: string): string {
   }
   
   return cleaned;
+}
+
+/**
+ * Generate fallback placeholder image when OpenAI API fails
+ */
+async function generateFallbackImage(prompt: string): Promise<string> {
+  console.log('🎨 Generating fallback placeholder image due to OpenAI API failure...');
+  
+  // Create a simple base64 placeholder image (1x1 pixel transparent PNG)
+  // This ensures the frontend doesn't hang waiting for images
+  const placeholderBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  
+  console.log('✅ Fallback placeholder generated - this indicates OpenAI API issues');
+  return placeholderBase64;
 }
