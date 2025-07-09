@@ -1,30 +1,29 @@
-
 const { OpenAI } = require('openai');
 
 async function checkOpenAIQuota() {
   console.log('🔍 Checking OpenAI API Quota Status');
   console.log('===================================');
-  
+
   const apiKey = process.env.OPENAI_API_KEY;
-  
+
   if (!apiKey) {
     console.error('❌ OPENAI_API_KEY not found in environment variables');
     return;
   }
-  
+
   console.log('✅ API Key found:', apiKey.substring(0, 20) + '...');
-  
+
   const openai = new OpenAI({
     apiKey: apiKey,
     timeout: 30000
   });
-  
+
   try {
     // Test 1: Check if we can list models (basic API access)
     console.log('\n📋 Test 1: Checking basic API access...');
     const models = await openai.models.list();
     console.log('✅ API access working - found', models.data.length, 'models');
-    
+
     // Test 2: Simple text completion (GPT-4)
     console.log('\n💬 Test 2: Testing GPT-4 text completion...');
     const textResponse = await openai.chat.completions.create({
@@ -34,7 +33,7 @@ async function checkOpenAIQuota() {
     });
     console.log('✅ GPT-4 working:', textResponse.choices[0].message.content);
     console.log('📊 Usage:', textResponse.usage);
-    
+
     // Test 3: DALL-E 3 Image Generation (the main issue)
     console.log('\n🎨 Test 3: Testing DALL-E 3 image generation...');
     const imageResponse = await openai.images.generate({
@@ -44,10 +43,10 @@ async function checkOpenAIQuota() {
       quality: 'standard',
       n: 1
     });
-    
+
     if (imageResponse.data && imageResponse.data[0] && imageResponse.data[0].url) {
       console.log('✅ DALL-E 3 working! Image URL received');
-      
+
       // Test 4: Image download
       console.log('\n📥 Test 4: Testing image download...');
       const fetch = (await import('node-fetch')).default;
@@ -61,16 +60,16 @@ async function checkOpenAIQuota() {
     } else {
       console.log('❌ No image URL in response');
     }
-    
+
     console.log('\n🎉 ALL TESTS PASSED - OpenAI API is working correctly with sufficient quota');
-    
+
   } catch (error) {
     console.error('\n❌ OpenAI API Error Detected:');
     console.error('Type:', error.constructor?.name);
     console.error('Message:', error.message);
     console.error('Status:', error.status);
     console.error('Code:', error.code);
-    
+
     // Analyze the specific error
     if (error.status === 429) {
       console.log('\n🚨 QUOTA LIMIT EXCEEDED');
