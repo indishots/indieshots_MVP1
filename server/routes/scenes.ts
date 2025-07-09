@@ -997,33 +997,60 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     }
 
     // Use the improved image generation function with retries
-    const { generateImageData } = await import('../services/imageGenerator');
-    const imageData = await generateImageData(modifiedPrompt, 3); // 3 retry attempts
+    let imageData: string | null = null;
+    let generationError: string | null = null;
+    
+    try {
+      const { generateImageData } = await import('../services/imageGenerator');
+      imageData = await generateImageData(modifiedPrompt, 3); // 3 retry attempts
+    } catch (importError) {
+      console.error('Failed to import generateImageData:', importError);
+      generationError = 'Image generation service unavailable';
+    }
 
-    if (!imageData || imageData === 'GENERATION_ERROR' || imageData === 'CONTENT_POLICY_ERROR') {
-      const errorType = imageData || 'unknown';
+    if (!imageData || imageData === 'GENERATION_ERROR' || imageData === 'CONTENT_POLICY_ERROR' || imageData === 'API_ACCESS_ERROR') {
+      const errorType = imageData || generationError || 'unknown';
       console.error(`Regeneration failed: ${errorType}`);
       console.error(`Failed prompt was: ${modifiedPrompt}`);
+
+      // Handle API access errors specifically
+      if (imageData === 'API_ACCESS_ERROR') {
+        return res.status(400).json({ 
+          error: 'OpenAI API key does not have access to DALL-E 3 image generation',
+          details: 'Please check your OpenAI API key permissions and billing status',
+          errorType: 'API_ACCESS_ERROR'
+        });
+      }
 
       // If this is a content policy issue, try one more time with an ultra-safe prompt
       if (imageData === 'CONTENT_POLICY_ERROR' || modifiedPrompt.toLowerCase().includes('blood')) {
         console.log('Attempting emergency ultra-safe regeneration...');
         const emergencyPrompt = `Professional medium shot in indoor location during day, clean movie production scene, cinematic lighting, film still, safe for work content`;
-        const emergencyResult = await generateImageData(emergencyPrompt, 1);
+        
+        try {
+          const { generateImageData } = await import('../services/imageGenerator');
+          const emergencyResult = await generateImageData(emergencyPrompt, 1);
 
-        if (emergencyResult && emergencyResult !== 'GENERATION_ERROR' && emergencyResult !== 'CONTENT_POLICY_ERROR') {
-          console.log('Emergency regeneration successful');
-          await storage.updateShotImage(shot.id, emergencyResult, emergencyPrompt);
-          return res.json({ 
-            message: 'Image regenerated with simplified prompt',
-            shotId: shot.id,
-            newPrompt: emergencyPrompt,
-            fallback: true
-          });
+          if (emergencyResult && emergencyResult !== 'GENERATION_ERROR' && emergencyResult !== 'CONTENT_POLICY_ERROR' && emergencyResult !== 'API_ACCESS_ERROR') {
+            console.log('Emergency regeneration successful');
+            await storage.updateShotImage(shot.id, emergencyResult, emergencyPrompt);
+            return res.json({ 
+              message: 'Image regenerated with simplified prompt',
+              shotId: shot.id,
+              newPrompt: emergencyPrompt,
+              fallback: true
+            });
+          }
+        } catch (emergencyError) {
+          console.error('Emergency regeneration also failed:', emergencyError);
         }
       }
 
-      throw new Error(`Failed to regenerate image: ${errorType}. The content may be too sensitive for AI image generation.`);
+      return res.status(400).json({ 
+        error: `Failed to regenerate image: ${errorType}. The content may be too sensitive for AI image generation.`,
+        details: generationError,
+        errorType: errorType
+      });
     }
 
     // Update shot with new image data
@@ -1039,7 +1066,26 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
 
   } catch (error) {
     console.error('Error regenerating image:', error);
-    res.status(500).json({ error: 'Failed to regenerate image', details: (error as Error).message });
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+    
+    // Return 400 for user errors (like invalid prompts) and 500 for server errors
+    const isUserError = error instanceof Error && (
+      error.message.includes('content policy') || 
+      error.message.includes('prompt') ||
+      error.message.includes('too sensitive')
+    );
+    
+    const statusCode = isUserError ? 400 : 500;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    
+    res.status(statusCode).json({ 
+      error: 'Failed to regenerate image', 
+      details: errorMessage,
+      isUserError: isUserError
+    });
   }
 });
 

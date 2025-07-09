@@ -95,6 +95,12 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       if (!response.ok) {
         const error = await response.json();
         console.error('Regeneration failed:', error);
+        
+        // Handle specific error types
+        if (error.errorType === 'API_ACCESS_ERROR') {
+          throw new Error('OpenAI API key does not have access to DALL-E 3 image generation. Please check your API key permissions and billing status.');
+        }
+        
         throw new Error(error.error || error.message || 'Failed to regenerate image');
       }
       

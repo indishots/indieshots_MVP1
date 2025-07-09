@@ -580,7 +580,11 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       }
       
       // Handle specific OpenAI errors with appropriate delays
-      if (error?.status === 429) {
+      if (error?.status === 400 && error?.type === 'image_generation_user_error') {
+        console.log('⚠️ OpenAI API key does not have access to DALL-E 3 image generation');
+        console.log('This is a permissions issue with the API key, not a temporary error');
+        return 'API_ACCESS_ERROR';
+      } else if (error?.status === 429) {
         console.log('Rate limit hit, waiting before retry...');
         await new Promise(resolve => setTimeout(resolve, 15000 * attempt)); // 15s, 30s, 45s delays
       } else if (error?.message === 'API request timeout') {
