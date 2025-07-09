@@ -1,7 +1,5 @@
 
-#!/usr/bin/env node
-
-import { OpenAI } from 'openai';
+const { OpenAI } = require('openai');
 
 async function checkOpenAIQuota() {
   console.log('🔍 Checking OpenAI API Quota Status');
@@ -52,10 +50,11 @@ async function checkOpenAIQuota() {
       
       // Test 4: Image download
       console.log('\n📥 Test 4: Testing image download...');
+      const fetch = (await import('node-fetch')).default;
       const downloadResponse = await fetch(imageResponse.data[0].url);
       if (downloadResponse.ok) {
-        const buffer = await downloadResponse.arrayBuffer();
-        console.log('✅ Image download successful, size:', buffer.byteLength, 'bytes');
+        const buffer = await downloadResponse.buffer();
+        console.log('✅ Image download successful, size:', buffer.length, 'bytes');
       } else {
         console.log('❌ Image download failed:', downloadResponse.status, downloadResponse.statusText);
       }
