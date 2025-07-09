@@ -12,18 +12,15 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Get JWT token for authentication
-  const token = localStorage.getItem('token');
+  // Authentication is handled via cookies and credentials: "include"
+  // No need to manually add Authorization header as server expects cookies
   const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
   
   const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "include", // This sends cookies automatically
   });
 
   await throwIfResNotOk(res);
@@ -36,16 +33,10 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // Get JWT token for authentication
-    const token = localStorage.getItem('token');
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
+    // Authentication is handled via cookies and credentials: "include"
+    // No need to manually add Authorization header as server expects cookies
     const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-      headers,
+      credentials: "include", // This sends cookies automatically
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
