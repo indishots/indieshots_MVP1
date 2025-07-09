@@ -8,7 +8,7 @@ function getOpenAIClient(): OpenAI {
   }
   return new OpenAI({ 
     apiKey,
-    timeout: 60000 // 60 second timeout for shot generation
+    timeout: 120000 // 120 second timeout for shot generation (increased from 60s)
   });
 }
 
@@ -103,12 +103,16 @@ async function gpt4Response(prompt: string): Promise<string> {
     return generateDemoShots(prompt);
   }
   
+  console.log('🔍 Shot generation starting with OpenAI API key present');
+  console.log('📝 Prompt length:', prompt.length);
+  console.log('💡 Prompt preview:', prompt.substring(0, 200) + '...');
+  
   // Try multiple times with different strategies
   const maxRetries = 3;
   const strategies = [
-    { model: 'gpt-4', max_tokens: 2000 },
-    { model: 'gpt-4', max_tokens: 1500 },
-    { model: 'gpt-4', max_tokens: 1000 }
+    { model: 'gpt-4', max_tokens: 1500, temperature: 0.3 },
+    { model: 'gpt-4', max_tokens: 1000, temperature: 0.2 },
+    { model: 'gpt-4', max_tokens: 800, temperature: 0.1 }
   ];
   
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -131,7 +135,7 @@ async function gpt4Response(prompt: string): Promise<string> {
           { role: 'user', content: prompt }
         ],
         max_tokens: strategy.max_tokens,
-        temperature: 0.3
+        temperature: strategy.temperature
       });
 
       console.log('✅ OpenAI API success on attempt', attempt + 1);
@@ -161,6 +165,7 @@ async function gpt4Response(prompt: string): Promise<string> {
   // Use demo shots as fallback for any API issues
   console.log('🎬 OpenAI API unavailable - using professional demo shot generation');
   console.log('📋 This ensures shot generation continues working even when API has issues');
+  console.log('❗ FALLBACK TRIGGERED - Real shots not generated due to API errors above');
   return generateDemoShots(prompt);
 }
 
@@ -170,9 +175,17 @@ async function gpt4Response(prompt: string): Promise<string> {
 function extractShotsFromResponse(responseText: string): Partial<ShotData>[] {
   const shots: Partial<ShotData>[] = [];
   
-  for (const line of responseText.split('\n')) {
+  console.log('📋 Parsing OpenAI response...');
+  console.log('📄 Response text length:', responseText.length);
+  console.log('📄 Response preview:', responseText.substring(0, 300) + '...');
+  
+  const lines = responseText.split('\n');
+  console.log('📄 Total lines to parse:', lines.length);
+  
+  for (const line of lines) {
     if (line.trim()) {
       const parts = line.split('|').map(part => part.trim());
+      console.log(`📄 Line parts count: ${parts.length}, expected: 14`);
       if (parts.length === 14) {
         const [shotDescription, shotType, lens, movement, mood, lighting, props, notes, sound, temp, tone, characters, action, dialogue] = parts;
         
@@ -201,6 +214,11 @@ function extractShotsFromResponse(responseText: string): Partial<ShotData>[] {
     }
   }
   
+  console.log('📋 Successfully parsed shots count:', shots.length);
+  if (shots.length > 0) {
+    console.log('📋 First shot sample:', shots[0]);
+  }
+  
   return shots;
 }
 
@@ -221,30 +239,29 @@ async function processParagraph(
   sceneNumber: number, 
   startIndex: number
 ): Promise<ShotData[]> {
-  const prompt = `Create cinematic shots for this scene. Use professional filmmaking terminology. Format each shot as a pipe-separated row:
+  const prompt = `Create 3-5 cinematic shots for this scene in pipe-separated format. Each row must have exactly 14 fields:
 
 Shot Description | Shot Type | Lens | Movement | Mood & Ambience | Lighting | Props | Notes | Sound Design | Colour Temp | Tone | Characters | Action | Dialogue
 
-Requirements:
-- Use clear, descriptive shot descriptions without numbering (e.g., "Woman walking alone in alley" not "Shot 1: Woman walking")
-- Use standard shot types: Wide Shot, Medium Shot, Close-up, Over-the-shoulder, Two-shot, etc.
-- Use specific lens values: 24mm, 35mm, 50mm, 85mm, 135mm
-- Use standard camera movements: Static, Pan, Tilt, Dolly, Handheld, Crane, Tracking
-- Be consistent with mood, lighting, and color temperature descriptions
-- Provide dramatic tone for each shot: Suspenseful, Mysterious, Romantic, Tense, Peaceful, Dramatic, etc.
-- List characters present in each shot (e.g., "Woman, Boy" or "Narrator")
-- Describe the main action happening in the shot (e.g., "Walking", "Looking around", "Speaking")
-- Include any dialogue spoken in the shot (leave blank if no dialogue)
-- Cover all important story beats and character interactions in the scene
+Example:
+Woman nervously checking phone | Medium Shot | 50mm | Static | Anxious | Soft key | Phone, coffee cup | Character introduction | Ambient café | Warm 3200K | Nervous | Sarah | Checking phone | Where is he?
 
-Scene Text: ${paragraph}
-Scene Heading: ${sceneHeading}
+Scene: ${paragraph}
+Heading: ${sceneHeading}
 Location: ${context.location}
-Time: ${context.timeOfDay}`;
+Time: ${context.timeOfDay}
+
+Generate exactly 3-5 shots covering the key story beats.`;
 
   try {
     const response = await gpt4Response(prompt);
     const shots = extractShotsFromResponse(response);
+    
+    // If no shots were parsed, don't return empty array - this triggers fallback
+    if (shots.length === 0) {
+      console.log('⚠️  No shots parsed from OpenAI response, using fallback generation');
+      throw new Error('No valid shots parsed from OpenAI response');
+    }
     
     return shots.map((shot, i) => ({
       shotNumber: startIndex + i + 1,
