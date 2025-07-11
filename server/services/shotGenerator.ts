@@ -57,10 +57,10 @@ function generateDemoShots(prompt: string): string {
   // Cutaway shot
   shotTemplates.push("Cutaway shot for context|Cutaway|50mm|Static|Contextual|Natural lighting|Environmental props|Scene context|Ambient sound|Natural temp|Neutral|Scene element|Provides context|No dialogue");
   
-  // Use all generated shots based on scene content - no arbitrary limits
-  const selectedShots = shotTemplates;
+  // Select 5 shots for free tier, more for premium
+  const selectedShots = shotTemplates.slice(0, 5);
   
-  console.log(`📋 Generated ${selectedShots.length} contextual shots based on scene analysis`);
+  console.log(`📋 Generated ${selectedShots.length} demo shots (fallback generation)`);
   return selectedShots.join('\n');
 }
 
@@ -240,7 +240,7 @@ async function processParagraph(
   sceneNumber: number, 
   startIndex: number
 ): Promise<ShotData[]> {
-  const prompt = `Create 5-8 cinematic shots for this scene in pipe-separated format. Each row must have exactly 14 fields:
+  const prompt = `Create 3-5 cinematic shots for this scene in pipe-separated format. Each row must have exactly 14 fields:
 
 Shot Description | Shot Type | Lens | Movement | Mood & Ambience | Lighting | Props | Notes | Sound Design | Colour Temp | Tone | Characters | Action | Dialogue
 
@@ -252,7 +252,7 @@ Heading: ${sceneHeading}
 Location: ${context.location}
 Time: ${context.timeOfDay}
 
-Generate 5-8 shots covering all major story beats, character moments, and cinematic opportunities. Include establishing shots, character coverage, reaction shots, and detail shots as appropriate for the scene content.`;
+Generate 3-5 shots covering the key story beats and essential coverage for the scene.`;
 
   try {
     const response = await gpt4Response(prompt);
