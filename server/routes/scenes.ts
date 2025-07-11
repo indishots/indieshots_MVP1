@@ -127,6 +127,16 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidation
   try {
     const { jobId, sceneIndex } = req.params;
     const userId = (req as any).user?.uid || (req as any).user?.id;
+    
+    // Debug logging for premium@demo.com
+    if ((req as any).user?.email === 'premium@demo.com') {
+      console.log('🔍 PREMIUM DEMO DEBUG - Route user ID extraction:', {
+        userUid: (req as any).user?.uid,
+        userId: (req as any).user?.id,
+        finalUserId: userId,
+        userEmail: (req as any).user?.email
+      });
+    }
 
     console.log(`Shot generation - jobId: ${jobId}, userId: ${userId}`);
 
@@ -194,7 +204,27 @@ router.post('/shots/generate/:jobId/:sceneIndex', authMiddleware, tierValidation
     // Check shot limit for free tier users
     const user = (req as any).user;
     const userTier = user?.tier || 'free';
+    
+    // Debug logging for premium@demo.com
+    if (user?.email === 'premium@demo.com') {
+      console.log('🔍 PREMIUM DEMO DEBUG - User details:', {
+        email: user.email,
+        tier: user.tier,
+        userId: userId,
+        userTier: userTier,
+        userObject: user
+      });
+    }
+    
     const userQuota = await productionQuotaManager.getUserQuota(userId, userTier);
+    
+    // Debug logging for premium@demo.com quota
+    if (user?.email === 'premium@demo.com') {
+      console.log('🔍 PREMIUM DEMO DEBUG - User quota:', userQuota);
+      console.log('🔍 PREMIUM DEMO DEBUG - shots.length:', shots.length);
+      console.log('🔍 PREMIUM DEMO DEBUG - userQuota.tier:', userQuota.tier);
+      console.log('🔍 PREMIUM DEMO DEBUG - userQuota.maxShotsPerScene:', userQuota.maxShotsPerScene);
+    }
 
     let finalShots = shots;
     let tierLimitWarning = null;
