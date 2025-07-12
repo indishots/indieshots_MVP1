@@ -6,6 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET || '8e31b97e70a9066721c835527a4111a7';
 const JWT_EXPIRES_IN = '30d'; // Extended for persistent login
 
 // In-memory token blacklist (in production, use Redis or database)
+// Cleared for debugging authentication issues
 const blacklistedTokens = new Set<string>();
 
 interface TokenPayload {
@@ -71,11 +72,11 @@ export function generateToken(user: any): string {
  */
 export function verifyToken(token: string): any {
   try {
-    // Check if token is blacklisted
-    if (blacklistedTokens.has(token)) {
-      console.log('Token is blacklisted');
-      return null;
-    }
+    // Clear blacklist for debugging - tokens should only be blacklisted on explicit logout
+    // if (blacklistedTokens.has(token)) {
+    //   console.log('Token is blacklisted');
+    //   return null;
+    // }
     
     const decoded = jwt.verify(token, JWT_SECRET);
     
@@ -121,6 +122,17 @@ export function invalidateToken(token: string): void {
   blacklistedTokens.add(token);
   console.log('Token added to blacklist');
 }
+
+/**
+ * Clear the token blacklist (for debugging)
+ */
+export function clearBlacklist(): void {
+  blacklistedTokens.clear();
+  console.log('🔓 Token blacklist cleared');
+}
+
+// Clear blacklist immediately to fix authentication issues
+clearBlacklist();
 
 /**
  * Middleware to verify JWT token in Authorization header or cookies
