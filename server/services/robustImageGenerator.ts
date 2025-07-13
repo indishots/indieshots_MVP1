@@ -24,7 +24,7 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
       return;
     }
     
-    // Check OpenAI API key availability
+    // Check OpenAI API key availability and quota
     if (!process.env.OPENAI_API_KEY) {
       console.error('❌ CRITICAL: OpenAI API key not found in environment variables');
       
@@ -40,7 +40,39 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
       }
       return;
     }
-    console.log('✅ OpenAI API key is configured');
+    
+    // Test API quota before processing
+    console.log('🔍 Testing OpenAI API quota...');
+    try {
+      const testResponse = await openai.images.generate({
+        model: 'dall-e-3',
+        prompt: 'A simple test image',
+        size: '1024x1024',
+        quality: 'standard',
+        n: 1
+      });
+      console.log('✅ OpenAI API quota check passed');
+    } catch (error: any) {
+      console.error('❌ OpenAI API quota check failed:', error.message);
+      
+      // Handle quota exceeded gracefully
+      if (error.message.includes('billing') || error.message.includes('quota') || error.message.includes('limit')) {
+        console.log('💳 API quota exceeded - generating fallback placeholders for all shots...');
+        
+        for (const shot of shots) {
+          try {
+            const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
+            await storage.updateShotImage(shot.id, placeholderImage, 'QUOTA_EXCEEDED: OpenAI API quota has been exceeded');
+          } catch (error) {
+            console.error(`Failed to generate placeholder for shot ${shot.id}:`, error);
+          }
+        }
+        return;
+      }
+      
+      // Continue with generation for other error types
+      console.log('⚠️ API test failed but continuing with generation attempts...');
+    }
     
     // Process shots in smaller batches to prevent overwhelming the database
     const BATCH_SIZE = 3;
