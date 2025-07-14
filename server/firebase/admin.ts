@@ -7,7 +7,7 @@ try {
   if (!admin.apps.length) {
     // Check if we have service account credentials
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    const projectId = process.env.VITE_FIREBASE_PROJECT_ID || 'indieshots-a24a9';
+    const projectId = process.env.VITE_FIREBASE_PROJECT_ID || 'indieshots-c6bb1';
     
     if (serviceAccountKey) {
       // Production: Use service account credentials

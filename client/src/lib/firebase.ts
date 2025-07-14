@@ -8,7 +8,7 @@ const APP_ID = import.meta.env.VITE_FIREBASE_APP_ID;
 
 // Use provided values or generate defaults based on project ID
 const AUTH_DOMAIN = import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${PROJECT_ID}.firebaseapp.com`;
-const STORAGE_BUCKET = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${PROJECT_ID}.firebasestorage.app`;
+const STORAGE_BUCKET = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${PROJECT_ID}.appspot.com`;
 const MESSAGING_SENDER_ID = import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "";
 
 // Validate that auth domain matches expected pattern
