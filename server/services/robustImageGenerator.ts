@@ -2,6 +2,7 @@ import { OpenAI } from 'openai';
 import { storage } from '../storage';
 import { costController } from './costController';
 import { generateValidFallbackImage } from './fallbackImageGenerator';
+import { contentPolicyDetector } from './contentPolicyDetector';
 
 // Configure OpenAI with cost-optimized settings
 const openai = new OpenAI({
@@ -147,10 +148,25 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
     try {
       console.log(`🎨 Shot ${shotNumber} - Attempt ${attempt}/${MAX_RETRIES} (30s timeout per attempt)`);
       
-      // Generate prompt
-      const prompt = await generateSafePrompt(shot);
-      if (!prompt) {
+      // Generate prompt with comprehensive content policy detection
+      const rawPrompt = await generateSafePrompt(shot);
+      if (!rawPrompt) {
         throw new Error('Failed to generate prompt');
+      }
+      
+      // Apply comprehensive content policy detection and sanitization
+      const contentAnalysis = await contentPolicyDetector.processPrompt(rawPrompt);
+      const prompt = contentAnalysis.sanitizedPrompt;
+      
+      // Log content policy analysis for debugging
+      if (contentAnalysis.analysis.isProblematic) {
+        console.log(`🔍 Shot ${shotNumber} - Content policy issues detected:`, contentAnalysis.analysis.detectedIssues);
+        console.log(`🛠️ Shot ${shotNumber} - Prompt sanitized for OpenAI compliance`);
+      }
+      
+      // If moderation API flags content, log it
+      if (contentAnalysis.moderation.flagged) {
+        console.log(`⚠️ Shot ${shotNumber} - OpenAI moderation flagged categories:`, contentAnalysis.moderation.categories);
       }
       
       // Generate image with timeout

@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import { characterMemoryService } from './characterMemoryService';
 import { costController } from './costController';
 import { generateValidFallbackImage } from './fallbackImageGenerator';
+import { contentPolicyDetector } from './contentPolicyDetector';
 
 const promptClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -387,9 +388,24 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
     try {
       console.log(`🎨 Image generation attempt ${attempt}/${MAX_RETRIES} for ${filename}`);
       
+      // Apply comprehensive content policy detection and sanitization
+      const contentAnalysis = await contentPolicyDetector.processPrompt(prompt);
+      const sanitizedPrompt = contentAnalysis.sanitizedPrompt;
+      
+      // Log content policy analysis for debugging
+      if (contentAnalysis.analysis.isProblematic) {
+        console.log(`🔍 Content policy issues detected for ${filename}:`, contentAnalysis.analysis.detectedIssues);
+        console.log(`🛠️ Prompt sanitized for OpenAI compliance`);
+      }
+      
+      // If moderation API flags content, log it
+      if (contentAnalysis.moderation.flagged) {
+        console.log(`⚠️ OpenAI moderation flagged categories for ${filename}:`, contentAnalysis.moderation.categories);
+      }
+      
       const response = await imageClient.images.generate({
         model: 'dall-e-3',
-        prompt,
+        prompt: sanitizedPrompt,
         size: '1024x1024', // COST SAVINGS: Reduced from expensive 1792x1024 to cheaper standard size
         quality: 'standard',
         n: 1

@@ -1016,6 +1016,24 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     console.log(`Final modifiedPrompt: ${modifiedPrompt}`);
     console.log(`=========================`);
 
+    // Apply comprehensive content policy detection and sanitization
+    const { contentPolicyDetector } = await import('../services/contentPolicyDetector');
+    const contentAnalysis = await contentPolicyDetector.processPrompt(modifiedPrompt);
+    const finalSanitizedPrompt = contentAnalysis.sanitizedPrompt;
+    
+    // Log content policy analysis for debugging
+    if (contentAnalysis.analysis.isProblematic) {
+      console.log(`🔍 Content policy issues detected in regeneration:`, contentAnalysis.analysis.detectedIssues);
+      console.log(`🛠️ Prompt sanitized for OpenAI compliance`);
+    }
+    
+    // If moderation API flags content, log it
+    if (contentAnalysis.moderation.flagged) {
+      console.log(`⚠️ OpenAI moderation flagged categories:`, contentAnalysis.moderation.categories);
+    }
+    
+    console.log(`Final sanitized prompt: "${finalSanitizedPrompt}"`);
+
     // Debug: Test the specific failing prompt
     if (modifiedPrompt.includes('blood-soaked') || modifiedPrompt.includes('blood soaked')) {
       console.log('WARNING: Detected blood-related content in prompt that may trigger content policy');
@@ -1032,7 +1050,7 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     
     try {
       const { generateImageData } = await import('../services/imageGenerator');
-      imageData = await generateImageData(modifiedPrompt, 3, userId, userTier); // 3 retry attempts
+      imageData = await generateImageData(finalSanitizedPrompt, 3, userId, userTier); // 3 retry attempts with sanitized prompt
     } catch (importError) {
       console.error('Failed to import generateImageData:', importError);
       generationError = 'Image generation service unavailable';
@@ -1083,8 +1101,8 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
       });
     }
 
-    // Update shot with new image data
-    await storage.updateShotImage(shot.id, imageData, modifiedPrompt);
+    // Update shot with new image data using the sanitized prompt
+    await storage.updateShotImage(shot.id, imageData, finalSanitizedPrompt);
 
     console.log(`Successfully regenerated image for shot ${shot.id}`);
 
