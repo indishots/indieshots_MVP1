@@ -564,8 +564,26 @@ export async function generateImageData(prompt: string, retries: number = 1, use
     try {
       console.log(`Generating image data (attempt ${attempt}/${retries}) with prompt: ${prompt.substring(0, 100)}...`);
       
-      // Clean the prompt to avoid content policy violations
-      const cleanedPrompt = sanitizePromptForGeneration(prompt);
+      // Apply comprehensive content policy detection and sanitization
+      const contentAnalysis = await contentPolicyDetector.processPrompt(prompt);
+      let cleanedPrompt = contentAnalysis.sanitizedPrompt;
+      
+      // If content is still problematic after basic sanitization, use LLM rewriting
+      if (contentAnalysis.analysis.isProblematic || contentAnalysis.moderation.flagged) {
+        console.log(`🧠 Content still problematic after sanitization, using LLM rewriting...`);
+        
+        const { promptRewriter } = await import('./promptRewriter');
+        const rewriteResult = await promptRewriter.rewritePromptForImageGeneration(cleanedPrompt);
+        
+        if (rewriteResult.success && rewriteResult.confidence > 0.7) {
+          cleanedPrompt = rewriteResult.rewrittenPrompt;
+          console.log(`✅ LLM rewrite successful: "${cleanedPrompt}"`);
+          console.log(`📊 Confidence: ${rewriteResult.confidence}`);
+        } else {
+          console.log(`⚠️ LLM rewrite failed or low confidence, using basic sanitization`);
+        }
+      }
+      
       console.log(`=== IMAGE GENERATION DEBUG ===`);
       console.log(`Original prompt: ${prompt}`);
       console.log(`Cleaned prompt: ${cleanedPrompt}`);

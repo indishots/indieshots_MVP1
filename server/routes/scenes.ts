@@ -1019,7 +1019,23 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     // Apply comprehensive content policy detection and sanitization
     const { contentPolicyDetector } = await import('../services/contentPolicyDetector');
     const contentAnalysis = await contentPolicyDetector.processPrompt(modifiedPrompt);
-    const finalSanitizedPrompt = contentAnalysis.sanitizedPrompt;
+    let finalSanitizedPrompt = contentAnalysis.sanitizedPrompt;
+    
+    // If content is still problematic after basic sanitization, use LLM rewriting
+    if (contentAnalysis.analysis.isProblematic || contentAnalysis.moderation.flagged) {
+      console.log(`🧠 Content still problematic after sanitization, using LLM rewriting...`);
+      
+      const { promptRewriter } = await import('../services/promptRewriter');
+      const rewriteResult = await promptRewriter.rewritePromptForImageGeneration(finalSanitizedPrompt);
+      
+      if (rewriteResult.success && rewriteResult.confidence > 0.7) {
+        finalSanitizedPrompt = rewriteResult.rewrittenPrompt;
+        console.log(`✅ LLM rewrite successful: "${finalSanitizedPrompt}"`);
+        console.log(`📊 Confidence: ${rewriteResult.confidence}`);
+      } else {
+        console.log(`⚠️ LLM rewrite failed or low confidence, using basic sanitization`);
+      }
+    }
     
     // Log content policy analysis for debugging
     if (contentAnalysis.analysis.isProblematic) {

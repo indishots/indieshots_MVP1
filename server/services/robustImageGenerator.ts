@@ -156,7 +156,23 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
       
       // Apply comprehensive content policy detection and sanitization
       const contentAnalysis = await contentPolicyDetector.processPrompt(rawPrompt);
-      const prompt = contentAnalysis.sanitizedPrompt;
+      let prompt = contentAnalysis.sanitizedPrompt;
+      
+      // If content is still problematic after basic sanitization, use LLM rewriting
+      if (contentAnalysis.analysis.isProblematic || contentAnalysis.moderation.flagged) {
+        console.log(`🧠 Shot ${shotNumber} - Content still problematic after sanitization, using LLM rewriting...`);
+        
+        const { promptRewriter } = await import('./promptRewriter');
+        const rewriteResult = await promptRewriter.rewritePromptForImageGeneration(prompt);
+        
+        if (rewriteResult.success && rewriteResult.confidence > 0.7) {
+          prompt = rewriteResult.rewrittenPrompt;
+          console.log(`✅ Shot ${shotNumber} - LLM rewrite successful: "${prompt}"`);
+          console.log(`📊 Shot ${shotNumber} - Confidence: ${rewriteResult.confidence}`);
+        } else {
+          console.log(`⚠️ Shot ${shotNumber} - LLM rewrite failed or low confidence, using basic sanitization`);
+        }
+      }
       
       // Log content policy analysis for debugging
       if (contentAnalysis.analysis.isProblematic) {
