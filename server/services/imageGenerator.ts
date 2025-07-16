@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import fetch from 'node-fetch';
 import { characterMemoryService } from './characterMemoryService';
+import { costController } from './costController';
 
 const promptClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -319,7 +320,7 @@ function extractImageUrlFromResponse(response: any): string | null {
  * Generate image using DALL-E 3 with robust retry system and response parsing
  */
 async function generateImage(prompt: string, filename: string): Promise<string> {
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 1; // COST SAVINGS: Single attempt only
   const RETRY_DELAY = 2000; // 2 seconds between retries
   
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -329,7 +330,7 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
       const response = await imageClient.images.generate({
         model: 'dall-e-3',
         prompt,
-        size: '1792x1024',
+        size: '1024x1024', // COST SAVINGS: Reduced from expensive 1792x1024 to cheaper standard size
         quality: 'standard',
         n: 1
       });
@@ -472,7 +473,16 @@ async function generateFallbackImage(originalPrompt: string): Promise<string | n
 /**
  * Generate image and return base64 data for database storage
  */
-export async function generateImageData(prompt: string, retries: number = 3): Promise<string | null> {
+export async function generateImageData(prompt: string, retries: number = 1, userId?: string, userTier?: string): Promise<string | null> { // COST SAVINGS: Reduced default retries
+  // COST CONTROL: Check if user can generate images
+  if (userId) {
+    const costCheck = costController.canGenerateImage(userId, userTier);
+    if (!costCheck.allowed) {
+      console.log(`🔒 COST CONTROL: Image generation blocked - ${costCheck.reason}`);
+      return generateFallbackImage(prompt);
+    }
+  }
+  
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Generating image data (attempt ${attempt}/${retries}) with prompt: ${prompt.substring(0, 100)}...`);
@@ -494,7 +504,7 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         model: "dall-e-3",
         prompt: cleanedPrompt,
         n: 1,
-        size: "1792x1024", // Wider cinematic format
+        size: "1024x1024", // COST SAVINGS: Standard size instead of expensive cinematic format
         response_format: "url"
       });
       
@@ -527,6 +537,10 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         const base64Data = imageUrl.split(',')[1];
         if (base64Data && base64Data.length > 100) {
           console.log(`Successfully extracted base64 data (attempt ${attempt}), length:`, base64Data.length);
+          // COST CONTROL: Record image generation usage
+          if (userId) {
+            costController.recordImageGeneration(userId, 0.08); // Record DALL-E 3 cost
+          }
           return base64Data;
         } else {
           console.error(`Invalid base64 data in response (attempt ${attempt})`);
@@ -561,6 +575,10 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
       const base64Data = imageBuffer.toString('base64');
       
       console.log(`Successfully generated image data (attempt ${attempt}), base64 length:`, base64Data.length);
+      // COST CONTROL: Record image generation usage
+      if (userId) {
+        costController.recordImageGeneration(userId, 0.08); // Record DALL-E 3 cost
+      }
       return base64Data;
     } catch (error: any) {
       console.error(`Error generating image data (attempt ${attempt}/${retries}):`, error?.message || error);
@@ -603,11 +621,11 @@ export async function generateImageData(prompt: string, retries: number = 3): Pr
         console.log('This is a permissions issue with the API key, not a temporary error');
         return 'API_ACCESS_ERROR';
       } else if (error?.status === 429) {
-        console.log('Rate limit hit, waiting before retry...');
-        await new Promise(resolve => setTimeout(resolve, 15000 * attempt)); // 15s, 30s, 45s delays
+        console.log('Rate limit hit - failing immediately to prevent billing escalation');
+        return 'RATE_LIMIT_EXCEEDED'; // COST SAVINGS: Don't retry on rate limits
       } else if (error?.message === 'API request timeout') {
-        console.log('API request timed out, retrying with longer delay...');
-        await new Promise(resolve => setTimeout(resolve, 10000 * attempt));
+        console.log('API request timed out - failing to prevent billing escalation');
+        return 'API_TIMEOUT'; // COST SAVINGS: Don't retry on timeouts
       } else if (error?.message === 'Download timeout') {
         console.log('Image download timed out, retrying...');
         await new Promise(resolve => setTimeout(resolve, 5000 * attempt));

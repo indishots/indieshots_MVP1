@@ -1,4 +1,5 @@
 import { OpenAI } from 'openai';
+import { costController } from './costController';
 
 // Create OpenAI client dynamically to pick up fresh environment variables
 function getOpenAIClient(): OpenAI {

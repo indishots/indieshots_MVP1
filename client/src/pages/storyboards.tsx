@@ -229,7 +229,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const { data: storyboards, isLoading: isLoadingStoryboards, refetch: refetchStoryboards } = useQuery({
     queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`],
     enabled: hasStartedGeneration, // Fetch when generation starts
-    refetchInterval: isGenerating ? 1000 : false, // Poll every 1 second during generation for faster updates
+    refetchInterval: isGenerating ? 5000 : false, // COST SAVINGS: Reduced polling from 1s to 5s to prevent excessive API calls
     staleTime: 0, // Always consider data stale
     gcTime: 0, // Don't cache data
     queryFn: async () => {

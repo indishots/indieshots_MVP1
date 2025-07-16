@@ -517,7 +517,7 @@ router.post('/storyboards/generate/:jobId/:sceneIndex', authMiddleware, async (r
     // Process images with DEPLOYMENT-SAFE error isolation - NEVER throw exceptions
     try {
       console.log('🚀 Starting deployment-safe batch generation...');
-      await generateStoryboardBatch(shots, parseInt(jobId));
+      await generateStoryboardBatch(shots, parseInt(jobId), userId, userTier);
       console.log('✅ Batch generation completed successfully');
     } catch (batchError) {
       console.error('❌ DEPLOYMENT ERROR - Batch generation failed:', batchError);
@@ -1032,7 +1032,7 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
     
     try {
       const { generateImageData } = await import('../services/imageGenerator');
-      imageData = await generateImageData(modifiedPrompt, 3); // 3 retry attempts
+      imageData = await generateImageData(modifiedPrompt, 3, userId, userTier); // 3 retry attempts
     } catch (importError) {
       console.error('Failed to import generateImageData:', importError);
       generationError = 'Image generation service unavailable';
@@ -1059,7 +1059,7 @@ router.post('/storyboards/regenerate/:jobId/:sceneIndex/:shotId', authMiddleware
         
         try {
           const { generateImageData } = await import('../services/imageGenerator');
-          const emergencyResult = await generateImageData(emergencyPrompt, 1);
+          const emergencyResult = await generateImageData(emergencyPrompt, 1, userId, userTier);
 
           if (emergencyResult && emergencyResult !== 'GENERATION_ERROR' && emergencyResult !== 'CONTENT_POLICY_ERROR' && emergencyResult !== 'API_ACCESS_ERROR') {
             console.log('Emergency regeneration successful');
@@ -1134,6 +1134,51 @@ router.get('/character-memory/debug', authMiddleware, async (req: Request, res: 
   } catch (error) {
     console.error('Error getting character memory stats:', error);
     res.status(500).json({ error: 'Failed to get character memory stats' });
+  }
+});
+
+/**
+ * GET /api/usage-stats
+ * Get current usage statistics for cost control
+ */
+router.get('/usage-stats', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.uid || (req as any).user?.id;
+    const userTier = (req as any).user?.tier || 'free';
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { costController } = await import('../services/costController');
+    const usage = costController.getUserUsageStats(userId);
+    
+    // Define limits based on tier
+    const limits = userTier === 'pro' ? 
+      { imageGenerations: 50, gptCalls: 200, maxCostPerDay: 5.00 } :
+      { imageGenerations: 5, gptCalls: 20, maxCostPerDay: 0.50 };
+    
+    const response = {
+      userId,
+      userTier,
+      usage: {
+        imageGenerations: usage.imageGenerations,
+        gptCalls: usage.gptCalls,
+        totalCost: usage.totalCost,
+        lastReset: usage.lastReset
+      },
+      limits,
+      remainingUsage: {
+        imageGenerations: Math.max(0, limits.imageGenerations - usage.imageGenerations),
+        gptCalls: Math.max(0, limits.gptCalls - usage.gptCalls),
+        budget: Math.max(0, limits.maxCostPerDay - usage.totalCost)
+      }
+    };
+    
+    res.json(response);
+  } catch (error) {
+    console.error('Error getting usage stats:', error);
+    res.status(500).json({ error: 'Failed to get usage statistics' });
   }
 });
 

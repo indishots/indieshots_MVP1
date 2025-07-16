@@ -1,11 +1,12 @@
 import { OpenAI } from 'openai';
 import { storage } from '../storage';
+import { costController } from './costController';
 
-// Configure OpenAI with original working settings
+// Configure OpenAI with cost-optimized settings
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-  timeout: process.env.NODE_ENV === 'production' ? 90000 : 120000, // Restored generous timeout for actual image generation
-  maxRetries: 2, // Allow retries for better success rate
+  timeout: 45000, // Reduced timeout to prevent expensive hanging requests
+  maxRetries: 0, // COST SAVINGS: Disable automatic retries to prevent excessive billing
   dangerouslyAllowBrowser: false
 });
 
@@ -13,7 +14,7 @@ const openai = new OpenAI({
  * Robust batch image generation with complete error isolation
  * This function NEVER throws exceptions - all errors are caught and handled
  */
-export async function generateStoryboardBatch(shots: any[], parseJobId: number): Promise<void> {
+export async function generateStoryboardBatch(shots: any[], parseJobId: number, userId?: string, userTier?: string): Promise<void> {
   try {
     console.log(`🎬 Starting robust batch generation for ${shots.length} shots`);
     console.log(`📋 Shot details:`, shots.map((s, i) => ({ index: i, id: s.id, description: s.shotDescription })));
@@ -22,6 +23,25 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
     if (!shots || shots.length === 0) {
       console.log('❌ No shots to process - batch generation aborted');
       return;
+    }
+
+    // COST CONTROL: Check if user can generate images
+    if (userId) {
+      const costCheck = costController.canGenerateImage(userId, userTier);
+      if (!costCheck.allowed) {
+        console.log(`🔒 COST CONTROL: Image generation blocked - ${costCheck.reason}`);
+        
+        // Generate fallback placeholders for all shots
+        for (const shot of shots) {
+          try {
+            const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
+            await storage.updateShotImage(shot.id, placeholderImage, `DAILY_LIMIT_EXCEEDED: ${costCheck.reason}`);
+          } catch (error) {
+            console.error(`Failed to generate placeholder for shot ${shot.id}:`, error);
+          }
+        }
+        return;
+      }
     }
     
     // Check OpenAI API key availability and quota
@@ -44,8 +64,8 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
     // Skip quota testing to save costs - handle quota issues during actual generation
     console.log('🎬 Proceeding directly to image generation with robust error handling...');
     
-    // Process shots in smaller batches to prevent overwhelming the database
-    const BATCH_SIZE = 3;
+    // COST SAVINGS: Reduced batch size to limit concurrent expensive API calls
+    const BATCH_SIZE = 1; // Process one shot at a time to prevent billing spikes
     for (let i = 0; i < shots.length; i += BATCH_SIZE) {
       try {
         const batch = shots.slice(i, i + BATCH_SIZE);
@@ -56,7 +76,7 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
           const shotNumber = i + batchIndex + 1;
           try {
             console.log(`🎨 Starting generation for shot ${shotNumber}/${shots.length}`);
-            await generateSingleShotImage(shot, parseJobId, shotNumber);
+            await generateSingleShotImage(shot, parseJobId, shotNumber, userId, userTier);
             console.log(`✅ Shot ${shotNumber} completed successfully - image immediately available for frontend polling`);
           } catch (error) {
             console.error(`❌ Shot ${shotNumber} failed independently (continuing with remaining shots):`, error);
@@ -118,8 +138,8 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number):
 /**
  * Generate image for a single shot with complete error isolation
  */
-async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber: number): Promise<void> {
-  const MAX_RETRIES = 2; // Reduced retries for faster feedback
+async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber: number, userId?: string, userTier?: string): Promise<void> {
+  const MAX_RETRIES = 1; // COST SAVINGS: Single attempt only to prevent billing multiplication
   let lastError: any = null;
   
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -140,6 +160,12 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
       
       // Save to database
       await storage.updateShotImage(shot.id, imageData, prompt);
+      
+      // COST CONTROL: Record image generation usage
+      if (userId) {
+        costController.recordImageGeneration(userId, 0.08); // Record DALL-E 3 cost
+      }
+      
       console.log(`✅ Shot ${shotNumber} - Real image generated successfully on attempt ${attempt}`);
       return;
       
