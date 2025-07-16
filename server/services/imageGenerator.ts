@@ -36,62 +36,125 @@ if (!fs.existsSync(IMAGE_OUTPUT_DIR)) {
 function sanitizePromptForGeneration(prompt: string): string {
   let cleaned = prompt;
   
-  // More comprehensive content policy replacements
+  // Comprehensive film-specific content replacements
   const replacements: { [key: string]: string } = {
-    // Violence and harm - enhanced for your specific case
-    'stabbing': 'dramatic confrontation',
-    'stab': 'dramatic gesture',
-    'blood spurting': 'red stage effects',
-    'blood-soaked': 'red-stained',
-    'bloody': 'red-tinted',
-    'gore': 'dramatic effects',
+    // Violence and weapons
     'violent': 'intense dramatic',
-    'death': 'dramatic conclusion',
-    'murder': 'mystery scene',
-    'kill': 'dramatic confrontation',
-    'weapon': 'prop',
-    'gun': 'hand prop',
-    'knife': 'kitchen utensil',
-    'sword': 'stage prop',
-    'violence': 'dramatic action',
-    'brutal': 'intense',
-    'torture': 'dramatic questioning',
-    'wound': 'stage makeup',
-    'injury': 'dramatic effect',
-    'attack': 'dramatic scene',
-    'fight': 'choreographed sequence',
-    'shooting': 'filming',
-    'shot': 'filmed',
-    'kicking': 'dramatic movement',
-    'kick': 'dramatic gesture',
+    'violence': 'intense drama',
     'blood': 'red stage makeup',
-    'spurting': 'flowing dramatically',
+    'bloody': 'with red stage effects',
+    'bleeding': 'with red makeup effects',
+    'weapon': 'film prop',
+    'weapons': 'film props',
+    'gun': 'prop firearm',
+    'guns': 'prop firearms',
+    'pistol': 'prop handgun',
+    'rifle': 'prop long gun',
+    'knife': 'prop blade',
+    'knives': 'prop blades',
+    'sword': 'prop sword',
+    'blade': 'prop cutting tool',
+    'bullet': 'prop ammunition',
+    'bullets': 'prop ammunition',
+    'grenade': 'prop explosive',
+    'bomb': 'prop device',
+    'explosion': 'special effects blast',
+    'explode': 'special effects explosion',
+    'shot': 'film shot',
+    'shoot': 'film',
+    'shooting': 'filming',
+    'fired': 'activated prop',
+    'trigger': 'prop mechanism',
     
-    // Crime terms
-    'crime scene': 'investigation scene',
-    'criminal': 'character',
-    'victim': 'person',
-    'suspect': 'character',
-    'police tape': 'yellow barrier tape',
-    'evidence': 'clues',
-    'blood soaked': 'red-stained',
-    'bloodsoaked': 'red-stained',
-    'lane': 'street area',
+    // Death and injury
+    'death': 'dramatic climax',
+    'dead': 'dramatically still',
+    'die': 'dramatic end',
+    'died': 'dramatically concluded',
+    'dying': 'dramatic final scene',
+    'kill': 'dramatically defeat',
+    'killed': 'dramatically defeated',
+    'killing': 'dramatic confrontation',
+    'murder': 'mystery drama',
+    'murdered': 'mystery victim',
+    'assassin': 'mystery character',
+    'corpse': 'dramatic figure',
+    'body': 'dramatic figure',
+    'wound': 'stage makeup effect',
+    'wounded': 'with makeup effects',
+    'injury': 'makeup effect',
+    'injured': 'with stage makeup',
+    'pain': 'dramatic expression',
+    'suffering': 'dramatic performance',
+    'torture': 'intense interrogation scene',
+    'beaten': 'dramatically confronted',
+    'hit': 'dramatic contact',
+    'punch': 'stage combat move',
+    'kick': 'choreographed movement',
+    'slam': 'dramatic impact',
+    'crush': 'dramatic pressure',
+    'stab': 'dramatic thrust motion',
+    'stabbed': 'dramatically struck',
+    'stabbing': 'dramatic thrust scene',
+    'slash': 'dramatic sweep motion',
+    'cut': 'dramatic edit',
+    'choke': 'dramatic grip scene',
+    'strangle': 'dramatic hold scene',
     
-    // General problematic terms
-    'dead': 'still',
-    'dying': 'dramatic',
-    'pain': 'emotion',
-    'suffering': 'dramatic emotion',
+    // Combat and conflict
+    'attack': 'dramatic confrontation',
+    'attacked': 'dramatically confronted',
+    'attacking': 'dramatic confrontation',
+    'fight': 'choreographed action scene',
+    'fighting': 'choreographed action',
+    'battle': 'dramatic conflict scene',
+    'war': 'conflict drama',
+    'combat': 'action choreography',
+    'enemy': 'opposing character',
+    'threat': 'dramatic tension',
+    'dangerous': 'suspenseful',
     'terror': 'suspense',
-    'horror': 'mystery'
+    'fear': 'dramatic tension',
+    'horror': 'suspense genre',
+    'scary': 'suspenseful',
+    'frightening': 'suspenseful',
+    'aggressive': 'intense dramatic',
+    'brutal': 'intense dramatic',
+    'savage': 'intense dramatic',
+    'vicious': 'intense dramatic',
+    'ruthless': 'determined character',
+    
+    // Substances and adult content
+    'drugs': 'prop substances',
+    'alcohol': 'prop beverage',
+    'drunk': 'character acting intoxicated',
+    'smoking': 'prop cigarette scene',
+    'cigarette': 'prop cigarette',
+    'naked': 'costume change scene',
+    'nude': 'artistic scene',
+    'sex': 'intimate scene',
+    'sexual': 'romantic scene',
+    
+    // General intensity reducers
+    'extreme': 'dramatic',
+    'intense': 'focused dramatic',
+    'disturbing': 'dramatic',
+    'shocking': 'surprising dramatic',
+    'graphic': 'detailed cinematic',
+    'explicit': 'clear cinematic',
+    'harsh': 'stern dramatic',
+    'rough': 'textured cinematic'
   };
   
-  // Apply replacements case-insensitively
-  for (const [problematic, replacement] of Object.entries(replacements)) {
-    const regex = new RegExp(`\\b${problematic}\\b`, 'gi');
-    cleaned = cleaned.replace(regex, replacement);
+  // Apply word-boundary replacements to avoid partial matches
+  for (const [bad, good] of Object.entries(replacements)) {
+    cleaned = cleaned.replace(new RegExp(`\\b${bad}\\b`, 'gi'), good);
   }
+  
+  // Additional safety measures for combined problematic phrases
+  cleaned = cleaned.replace(/\b(very|extremely|ultra|super)\s+(violent|bloody|graphic|brutal|savage)\b/gi, 'dramatically intense');
+  cleaned = cleaned.replace(/\b(gore|gory|gruesome)\b/gi, 'dramatic special effects');
+  cleaned = cleaned.replace(/\b(massacre|slaughter|carnage)\b/gi, 'dramatic conflict scene');
   
   // Remove any remaining potentially problematic phrases
   const problematicPhrases = [
@@ -113,17 +176,13 @@ function sanitizePromptForGeneration(prompt: string): string {
     cleaned = cleaned.replace(phrase, 'dramatic theatrical scene with red stage effects');
   }
   
-  // Create safe cinematic alternatives for violent content
-  if (cleaned.toLowerCase().includes('dramatic confrontation') || 
-      cleaned.toLowerCase().includes('red stage effects') || 
-      cleaned.toLowerCase().includes('dramatic theatrical scene')) {
-    cleaned = `Professional film production scene with dramatic lighting and theatrical staging, ${cleaned}, safe for work content, artistic cinematography`;
-  } else if (!cleaned.toLowerCase().includes('cinematic') && !cleaned.toLowerCase().includes('film')) {
-    cleaned = `Professional cinematic scene: ${cleaned}`;
+  // Ensure cinematic context is clear for OpenAI
+  if (cleaned.includes('dramatic') || cleaned.includes('prop') || cleaned.includes('stage')) {
+    cleaned = `Professional film production scene: ${cleaned}`;
   }
   
   // Add artistic modifiers to make it more acceptable
-  cleaned = `${cleaned}, professional movie scene, artistic lighting, film production quality`;
+  cleaned = `${cleaned}, professional movie scene, artistic lighting, film production quality, safe for work content`;
   
   return cleaned.trim();
 }
