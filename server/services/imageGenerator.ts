@@ -4,6 +4,7 @@ import * as path from 'path';
 import fetch from 'node-fetch';
 import { characterMemoryService } from './characterMemoryService';
 import { costController } from './costController';
+import { generateValidFallbackImage } from './fallbackImageGenerator';
 
 const promptClient = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -419,7 +420,8 @@ async function generateImage(prompt: string, filename: string): Promise<string> 
   
   // If we get here, try fallback
   console.log(`🔄 Attempting fallback image generation for ${filename}`);
-  return await generateFallbackImage(prompt) || `[ERROR] Both primary and fallback generation failed for ${filename}`;
+  const fallbackImage = await generateValidFallbackImage(prompt);
+  return fallbackImage || `[ERROR] Both primary and fallback generation failed for ${filename}`;
 }
 
 /**
@@ -479,7 +481,7 @@ export async function generateImageData(prompt: string, retries: number = 1, use
     const costCheck = costController.canGenerateImage(userId, userTier);
     if (!costCheck.allowed) {
       console.log(`🔒 COST CONTROL: Image generation blocked - ${costCheck.reason}`);
-      return generateFallbackImage(prompt);
+      return generateValidFallbackImage(prompt);
     }
   }
   

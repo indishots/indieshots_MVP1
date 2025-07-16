@@ -16,6 +16,30 @@ import { useAuth } from "@/components/auth/UltimateAuthProvider";
 import { StoryboardUpgradeModal } from "@/components/ui/storyboard-upgrade-modal";
 import { safeResponseHandler } from "../utils/responseUtils";
 
+// Helper function to validate base64 data
+function isValidBase64(str: string): boolean {
+  if (!str || str.length === 0) return false;
+  
+  // Check for common error states
+  if (str.includes('GENERATION_ERROR') || str.includes('CONTENT_POLICY_ERROR') || 
+      str.includes('PROCESSING_ERROR') || str.includes('STORAGE_FAILED') ||
+      str.includes('API_ACCESS_ERROR') || str.includes('DAILY_LIMIT_EXCEEDED')) {
+    return false;
+  }
+  
+  // Basic base64 validation
+  try {
+    const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+    if (!base64Regex.test(str)) return false;
+    
+    // Check if it's a reasonable length for an image
+    if (str.length < 100) return false;
+    
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
 
 interface StoryboardsProps {
   jobId: string;
@@ -684,7 +708,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                              setShowCarousel(true);
                            }
                          }}>
-                      {frame.hasImage && frame.imageData ? (
+                      {frame.hasImage && frame.imageData && isValidBase64(frame.imageData) ? (
                         <img 
                           src={`data:image/png;base64,${updatedMainImages[idx] || frame.imageData}`}
                           alt={`Storyboard frame ${idx + 1}`}
@@ -697,14 +721,15 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                               newSet.add(idx);
                               return newSet;
                             });
-                            console.log(`Image ${idx} loaded successfully with data length:`, frame.imageData?.length, 'Generated at:', frame.imageGeneratedAt);
+                            console.log(`Image ${idx + 1} loaded successfully with data length:`, frame.imageData?.length, 'Generated at:', frame.imageGeneratedAt);
                           }}
                           onError={() => {
-                            console.error(`Failed to load image ${idx}`, {
+                            console.error(`Failed to load image ${idx + 1}`, {
                               hasImageData: !!frame.imageData,
                               dataLength: frame.imageData?.length || 0,
                               dataPreview: frame.imageData?.substring(0, 50) || 'no data',
-                              generatedAt: frame.imageGeneratedAt
+                              generatedAt: frame.imageGeneratedAt,
+                              isValidBase64: isValidBase64(frame.imageData || '')
                             });
                           }}
                         />

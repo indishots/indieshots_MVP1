@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai';
 import { storage } from '../storage';
 import { costController } from './costController';
+import { generateValidFallbackImage } from './fallbackImageGenerator';
 
 // Configure OpenAI with cost-optimized settings
 const openai = new OpenAI({
@@ -34,7 +35,7 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number, 
         // Generate fallback placeholders for all shots
         for (const shot of shots) {
           try {
-            const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
+            const placeholderImage = await generateValidFallbackImage(shot.shotDescription || 'storyboard frame');
             await storage.updateShotImage(shot.id, placeholderImage, `DAILY_LIMIT_EXCEEDED: ${costCheck.reason}`);
           } catch (error) {
             console.error(`Failed to generate placeholder for shot ${shot.id}:`, error);
@@ -52,7 +53,7 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number, 
       console.log('🔄 Generating fallback placeholders for all shots...');
       for (const shot of shots) {
         try {
-          const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
+          const placeholderImage = await generateValidFallbackImage(shot.shotDescription || 'storyboard frame');
           await storage.updateShotImage(shot.id, placeholderImage, 'API_KEY_MISSING: OpenAI API key not configured');
         } catch (error) {
           console.error(`Failed to generate placeholder for shot ${shot.id}:`, error);
@@ -197,7 +198,7 @@ async function generateSingleShotImage(shot: any, parseJobId: number, shotNumber
   
   console.log(`⚠️ Shot ${shotNumber} - OpenAI ${errorType}, using placeholder for immediate feedback`);
   try {
-    const placeholderImage = await generateFallbackImage(shot.shotDescription || 'storyboard frame');
+    const placeholderImage = await generateValidFallbackImage(shot.shotDescription || 'storyboard frame');
     await storage.updateShotImage(shot.id, placeholderImage, `${errorType}: ${lastError?.message || 'OpenAI API issue'}`);
     console.log(`📦 Shot ${shotNumber} - Placeholder saved with error type: ${errorType}`);
   } catch (dbError) {
