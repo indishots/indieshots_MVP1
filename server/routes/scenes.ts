@@ -862,6 +862,44 @@ router.get('/storyboards/:jobId/:sceneIndex/image/:imageIndex', authMiddleware, 
 });
 
 /**
+ * POST /api/storyboards/recover/:jobId/:sceneIndex
+ * Recover all failed shots in a scene using LLM rewriting
+ */
+router.post('/storyboards/recover/:jobId/:sceneIndex', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { jobId, sceneIndex } = req.params;
+    const userId = (req as any).user?.uid || (req as any).user?.id;
+    const user = (req as any).user;
+    const userTier = user?.tier || 'free';
+
+    console.log(`🔄 Starting shot recovery for jobId: ${jobId}, sceneIndex: ${sceneIndex}`);
+
+    // Verify user owns the job
+    const parseJob = await storage.getParseJob(parseInt(jobId));
+    if (!parseJob || parseJob.userId !== userId) {
+      return res.status(404).json({ error: 'Parse job not found' });
+    }
+
+    // Import and run recovery service
+    const { shotRecoveryService } = await import('../services/shotRecoveryService');
+    await shotRecoveryService.recoverFailedShots(parseInt(jobId), parseInt(sceneIndex), userId, userTier);
+
+    res.json({ 
+      message: 'Shot recovery completed successfully',
+      jobId: parseInt(jobId),
+      sceneIndex: parseInt(sceneIndex)
+    });
+
+  } catch (error) {
+    console.error('Shot recovery failed:', error);
+    res.status(500).json({ 
+      error: 'Failed to recover shots',
+      details: error.message
+    });
+  }
+});
+
+/**
  * POST /api/storyboards/regenerate/:jobId/:sceneIndex/:shotId
  * Regenerate a specific storyboard image with modifications
  */

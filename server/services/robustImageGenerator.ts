@@ -119,6 +119,30 @@ export async function generateStoryboardBatch(shots: any[], parseJobId: number, 
     }
     
     console.log(`🎬 Batch generation completed for ${shots.length} shots`);
+    
+    // Check if we have multiple failed shots and trigger recovery if needed
+    try {
+      const finalShots = await storage.getShots(parseJobId, shots[0]?.sceneIndex || 0);
+      const stillFailed = finalShots.filter(shot => 
+        !shot.imageData || 
+        shot.imageData === null || 
+        shot.imagePromptText?.includes('API_UNAVAILABLE') ||
+        shot.imagePromptText?.includes('GENERATION_ERROR')
+      );
+      
+      if (stillFailed.length > 0) {
+        console.log(`🔄 ${stillFailed.length} shots still failed, triggering recovery service...`);
+        
+        // Import and run recovery service
+        const { shotRecoveryService } = await import('./shotRecoveryService');
+        await shotRecoveryService.recoverFailedShots(parseJobId, shots[0]?.sceneIndex || 0, userId || 'unknown', userTier || 'free');
+        
+        console.log(`✅ Recovery service completed for ${stillFailed.length} failed shots`);
+      }
+    } catch (recoveryError) {
+      console.error('Recovery service failed:', recoveryError);
+    }
+    
   } catch (topLevelError) {
     console.error('Top-level batch generation error:', topLevelError);
     console.error('Stack trace:', topLevelError instanceof Error ? topLevelError.stack : 'No stack trace');

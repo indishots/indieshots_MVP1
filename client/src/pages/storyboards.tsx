@@ -70,6 +70,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
   const [progressiveImages, setProgressiveImages] = useState<{[key: number]: string}>({});
   const [generationProgress, setGenerationProgress] = useState<{total: number, completed: number}>({total: 0, completed: 0});
   const [newlyGeneratedImages, setNewlyGeneratedImages] = useState<Set<number>>(new Set());
+  const [isRecovering, setIsRecovering] = useState(false);
 
   
   // Helper functions for image selection and carousel
@@ -241,6 +242,34 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     },
     onSettled: () => {
       setIsRegenerating(false);
+    }
+  });
+  
+  // Recovery mutation to fix failed shots
+  const recoveryMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest(`/api/storyboards/recover/${jobId}/${sceneIndex}`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      setIsRecovering(false);
+      toast({ title: "Recovery completed", description: "Failed shots have been fixed and regenerated" });
+      // Refresh the storyboards to show the fixed images
+      refetchStoryboards();
+    },
+    onError: (error: any) => {
+      setIsRecovering(false);
+      console.error('Recovery error:', error);
+      const errorMessage = error.message || 'Failed to recover shots';
+      toast({ 
+        title: "Recovery failed", 
+        description: errorMessage,
+        variant: "destructive" 
+      });
+    },
+    onMutate: () => {
+      setIsRecovering(true);
     }
   });
   
@@ -612,42 +641,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={async () => {
-                        try {
-                          const failedFrames = storyboardFrames
-                            .map((frame: any, index: number) => ({ frame, index }))
-                            .filter(({ frame }: { frame: any }) => 
-                              frame.imageData === 'GENERATION_ERROR' || 
-                              frame.imageData === 'CONTENT_POLICY_ERROR' || 
-                              frame.imageData === 'PROCESSING_ERROR' || 
-                              frame.imageData === 'STORAGE_FAILED'
-                            );
-                          
-                          for (const { frame, index } of failedFrames) {
-                            await fetch(`/api/storyboards/regenerate/${jobId}/${sceneIndex}/${index}`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              credentials: 'include',
-                              body: JSON.stringify({ 
-                                errorType: frame.imageData,
-                                intelligentRetry: true 
-                              })
-                            });
-                          }
-                          
-                          queryClient.invalidateQueries({ queryKey: [`/api/storyboards/${jobId}/${sceneIndex}`] });
-                          toast({ 
-                            title: `Retrying ${failedCount} failed images...`,
-                            description: "Using intelligent error-specific approaches"
-                          });
-                        } catch (error) {
-                          toast({ title: "Bulk retry failed", variant: "destructive" });
-                        }
-                      }}
+                      onClick={() => recoveryMutation.mutate()}
+                      disabled={isRecovering}
                       className="text-orange-600 border-orange-200 hover:bg-orange-50"
                     >
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      Retry {failedCount} Failed
+                      {isRecovering ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 mr-2" />
+                      )}
+                      {isRecovering ? 'Recovering...' : `Fix ${failedCount} Failed`}
                     </Button>
                   );
                 })()}
