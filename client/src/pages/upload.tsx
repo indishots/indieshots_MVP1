@@ -8,7 +8,7 @@ import { ArrowRight, Eye, Download } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate } from "@/lib/utils";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 export default function Upload() {
   const [, setLocation] = useLocation();
@@ -66,6 +66,11 @@ export default function Upload() {
   // Fetch previously uploaded scripts
   const { data: scripts = [], isLoading: isLoadingScripts } = useQuery({
     queryKey: ["/api/scripts"],
+  });
+
+  // Fetch parse jobs to determine completed status
+  const { data: parseJobs = [] } = useQuery({
+    queryKey: ["/api/jobs"],
   });
   
   // Upload script mutation
@@ -235,16 +240,40 @@ export default function Upload() {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={`/columns/${script.id}`}>
-                          <Eye className="h-4 w-4" />
-                        </a>
-                      </Button>
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={`/api/jobs/${script.id}/download`}>
-                          <Download className="h-4 w-4" />
-                        </a>
-                      </Button>
+                      {(() => {
+                        // Find the completed parse job for this script
+                        const completedJob = Array.isArray(parseJobs) && parseJobs.find((job: any) => job.scriptId === script.id && job.status === 'completed');
+                        
+                        if (completedJob) {
+                          return (
+                            <>
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/review/${completedJob.id}`}>
+                                  <Eye className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button variant="ghost" size="sm" asChild>
+                                <a href={`/api/jobs/${completedJob.id}/download`}>
+                                  <Download className="h-4 w-4" />
+                                </a>
+                              </Button>
+                            </>
+                          );
+                        } else {
+                          return (
+                            <>
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link href={`/columns/${script.id}`}>
+                                  <Eye className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button variant="ghost" size="sm" disabled>
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </>
+                          );
+                        }
+                      })()}
                     </div>
                   </div>
                 ))}
