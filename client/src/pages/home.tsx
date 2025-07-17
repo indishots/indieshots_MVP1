@@ -137,7 +137,7 @@ export default function Home() {
               <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center mb-6">
                 <Code className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-3">2. Define Your Scenes</h3>
+              <h3 className="text-xl font-semibold mb-3">2. Select Your Scenes</h3>
               <p className="text-muted-foreground leading-relaxed">
                 Precisely select the scenes you wish to transform into detailed shot breakdowns. Focus on what matters most for your vision.
               </p>
