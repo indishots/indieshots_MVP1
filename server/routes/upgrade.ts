@@ -11,8 +11,35 @@ const router = Router();
 router.get('/plans', authMiddleware, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    const currentTier = getUserTierInfo(user);
-
+    
+    // Use the same database query logic as the status endpoint for accurate page counts
+    const { db } = await import('../db');
+    const { scripts, promoCodeUsage } = await import('../../shared/schema');
+    const { eq } = await import('drizzle-orm');
+    
+    // Check for promo code usage
+    const hasPromoCode = await db.select()
+      .from(promoCodeUsage)
+      .where(eq(promoCodeUsage.userEmail, user.email.toLowerCase()));
+    
+    const shouldBeProTier = hasPromoCode.length > 0;
+    const isPremiumDemo = user.email === 'premium@demo.com' || 
+                         user.id === '119' || 
+                         user.id === 119;
+    
+    // Calculate actual used pages by summing page_count from user's scripts
+    const userIdForQuery = String(user.uid || user.id);
+    const userScripts = await db.select()
+      .from(scripts)
+      .where(eq(scripts.userId, userIdForQuery));
+    
+    const actualUsedPages = userScripts.reduce((total, script) => {
+      return total + (script.pageCount || 0);
+    }, 0);
+    
+    // Determine final tier
+    const finalTier = isPremiumDemo || shouldBeProTier ? 'pro' : 'free';
+    
     const plans = [
       {
         id: 'free',
@@ -32,7 +59,7 @@ router.get('/plans', authMiddleware, async (req: Request, res: Response) => {
           'Limited shots per scene',
           'Monthly page limit'
         ],
-        current: currentTier.tier === 'free'
+        current: finalTier === 'free'
       },
       {
         id: 'pro',
@@ -51,18 +78,18 @@ router.get('/plans', authMiddleware, async (req: Request, res: Response) => {
           'CSV & ZIP exports'
         ],
         limitations: [],
-        current: currentTier.tier === 'pro',
+        current: finalTier === 'pro',
         popular: true
       }
     ];
 
     res.json({
       plans,
-      currentTier: currentTier.tier,
+      currentTier: finalTier,
       usage: {
-        pagesUsed: currentTier.usedPages,
-        totalPages: currentTier.totalPages,
-        canGenerateStoryboards: currentTier.canGenerateStoryboards
+        pagesUsed: actualUsedPages,
+        totalPages: finalTier === 'pro' ? -1 : 5,
+        canGenerateStoryboards: finalTier === 'pro'
       }
     });
   } catch (error) {
