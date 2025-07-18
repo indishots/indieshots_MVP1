@@ -545,7 +545,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                     Shot {idx + 1}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {progressiveImages[idx] ? '' : 'Generating...'}
+                    {progressiveImages[idx] ? 'Generated successfully' : 'Generating...'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
