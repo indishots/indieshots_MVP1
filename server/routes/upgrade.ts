@@ -232,16 +232,22 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
     
     // Calculate actual used pages by counting user's scripts
     const { scripts } = await import('../../shared/schema');
+    
+    // Ensure user ID is properly converted to string format for database query
+    const userIdForQuery = String(user.uid || user.id);
+    
     const userScripts = await db.select()
       .from(scripts)
-      .where(eq(scripts.userId, user.uid || user.id));
+      .where(eq(scripts.userId, userIdForQuery));
     
     const actualUsedPages = userScripts.length;
     console.log('📊 UPGRADE STATUS: User page count:', {
-      userId: user.uid || user.id,
+      originalUserId: user.uid || user.id,
+      userIdForQuery,
       email: user.email,
       scriptCount: userScripts.length,
-      actualUsedPages
+      actualUsedPages,
+      userScriptIds: userScripts.map(s => s.id)
     });
     
     // Determine final tier based on promo code usage or premium demo status
