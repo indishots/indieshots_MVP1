@@ -140,12 +140,15 @@ clearBlacklist();
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
     console.log('🔐 Auth middleware called for:', req.method, req.path);
+    console.log('🔐 Request origin:', req.get('origin'));
+    console.log('🔐 User-Agent:', req.get('user-agent'));
     
     // Check for token in cookies first (for browser clients)
     let token = req.cookies?.auth_token;
     
     console.log('Auth middleware - checking token in cookies:', !!token);
     console.log('Auth middleware - all cookies:', Object.keys(req.cookies || {}));
+    console.log('Auth middleware - all headers:', Object.keys(req.headers || {}));
     
     // If no cookie, check Authorization header (for API clients)
     if (!token && req.headers.authorization) {
@@ -159,7 +162,21 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     
     if (!token) {
       console.log('Auth middleware - no token found, returning 401');
-      return res.status(401).json({ message: 'Unauthorized' });
+      console.log('Auth middleware - Missing token error details:');
+      console.log('  - Cookies available:', Object.keys(req.cookies || {}));
+      console.log('  - auth_token cookie:', req.cookies?.auth_token ? 'present' : 'missing');
+      console.log('  - Authorization header:', req.headers.authorization ? 'present' : 'missing');
+      console.log('  - Is deployment environment:', process.env.NODE_ENV === 'production');
+      console.log('  - Request URL:', req.url);
+      console.log('  - Referer:', req.get('referer'));
+      
+      // Special handling for deployment environment - check if this is a deployment cookie issue
+      if (process.env.NODE_ENV === 'production' && req.path.includes('/storyboards/')) {
+        console.log('DEPLOYMENT ISSUE: Storyboard generation failing due to authentication in deployment');
+        console.log('This may be a deployment-specific cookie handling issue');
+      }
+      
+      return res.status(401).json({ message: 'Invalid token' });
     }
     
     const decoded = verifyToken(token);

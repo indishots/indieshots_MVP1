@@ -403,20 +403,16 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       setGenerationProgress({total: totalShots, completed: 0});
       setProgressiveImages({});
       
-      // Get JWT token from localStorage for authentication
-      const token = localStorage.getItem('token');
-      console.log('🔐 Token exists:', !!token);
-      
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      // Use cookie-based authentication (server will read auth_token cookie)
+      console.log('🔐 Token exists: false'); // Note: Using cookies now
       
       console.log('🚀 Making API request to generate storyboards...');
       const response = await fetch(`/api/storyboards/generate/${jobId}/${sceneIndex}`, {
         method: 'POST',
-        headers,
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include', // This ensures cookies are sent
         body: JSON.stringify({
           shots: (shotsData as any)?.shots || [],
           forceRegenerate: true // Always force fresh generation
