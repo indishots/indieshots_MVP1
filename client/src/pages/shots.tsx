@@ -243,7 +243,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     
     toast({
       title: "CSV downloaded",
-      description: `Downloaded ${shots.length} shots with ${headers.length} comprehensive fields`,
+      description: "Downloaded CSV file with comprehensive shot data",
     });
   };
 
@@ -345,7 +345,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     
     toast({
       title: "Excel file downloaded",
-      description: `Downloaded ${shots.length} shots as Excel file with ${headers.length} comprehensive fields`,
+      description: "Downloaded Excel file with comprehensive shot data",
     });
   };
   
