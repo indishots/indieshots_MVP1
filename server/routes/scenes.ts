@@ -644,6 +644,8 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
     console.log(`JobId: ${jobId}, SceneIndex: ${sceneIndex}`);
     console.log(`User ID: ${userId}`);
     console.log(`User object:`, JSON.stringify(user, null, 2));
+    console.log(`Request cookies:`, JSON.stringify(req.cookies, null, 2));
+    console.log(`Request headers:`, JSON.stringify(req.headers, null, 2));
 
     // Check if user is authenticated
     if (!userId) {
@@ -735,6 +737,10 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
     console.error('Error type:', typeof error);
     console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Request URL:', req.url);
+    console.error('Request method:', req.method);
+    console.error('JobId:', req.params.jobId);
+    console.error('SceneIndex:', req.params.sceneIndex);
 
     // Only respond if we haven't already sent a response
     if (!hasResponded && !res.headersSent) {
@@ -745,7 +751,9 @@ router.get('/storyboards/:jobId/:sceneIndex', authMiddleware, async (req: Reques
           storyboards: [],
           success: false,
           deploymentError: true,
-          errorMessage: error instanceof Error ? error.message : 'System error retrieving storyboards'
+          errorMessage: error instanceof Error ? error.message : 'System error retrieving storyboards',
+          jobId: req.params.jobId,
+          sceneIndex: req.params.sceneIndex
         });
       } catch (responseError) {
         console.error('💥 CRITICAL: Failed to send error response:', responseError);

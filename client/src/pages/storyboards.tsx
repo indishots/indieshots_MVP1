@@ -138,19 +138,15 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
       
       // Fetch fresh image data but only update carousel view
       try {
-        // Get JWT token for authentication
-        const token = localStorage.getItem('token');
+        // Use cookie-based authentication (consistent with main storyboard generation)
         const headers: Record<string, string> = {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
           'Expires': '0'
         };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
         
         const response = await fetch(`/api/storyboards/${jobId}/${sceneIndex}?_t=${Date.now()}`, {
-          credentials: 'include',
+          credentials: 'include', // This ensures cookies are sent
           headers
         });
         
@@ -287,15 +283,12 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
     gcTime: 0, // Don't cache data
     queryFn: async () => {
       try {
-        const token = localStorage.getItem('token');
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        
+        // Use cookie-based authentication only (consistent with generation)
         const response = await fetch(`/api/storyboards/${jobId}/${sceneIndex}`, {
-          credentials: 'include',
-          headers
+          credentials: 'include', // This ensures cookies are sent
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
         
         // Use safe response handler to prevent JSON parsing errors
