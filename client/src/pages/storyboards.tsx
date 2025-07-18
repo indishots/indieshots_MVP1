@@ -543,14 +543,9 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-2">
                     Shot {idx + 1}
-                    {progressiveImages[idx] && (
-                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                        Ready
-                      </Badge>
-                    )}
                   </CardTitle>
                   <CardDescription className="text-xs">
-                    {progressiveImages[idx] ? 'Generated successfully' : 'Generating...'}
+                    {progressiveImages[idx] ? '' : 'Generating...'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
