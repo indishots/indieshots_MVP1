@@ -367,7 +367,7 @@ export default function Storyboards({ jobId, sceneIndex }: StoryboardsProps) {
         if (completedCount > 0) {
           toast({
             title: "Storyboard generation complete",
-            description: `${completedCount} images generated successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+            description: errorCount > 0 ? "Images generated with some failures" : "All images generated successfully",
           });
         } else if (errorCount > 0) {
           // All images failed - show more specific error message
