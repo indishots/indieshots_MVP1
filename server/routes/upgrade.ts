@@ -230,12 +230,26 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
                          user.id === '119' || 
                          user.id === 119;
     
+    // Calculate actual used pages by counting user's scripts
+    const { scripts } = await import('../../shared/schema');
+    const userScripts = await db.select()
+      .from(scripts)
+      .where(eq(scripts.userId, user.uid || user.id));
+    
+    const actualUsedPages = userScripts.length;
+    console.log('📊 UPGRADE STATUS: User page count:', {
+      userId: user.uid || user.id,
+      email: user.email,
+      scriptCount: userScripts.length,
+      actualUsedPages
+    });
+    
     // Determine final tier based on promo code usage or premium demo status
     const finalTier = isPremiumDemo || shouldBeProTier ? 'pro' : 'free';
     const finalQuota = {
       tier: finalTier,
       totalPages: finalTier === 'pro' ? -1 : 5,
-      usedPages: 0,
+      usedPages: actualUsedPages,
       maxShotsPerScene: finalTier === 'pro' ? -1 : 5,
       canGenerateStoryboards: finalTier === 'pro'
     };

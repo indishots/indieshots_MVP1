@@ -112,8 +112,9 @@ export default function Upload() {
         description: "Extracting scenes from your script...",
       });
       
-      // Invalidate scripts query
+      // Invalidate scripts query and upgrade status to update usage count
       queryClient.invalidateQueries({ queryKey: ["/api/scripts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/upgrade/status"] });
       
       // Create a parse job automatically with default columns
       createParseJob(data.script.id).then((parseJobId) => {
@@ -126,6 +127,9 @@ export default function Upload() {
             const job = await response.json();
             
             if (job.status === 'completed') {
+              // Invalidate upgrade status to update usage count after completion
+              queryClient.invalidateQueries({ queryKey: ["/api/upgrade/status"] });
+              
               toast({
                 title: "Scene extraction completed",
                 description: "Your script has been divided into scenes. Choose a scene to work with."
