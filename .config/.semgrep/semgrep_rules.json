@@ -50050,6 +50050,73 @@
       "severity": "WARNING"
     },
     {
+      "id": "vendored-rules.typescript.react.security.react-markdown-insecure-html",
+      "languages": [
+        "js",
+        "ts"
+      ],
+      "message": "Overwriting `transformLinkUri` or `transformImageUri` to something insecure, or turning `allowDangerousHtml` on, or turning `escapeHtml` off, will open the code up to XSS vectors.",
+      "metadata": {
+        "category": "security",
+        "confidence": "LOW",
+        "cwe": [
+          "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+        ],
+        "cwe2021-top25": true,
+        "cwe2022-top25": true,
+        "impact": "LOW",
+        "likelihood": "LOW",
+        "owasp": [
+          "A07:2017 - Cross-Site Scripting (XSS)",
+          "A03:2021 - Injection"
+        ],
+        "references": [
+          "https://www.npmjs.com/package/react-markdown#security"
+        ],
+        "subcategory": [
+          "audit"
+        ],
+        "technology": [
+          "react"
+        ]
+      },
+      "patterns": [
+        {
+          "pattern-either": [
+            {
+              "pattern-inside": "$X = require('react-markdown/with-html');\n...\n"
+            },
+            {
+              "pattern-inside": "$X = require('react-markdown');\n...\n"
+            },
+            {
+              "pattern-inside": "import 'react-markdown/with-html';\n...\n"
+            },
+            {
+              "pattern-inside": "import 'react-markdown';\n...\n"
+            }
+          ]
+        },
+        {
+          "pattern-either": [
+            {
+              "pattern": "<$EL allowDangerousHtml />\n"
+            },
+            {
+              "pattern": "<$EL escapeHtml={false} />\n"
+            },
+            {
+              "pattern": "<$EL transformLinkUri=... />\n"
+            },
+            {
+              "pattern": "<$EL transformImageUri=... />\n"
+            }
+          ]
+        }
+      ],
+      "severity": "WARNING"
+    },
+    {
       "id": "vendored-rules.typescript.react.security.react-insecure-request",
       "languages": [
         "js",
@@ -50137,78 +50204,11 @@
         {
           "metavariable-regex": {
             "metavariable": "$URL",
-            "regex": "^([Hh][Tt][Tt][Pp]:\\/\\/(?!localhost).*)"
+            "regex": "^([Hh][Tt][Tt][Pp]:\\/\\/(?!localhost|127\\.0\\.0\\.1).*)"
           }
         }
       ],
       "severity": "ERROR"
-    },
-    {
-      "id": "vendored-rules.typescript.react.security.react-markdown-insecure-html",
-      "languages": [
-        "js",
-        "ts"
-      ],
-      "message": "Overwriting `transformLinkUri` or `transformImageUri` to something insecure, or turning `allowDangerousHtml` on, or turning `escapeHtml` off, will open the code up to XSS vectors.",
-      "metadata": {
-        "category": "security",
-        "confidence": "LOW",
-        "cwe": [
-          "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
-        ],
-        "cwe2021-top25": true,
-        "cwe2022-top25": true,
-        "impact": "LOW",
-        "likelihood": "LOW",
-        "owasp": [
-          "A07:2017 - Cross-Site Scripting (XSS)",
-          "A03:2021 - Injection"
-        ],
-        "references": [
-          "https://www.npmjs.com/package/react-markdown#security"
-        ],
-        "subcategory": [
-          "audit"
-        ],
-        "technology": [
-          "react"
-        ]
-      },
-      "patterns": [
-        {
-          "pattern-either": [
-            {
-              "pattern-inside": "$X = require('react-markdown/with-html');\n...\n"
-            },
-            {
-              "pattern-inside": "$X = require('react-markdown');\n...\n"
-            },
-            {
-              "pattern-inside": "import 'react-markdown/with-html';\n...\n"
-            },
-            {
-              "pattern-inside": "import 'react-markdown';\n...\n"
-            }
-          ]
-        },
-        {
-          "pattern-either": [
-            {
-              "pattern": "<$EL allowDangerousHtml />\n"
-            },
-            {
-              "pattern": "<$EL escapeHtml={false} />\n"
-            },
-            {
-              "pattern": "<$EL transformLinkUri=... />\n"
-            },
-            {
-              "pattern": "<$EL transformImageUri=... />\n"
-            }
-          ]
-        }
-      ],
-      "severity": "WARNING"
     },
     {
       "id": "vendored-rules.typescript.react.security.audit.react-dangerouslysetinnerhtml",
@@ -51443,6 +51443,93 @@
         },
         {
           "pattern-not-inside": "\"_shrinkwrap\": {\n  ...\n}"
+        }
+      ],
+      "severity": "ERROR"
+    },
+    {
+      "id": "replit-rules.javascript.multer.security.audit.multer-vulnerable-version-check",
+      "languages": [
+        "json"
+      ],
+      "message": "Multer version detected is not the latest secure version. \nCVE-2025-48997 (GHSA-g5hg-p3ph-g8qg) affects versions >=1.4.4-lts.1 and <2.0.1, \nallowing attackers to trigger Denial of Service by sending upload requests with empty string field names. \nPlease upgrade to version 2.0.1 or later for the latest security fixes.\nNote: Upgrading from 1.x to 2.x is a breaking change - the minimum supported Node version is now 10.16.0.\n",
+      "metadata": {
+        "category": "security",
+        "confidence": "HIGH",
+        "cwe": [
+          "CWE-248: Uncaught Exception"
+        ],
+        "impact": "HIGH",
+        "likelihood": "HIGH",
+        "owasp": [
+          "A06:2021 - Vulnerable and Outdated Components"
+        ],
+        "references": [
+          "https://github.com/advisories/GHSA-g5hg-p3ph-g8qg",
+          "https://nvd.nist.gov/vuln/detail/CVE-2025-48997",
+          "https://github.com/expressjs/multer/issues/1233",
+          "https://github.com/expressjs/multer/pull/1256",
+          "https://osv.dev/vulnerability/GHSA-g5hg-p3ph-g8qg"
+        ],
+        "subcategory": [
+          "audit"
+        ],
+        "technology": [
+          "multer",
+          "javascript",
+          "nodejs",
+          "express"
+        ]
+      },
+      "paths": {
+        "include": [
+          "*package.json"
+        ]
+      },
+      "patterns": [
+        {
+          "pattern-either": [
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~]?[01]\\.\\d+\\.\\d+(-\\w+\\.\\d+)?\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~]?2\\.0\\.0\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"(latest|\\*)\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\">=?\\s*[01]\\.\\d+\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\">=?\\s*2\\.0\\.0\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~][01]\\.\\d+\\.\\d+\""
+            },
+            {
+              "pattern-regex": "\"multer\"\\s*:\\s*\"[\\^~]2\\.0\\.0\""
+            }
+          ]
+        },
+        {
+          "pattern-either": [
+            {
+              "pattern-inside": "\"dependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"devDependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"optionalDependencies\": {\n  ...\n}\n"
+            },
+            {
+              "pattern-inside": "\"peerDependencies\": {\n  ...\n}\n"
+            }
+          ]
+        },
+        {
+          "pattern-not-inside": "\"_shrinkwrap\": {\n  ...\n}\n"
         }
       ],
       "severity": "ERROR"
