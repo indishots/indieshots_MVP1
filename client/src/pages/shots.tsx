@@ -86,7 +86,7 @@ export default function Shots({ jobId, sceneIndex }: ShotsProps) {
     onSuccess: (data) => {
       toast({
         title: "Shots generated successfully",
-        description: `Generated ${data.shotCount || 0} shots for the scene`,
+        description: "Generated all shots for the scene",
       });
       queryClient.invalidateQueries({ queryKey: [`/api/shots/${jobId}/${sceneIndex}`] });
       setIsGenerating(false);
