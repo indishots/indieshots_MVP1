@@ -17,12 +17,13 @@ const imageClient = new OpenAI({
   timeout: 60000 // 60 second timeout
 });
 
-const SYSTEM_PROMPT = `You are a professional film director and AI visual artist. 
-Your task is to take each shot from a shot division table and turn it into a vivid, detailed prompt for an image generation AI. 
-Your prompt should visually describe the entire scene in cinematic terms with emphasis on character consistency. 
-When character descriptions are provided, use them exactly as specified to maintain visual continuity across scenes.
-Focus on cinematic composition, lighting, mood, and visual storytelling. Be descriptive and use visual language.
-Format the response as a single detailed paragraph suitable for DALL-E 3 generation.`;
+const SYSTEM_PROMPT = `You are a cinematic visualizer and storyboard artist. 
+Your task is to carefully analyze given scene details and imagine the scene vividly in your mind. 
+Then write a clear, highly detailed, descriptive visual summary that captures what should appear in the image. 
+Describe the characters (appearance, clothing, expressions, positions), the setting (environment, background, colors), 
+camera angle, lighting style, atmosphere, and props — exactly as you would want it drawn in a cinematic graphic novel comic book storyboard. 
+Avoid poetic language or vague descriptions. Your description must help an AI imagine and generate the scene clearly, 
+with a focus on storytelling and visual accuracy. The art style must always be emphasized as 'cinematic graphic novel comic book style'.`;
 
 const IMAGE_OUTPUT_DIR = path.join(process.cwd(), 'generated_images');
 
@@ -278,7 +279,10 @@ async function generatePrompt(userMessage: string, retries: number = 2): Promise
         model: 'gpt-4',
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: enhancedMessage }
+          { 
+            role: 'user', 
+            content: `Here are the scene details:\n\n${enhancedMessage}\n\nNow, imagine this scene and describe it in detail (150-200 words). Focus on the key visual elements that must appear in the frame. Mention characters' appearance, expressions, setting, atmosphere, camera framing, and any other visual detail that would help draw this scene. End by stating that this is in cinematic graphic novel comic book style.`
+          }
         ],
         max_tokens: 400, // Increased to accommodate character descriptions
         temperature: 0.7

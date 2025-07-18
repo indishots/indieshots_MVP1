@@ -285,16 +285,20 @@ async function generateSafePrompt(shot: any): Promise<string | null> {
         messages: [
           {
             role: 'system',
-            content: `You are a professional film director creating visual prompts for image generation. 
-Transform the shot description into a vivid, cinematic visual prompt suitable for DALL-E 3.
-Focus on visual composition, lighting, and mood. Keep it safe and professional.`
+            content: `You are a cinematic visualizer and storyboard artist. 
+Your task is to carefully analyze given scene details and imagine the scene vividly in your mind. 
+Then write a clear, highly detailed, descriptive visual summary that captures what should appear in the image. 
+Describe the characters (appearance, clothing, expressions, positions), the setting (environment, background, colors), 
+camera angle, lighting style, atmosphere, and props — exactly as you would want it drawn in a cinematic graphic novel comic book storyboard. 
+Avoid poetic language or vague descriptions. Your description must help an AI imagine and generate the scene clearly, 
+with a focus on storytelling and visual accuracy. The art style must always be emphasized as 'cinematic graphic novel comic book style'.`
           },
           {
             role: 'user',
-            content: basicPrompt
+            content: `Here are the scene details:\n\n${basicPrompt}\n\nNow, imagine this scene and describe it in detail (150-200 words). Focus on the key visual elements that must appear in the frame. Mention characters' appearance, expressions, setting, atmosphere, camera framing, and any other visual detail that would help draw this scene. End by stating that this is in cinematic graphic novel comic book style.`
           }
         ],
-        max_tokens: 200,
+        max_tokens: 250,
         temperature: 0.7
       });
     } catch (gptError: any) {
