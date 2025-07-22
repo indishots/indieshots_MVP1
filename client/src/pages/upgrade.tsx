@@ -291,12 +291,7 @@ export default function Upgrade() {
           Unlock the full power of IndieShots for your filmmaking projects
         </p>
         
-        {/* Professional Payment Notice */}
-        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
-          <p className="text-sm text-blue-800">
-            <strong>Secure Payment Processing:</strong> Payments processed through PayU's secure gateway with multiple payment options available.
-          </p>
-        </div>
+
       </div>
 
       {/* Current Usage Display */}
@@ -402,7 +397,7 @@ export default function Upgrade() {
                     <Button disabled className="w-full">
                       Current Plan
                     </Button>
-                  ) : plan.id === 'pro' ? (
+                  ) : plan.id === 'pro' && currentTier !== 'pro' ? (
                     <Button 
                       onClick={handleUpgrade}
                       disabled={isProcessing}
