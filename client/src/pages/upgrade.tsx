@@ -28,13 +28,28 @@ export default function Upgrade() {
     enabled: !!user
   });
 
-  // Create PayU payment session mutation
+  // Create fresh PayU payment session mutation
   const createCheckoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/payu/create-payment', {
-        amount: 1, // 1 rupee as requested
-        tier: 'pro'
+      if (!user?.email || !user?.displayName) {
+        throw new Error('User information required');
+      }
+
+      const response = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: user.email,
+          firstname: user.displayName.split(' ')[0] || 'User',
+          phone: '9999999999'
+        })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Payment creation failed');
+      }
+
       return await response.json();
     },
     onError: (error: Error) => {
@@ -68,28 +83,33 @@ export default function Upgrade() {
       }
     },
     onSuccess: (data: any) => {
-      console.log('Payment response:', data);
+      console.log('Fresh PayU payment response:', data);
       
-      if (data.success && data.redirectUrl) {
-        console.log('Redirecting to PayU payment gateway:', data.redirectUrl);
+      if (data.success && data.paymentUrl) {
+        console.log('Creating PayU form submission:', data.paymentUrl);
         
-        toast({
-          title: "Redirecting to Payment Gateway",
-          description: "Please wait while we redirect you to PayU...",
+        // Create form and submit to PayU
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = data.paymentUrl;
+        
+        // Add all PayU parameters
+        Object.entries(data.paymentData).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = String(value);
+          form.appendChild(input);
         });
         
-        // Direct redirect to our server endpoint that handles PayU form submission
-        window.location.href = data.redirectUrl;
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
         
-      } else if (data.paymentParams && data.paymentUrl) {
-        console.log('Creating PayU payment form with parameters:', Object.keys(data.paymentParams));
-        
-        try {
-          // Create a form and submit it directly to PayU
-          const form = document.createElement('form');
-          form.method = 'POST';
-          form.action = data.paymentUrl;
-          form.style.display = 'none';
+        toast({
+          title: "Redirecting to PayU",
+          description: "Opening PayU payment gateway for ₹1 subscription...",
+        });
           
           // Add all payment parameters as hidden inputs
           Object.entries(data.paymentParams).forEach(([key, value]) => {

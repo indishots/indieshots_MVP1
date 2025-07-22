@@ -36,6 +36,7 @@ import VerifyEmail from "@/pages/verify-email";
 import FilmAnimationsDemo from "@/pages/film-animations-demo";
 import TestPromoFlow from "@/pages/test-promo-flow";
 import ScriptHealthComingSoon from "@/pages/script-health-coming-soon";
+import PaymentTest from "@/pages/payment-test";
 
 function App() {
   return (
@@ -200,6 +201,14 @@ function App() {
                 <ProtectedRoute component={() => (
                   <AppLayout>
                     <Upgrade />
+                  </AppLayout>
+                )} />
+              </Route>
+
+              <Route path="/payment-test">
+                <ProtectedRoute component={() => (
+                  <AppLayout>
+                    <PaymentTest />
                   </AppLayout>
                 )} />
               </Route>
