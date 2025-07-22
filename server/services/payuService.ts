@@ -77,14 +77,15 @@ export class PayUService {
    * Generate hash for payment request
    */
   generatePaymentHash(params: Omit<PaymentParams, 'hash'>): string {
-    // PayU OFFICIAL hash formula from docs: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
-    // From PayU docs: udf1|udf2|udf3|udf4|udf5|||||| (5 UDFs + 6 empty pipes)
-    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||${this.config.merchantSalt}`;
+    // PayU EXACT hash formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+    // CRITICAL: Must have exactly 11 pipes after email (5 UDF fields + 6 additional empty pipes)
+    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||||${this.config.merchantSalt}`;
     
-    console.log('=== PayU Hash Debug (OFFICIAL FORMAT) ===');
+    console.log('=== PayU Hash Debug (EXACT FORMAT) ===');
     console.log('Hash String:', hashString);
-    console.log('Official PayU Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt');
-    console.log('Our Format:           ', hashString);
+    console.log('PayU Required Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt');
+    console.log('Our Format (FIXED):   ', hashString);
+    console.log('Pipe Count After Email:', (hashString.split('|').length - 7), '(should be 12 total pipes)');
     console.log('Key:', params.key);
     console.log('TxnID:', params.txnid);
     console.log('Amount:', params.amount);
@@ -94,7 +95,7 @@ export class PayUService {
     console.log('Salt:', this.config.merchantSalt);
     
     const hash = crypto.createHash('sha512').update(hashString).digest('hex');
-    console.log('Generated Hash:', hash);
+    console.log('Generated Hash (FIXED):', hash);
     return hash;
   }
 
