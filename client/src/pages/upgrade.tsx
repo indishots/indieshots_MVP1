@@ -133,11 +133,21 @@ export default function Upgrade() {
         window.location.href = url;
       } else if (data.error) {
         console.error('Payment error from server:', data.error);
-        toast({
-          title: "Payment Error",
-          description: data.error,
-          variant: "destructive",
-        });
+        
+        // Special handling for test mode error
+        if (data.isTestMode) {
+          toast({
+            title: "Payment System Setup",
+            description: "We're currently configuring the payment gateway for real transactions. Please contact support for immediate upgrade or try again later.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Payment Error",
+            description: data.message || data.error,
+            variant: "destructive",
+          });
+        }
       } else {
         console.error('Unknown payment response:', data);
         toast({
@@ -254,6 +264,18 @@ export default function Upgrade() {
         <p className="text-muted-foreground">
           Unlock the full power of IndieShots for your filmmaking projects
         </p>
+        
+        {/* Payment System Notice */}
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
+          <p className="text-sm text-blue-800">
+            📢 <strong>Payment Gateway Setup:</strong> We're currently configuring our production payment system. 
+            For immediate Pro access, please contact{' '}
+            <a href="mailto:indieshots@theindierise.com" className="underline font-medium">
+              indieshots@theindierise.com
+            </a>
+            {' '}or try again in a few hours.
+          </p>
+        </div>
       </div>
 
       {/* Current Usage Display */}

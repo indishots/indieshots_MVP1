@@ -51,19 +51,26 @@ export class PayUService {
 
   constructor() {
     const isProduction = process.env.NODE_ENV === 'production';
+    const hasProductionKeys = process.env.PAYU_MERCHANT_KEY && process.env.PAYU_MERCHANT_SALT;
     
     this.config = {
       merchantKey: process.env.PAYU_MERCHANT_KEY || '9AsyFa', // Default test key
       merchantSalt: process.env.PAYU_MERCHANT_SALT || '6pSdSll7fkWxuRBbTESjJVztSp7wVGFD', // Default test salt
       clientId: process.env.PAYU_CLIENT_ID || 'de68a0289b39ab2dfee8c662a65a1bc2d33011f78ae76b7e4c96c55396b3fc29',
       clientSecret: process.env.PAYU_CLIENT_SECRET || '621b230f06e83138b083a27f2c3732740678206aa537a090076f0653ea50c68d',
-      baseUrl: isProduction ? 'https://secure.payu.in' : 'https://test.payu.in'
+      baseUrl: hasProductionKeys ? 'https://secure.payu.in' : 'https://test.payu.in'
     };
 
     // Log configuration status
     console.log(`PayU Service initialized in ${isProduction ? 'PRODUCTION' : 'TEST'} mode`);
     console.log(`Using base URL: ${this.config.baseUrl}`);
     console.log(`Merchant Key: ${this.config.merchantKey.substring(0, 6)}...`);
+    
+    // Alert if using test credentials in production intent
+    if (this.config.merchantKey === '9AsyFa') {
+      console.warn('⚠️  WARNING: Using test PayU credentials. Real payments will fail with "Unable to scan QR" error.');
+      console.warn('⚠️  Configure PAYU_MERCHANT_KEY and PAYU_MERCHANT_SALT for production payments.');
+    }
   }
 
   /**
