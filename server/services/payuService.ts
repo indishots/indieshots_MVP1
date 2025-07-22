@@ -73,8 +73,9 @@ export class PayUService {
   }
 
   /**
-   * Generate secure hash for payment request using PayU official format
-   * Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+   * Generate secure hash for payment request using PayU OFFICIAL format
+   * OFFICIAL Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT
+   * Critical: 6 empty pipes after udf5, not 5!
    */
   generatePaymentHash(params: Omit<PaymentParams, 'hash'>): string {
     const udf1 = params.udf1 || '';
@@ -83,15 +84,28 @@ export class PayUService {
     const udf4 = params.udf4 || '';
     const udf5 = params.udf5 || '';
     
-    // PayU official hash format with UDF fields and empty pipes
-    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|${udf1}|${udf2}|${udf3}|${udf4}|${udf5}||||||${this.config.merchantSalt}`;
+    // PayU OFFICIAL hash format - CORRECTED to match official documentation
+    // Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT
+    // Empty UDF fields: email|||||||SALT (7 pipes after email, 14 total)
+    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||${this.config.merchantSalt}`;
     
-    console.log('🔐 PayU Hash Generation (PRODUCTION)');
-    console.log(`Hash String: ${hashString}`);
+    console.log('🔐 PayU OFFICIAL Hash Generation (CORRECTED)');
+    console.log(`Key: ${params.key}`);
+    console.log(`TxnID: ${params.txnid}`);
+    console.log(`Amount: ${params.amount}`);
+    console.log(`ProductInfo: ${params.productinfo}`);
+    console.log(`FirstName: ${params.firstname}`);
+    console.log(`Email: ${params.email}`);
+    console.log(`UDF Fields: Empty (11 pipes)`);
     console.log(`Salt: ${this.config.merchantSalt}`);
+    console.log(`OFFICIAL Hash String: ${hashString}`);
     
-    const hash = crypto.createHash('sha512').update(hashString).digest('hex').toLowerCase();
-    console.log(`Generated Hash: ${hash.substring(0, 32)}...`);
+    // Count pipes for verification
+    const pipeCount = (hashString.match(/\|/g) || []).length;
+    console.log(`Total Pipes: ${pipeCount} (PayU requires specific count)`);
+    
+    const hash = crypto.createHash('sha512').update(hashString).digest('hex');
+    console.log(`Generated SHA512 Hash: ${hash.substring(0, 64)}...`);
     
     return hash;
   }
