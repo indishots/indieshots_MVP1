@@ -43,8 +43,8 @@ export function generateToken(user: any): string {
   // Special handling for premium demo account - always treat as pro tier
   const isPremiumDemo = user.email === 'premium@demo.com';
   
-  // Ensure tier is explicitly determined
-  const userTier = isPremiumDemo ? 'pro' : (user.tier || 'free');
+  // DEFAULT TO FREE TIER unless premium demo or explicitly pro
+  const userTier = isPremiumDemo ? 'pro' : 'free'; // Force all users to free except premium demo
   const isProTier = userTier === 'pro';
   
   if (isPremiumDemo) {

@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, X, Crown, Zap, Image, Infinity, FileText, Camera, Headphones, Sparkles } from 'lucide-react';
+import { CheckCircle, X, Crown, Zap, Image, Infinity, FileText, Camera, Headphones, Sparkles, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
@@ -193,6 +193,56 @@ export default function Upgrade() {
   const plans = (plansData as any)?.plans || [];
   const currentTier = (plansData as any)?.currentTier || 'free';
   const usage = (plansData as any)?.usage || {};
+
+  // If user is already on pro tier, show pro member status instead of upgrade options
+  if (currentTier === 'pro') {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 dark:border-amber-700">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-4 relative">
+              <div className="absolute -top-2 -right-2 w-4 h-4 bg-amber-400 rounded-full animate-pulse"></div>
+              <Crown className="h-16 w-16 text-amber-500 mx-auto drop-shadow-lg" />
+            </div>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+              You're Already a Pro Member!
+            </CardTitle>
+            <CardDescription className="text-lg text-amber-800 dark:text-amber-200 mt-2">
+              You have unlimited access to all IndieShots features
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col items-center p-4 bg-white/50 dark:bg-amber-900/10 rounded-lg">
+                <FileText className="h-8 w-8 text-amber-600 mb-2" />
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100">Unlimited Pages</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">Process scripts of any length</p>
+              </div>
+              <div className="flex flex-col items-center p-4 bg-white/50 dark:bg-amber-900/10 rounded-lg">
+                <Zap className="h-8 w-8 text-amber-600 mb-2" />
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100">Unlimited Shots</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">Generate detailed shot lists</p>
+              </div>
+              <div className="flex flex-col items-center p-4 bg-white/50 dark:bg-amber-900/10 rounded-lg">
+                <Camera className="h-8 w-8 text-amber-600 mb-2" />
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100">AI Storyboards</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">Create visual storyboards</p>
+              </div>
+            </div>
+            <div className="pt-4">
+              <Button 
+                onClick={() => window.location.href = '/dashboard'} 
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Go to Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6">
