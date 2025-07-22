@@ -89,9 +89,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upgradeRoutes = await import('./routes/upgrade');
   app.use('/api/upgrade', upgradeRoutes.default);
   
-  // PayU payment routes (some routes bypass auth)
+  // Payment system routes
   const payuRoutes = await import('./routes/payu');
   app.use('/api/payu', payuRoutes.default);
+  
+  const stripeRoutes = await import('./routes/stripe');
+  app.use('/api/stripe', stripeRoutes.default);
+  
+  const webhookRoutes = await import('./routes/webhooks');
+  app.use('/api/webhooks', webhookRoutes.default);
+  
+  const paymentRoutes = await import('./routes/payments');
+  app.use('/api/payments', paymentRoutes.default);
+  
+  const paymentSuccessRoutes = await import('./routes/payment-success');
+  app.use('/payment', paymentSuccessRoutes.default);
+  
+  const envRoutes = await import('./routes/environment-variables');
+  app.use('/api/env', envRoutes.default);
   
   // Promo code routes
   const promoCodeRoutes = await import('./routes/promoCode');

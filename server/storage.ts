@@ -22,14 +22,17 @@ import { eq, desc, and, sql } from "drizzle-orm";
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByProviderId(provider: string, providerId: string): Promise<User | undefined>;
   getUserByVerificationToken(token: string): Promise<User | undefined>;
   getUserByResetToken(token: string): Promise<User | undefined>;
   getUserByMagicLinkToken(token: string): Promise<User | undefined>;
+  getUserByStripeSubscriptionId(subscriptionId: string): Promise<User | undefined>;
   createUser(user: Partial<User>): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: number, updates: Partial<User>): Promise<User>;
+  updateUserTier(userId: string, tier: string, paymentInfo?: any): Promise<User>;
   updateUserPageCount(userId: number, pagesUsed: number): Promise<User>;
   updateUserPreferences(userId: number, preferences: any): Promise<User>;
   updateStripeCustomerId(userId: number, customerId: string): Promise<User>;
@@ -39,6 +42,7 @@ export interface IStorage {
   scheduleUserDeletion(userId: string): Promise<User>;
   cancelUserDeletion(userId: string): Promise<User>;
   getUsersPendingDeletion(): Promise<User[]>;
+  getUserPaymentHistory(userId: string): Promise<any[]>;
   
   // Script operations
   createScript(script: InsertScript): Promise<Script>;
@@ -68,6 +72,10 @@ export interface IStorage {
   // Session operations
   deleteUserSessions(userId: string): Promise<void>;
 }
+
+// Use the extended storage with payment methods
+import { ExtendedDatabaseStorage } from './storage-extensions';
+const storage = new ExtendedDatabaseStorage();
 
 export class DatabaseStorage implements IStorage {
   // User operations
@@ -599,4 +607,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-export const storage = new DatabaseStorage();
+// Export singleton extended storage instance with payment methods  
+export { storage };

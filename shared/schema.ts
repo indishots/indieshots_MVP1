@@ -42,6 +42,12 @@ export const users = pgTable("users", {
   canGenerateStoryboards: boolean("can_generate_storyboards").default(false), // Storyboard access
   stripeCustomerId: varchar("stripe_customer_id"), // Stripe customer ID for subscriptions
   stripeSubscriptionId: varchar("stripe_subscription_id"), // Active subscription ID
+  payuTransactionId: varchar("payu_transaction_id"), // PayU transaction ID
+  payuTxnId: varchar("payu_txn_id"), // PayU txn ID
+  paymentMethod: varchar("payment_method"), // stripe, payu, etc.
+  paymentStatus: varchar("payment_status"), // active, canceled, failed, etc.
+  firebaseUID: varchar("firebase_uid"), // Firebase UID for cross-reference
+  displayName: varchar("display_name"), // User display name
   emailVerified: boolean("email_verified").default(false),
   verificationToken: varchar("verification_token"),
   resetToken: varchar("reset_token"),
