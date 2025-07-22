@@ -88,31 +88,14 @@ export default function Upgrade() {
       if (data.success && data.paymentUrl) {
         console.log('Creating PayU form submission:', data.paymentUrl);
         
-        // Create form and submit to PayU
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = data.paymentUrl;
-        
-        // Add all PayU parameters
-        Object.entries(data.paymentData).forEach(([key, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = String(value);
-          form.appendChild(input);
-        });
-        
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-        
-        toast({
-          title: "Redirecting to PayU",
-          description: "Opening PayU payment gateway for ₹1 subscription...",
-        });
+        try {
+          // Create form and submit to PayU
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = data.paymentUrl;
           
-          // Add all payment parameters as hidden inputs
-          Object.entries(data.paymentParams).forEach(([key, value]) => {
+          // Add all PayU parameters
+          Object.entries(data.paymentData).forEach(([key, value]) => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = key;
@@ -124,7 +107,7 @@ export default function Upgrade() {
           
           // Verify required fields are present
           const requiredFields = ['key', 'amount', 'email', 'hash', 'txnid'];
-          const missingFields = requiredFields.filter(field => !data.paymentParams[field]);
+          const missingFields = requiredFields.filter(field => !data.paymentData[field]);
           
           if (missingFields.length > 0) {
             throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
@@ -132,7 +115,7 @@ export default function Upgrade() {
           
           document.body.appendChild(form);
           console.log('Submitting PayU form to:', form.action);
-          console.log('Transaction ID:', data.paymentParams.txnid);
+          console.log('Transaction ID:', data.paymentData.txnid);
           
           // Show loading message
           toast({
