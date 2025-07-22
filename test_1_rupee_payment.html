@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PayU 1 Rupee Test Payment</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; background: #f8f9fa; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .test-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0; }
+        button { padding: 15px 30px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; margin: 10px; }
+        button:hover { background: #0056b3; }
+        .hash-debug { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; font-family: monospace; font-size: 12px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>PayU 1 Rupee Test Payment - Hash Debug</h1>
+        
+        <h3>Test 1 Rupee Payment</h3>
+        <button onclick="create1RupeePayment()">Create 1 Rupee Payment</button>
+        <button onclick="submitToPayU()" style="background: #28a745;" disabled id="submitBtn">Submit to PayU</button>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        let paymentData = null;
+        
+        async function create1RupeePayment() {
+            try {
+                document.getElementById('test-results').innerHTML = `
+                    <div class="success">Creating 1 rupee test payment...</div>
+                `;
+                
+                const response = await fetch('/api/payu/create-test-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'alphantr9999@gmail.com',
+                        amount: 1,
+                        firstname: 'alphantr9999'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Payment creation failed');
+                }
+                
+                paymentData = data;
+                
+                document.getElementById('test-results').innerHTML = `
+                    <div class="success">
+                        <h3>1 Rupee Payment Created Successfully!</h3>
+                        <div class="hash-debug">
+                            <strong>Transaction ID:</strong> ${data.txnid}<br>
+                            <strong>Amount:</strong> ₹${data.paymentParams.amount}<br>
+                            <strong>Email:</strong> ${data.paymentParams.email}<br>
+                            <strong>Merchant Key:</strong> ${data.paymentParams.key}<br>
+                            <strong>Hash:</strong> ${data.paymentParams.hash}<br>
+                            <strong>PayU URL:</strong> ${data.paymentUrl}<br><br>
+                            
+                            <strong>Hash Calculation Debug:</strong><br>
+                            Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt<br>
+                            String: ${data.paymentParams.key}|${data.txnid}|${data.paymentParams.amount}|${data.paymentParams.productinfo}|${data.paymentParams.firstname}|${data.paymentParams.email}|||||||||||[SALT]
+                        </div>
+                        <p><strong>Ready to test with PayU gateway!</strong></p>
+                    </div>
+                `;
+                
+                document.getElementById('submitBtn').disabled = false;
+                
+            } catch (error) {
+                document.getElementById('test-results').innerHTML = `
+                    <div class="error">
+                        <strong>Payment Creation Failed:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function submitToPayU() {
+            if (!paymentData) {
+                alert('No payment data available. Create payment first.');
+                return;
+            }
+            
+            console.log('Submitting 1 rupee payment to PayU');
+            console.log('Payment params:', paymentData.paymentParams);
+            
+            // Create form for PayU submission
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = paymentData.paymentUrl;
+            form.target = '_blank';
+            
+            Object.entries(paymentData.paymentParams).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = String(value);
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            
+            document.getElementById('test-results').innerHTML += `
+                <div class="success" style="margin-top: 20px;">
+                    <strong>Submitted 1 Rupee Payment to PayU!</strong><br>
+                    Check the new tab for PayU payment page. If hash error persists, we need to verify salt with PayU support.
+                </div>
+            `;
+        }
+        
+        // Auto-create payment on load
+        window.onload = function() {
+            setTimeout(create1RupeePayment, 1000);
+        };
+    </script>
+</body>
+</html>

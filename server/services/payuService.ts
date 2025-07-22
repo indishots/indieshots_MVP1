@@ -55,7 +55,7 @@ export class PayUService {
     
     this.config = {
       merchantKey: process.env.PAYU_MERCHANT_KEY || 'xXZDKp', // Production key from dashboard
-      merchantSalt: process.env.PAYU_MERCHANT_SALT || 'PEvebkhtqZbQ4VhCV7W2IZCdgnGGaa2B', // Production 32-bit salt (for hash generation)
+      merchantSalt: process.env.PAYU_MERCHANT_SALT || 'ezsXEEqchsA1ZLmHzn5BrLRl9snmckH', // Fixed to 32 characters as PayU requires
       clientId: process.env.PAYU_CLIENT_ID || 'f10a90386f9639dadfe839bc565d2e6d26cb5d88e1f49640b53960ed0d1364c8',
       clientSecret: process.env.PAYU_CLIENT_SECRET || 'd2d92cbf109d9efe6430ec8399c5ffc89287b5fcfe6e8f27713a0fc17f3b74ec',
       baseUrl: 'https://secure.payu.in' // Always use production URL with production credentials
@@ -109,6 +109,7 @@ export class PayUService {
     console.log('UDF4:', udf4 || '(empty)');
     console.log('UDF5:', udf5 || '(empty)');
     console.log('Salt:', this.config.merchantSalt);
+    console.log('Salt Length:', this.config.merchantSalt.length, '(PayU requires 32 chars)');
     
     const hash = crypto.createHash('sha512').update(hashString).digest('hex').toLowerCase();
     console.log('Generated Hash (OFFICIAL & LOWERCASE):', hash);
