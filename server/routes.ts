@@ -93,6 +93,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const payuRoutes = await import('./routes/payu');
   app.use('/api/payu', payuRoutes.default);
   
+  // PayU test routes (development)
+  if (process.env.NODE_ENV === 'development') {
+    const payuTestRoutes = await import('./routes/payu-test');
+    app.use('/api/payu', payuTestRoutes.default);
+  }
+  
   const stripeRoutes = await import('./routes/stripe');
   app.use('/api/stripe', stripeRoutes.default);
   

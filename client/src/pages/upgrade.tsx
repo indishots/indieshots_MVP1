@@ -147,14 +147,6 @@ export default function Upgrade() {
           variant: "destructive",
         });
       }
-    },
-    onError: (error: any) => {
-      console.error('Checkout error:', error);
-      toast({
-        title: "Checkout Failed",
-        description: error.message || "Failed to start checkout process",
-        variant: "destructive",
-      });
     }
   });
 
