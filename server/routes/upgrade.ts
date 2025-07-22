@@ -109,8 +109,14 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
       return res.status(400).json({ error: 'User email required for checkout' });
     }
 
-    const currentTier = getUserTierInfo(user);
-    if (currentTier.tier === 'pro') {
+    // Get fresh user data from database to avoid cached tier issues
+    const { storage } = await import('../storage');
+    const dbUser = await storage.getUserByEmail(user.email);
+    const currentTier = dbUser ? dbUser.tier : 'free';
+    
+    console.log(`[UPGRADE] User ${user.email} - JWT tier: ${user.tier}, DB tier: ${currentTier}`);
+    
+    if (currentTier === 'pro') {
       return res.status(400).json({ 
         error: 'You already have a Pro account with unlimited access to all features. No upgrade needed!' 
       });
