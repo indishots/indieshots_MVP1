@@ -77,21 +77,21 @@ export class PayUService {
    * Generate hash for payment request
    */
   generatePaymentHash(params: Omit<PaymentParams, 'hash'>): string {
-    // PayU hash formula: sha512(key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT)
-    // From PayU error: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT
-    // This means: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||(6 empty fields)|SALT
-    // PayU official formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
-    // UDF = User Defined Fields (optional custom data - we don't use them, so empty)
-    // After udf5, there are 6 additional empty fields, then salt
-    // Let me count PayU's expected string: 9AsyFa|INDIE_xxx|29.00|IndieShots_pro_Subscription|user4|user4@gmail.com|||||||||||6pSdSll7...
-    // After email: ||||||||||| (11 pipes) then salt
-    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||||${this.config.merchantSalt}`;
+    // PayU official hash formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+    // UDF fields are optional user-defined fields (we don't use them, so empty)
+    // After email: udf1|udf2|udf3|udf4|udf5||||| (5 UDFs + 5 empty fields) then salt
+    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}||||||||||${this.config.merchantSalt}`;
     
     console.log('=== PayU Hash Debug ===');
-    console.log('Our Hash String:      ', hashString);
-    console.log('PayU Expected String: ', `9AsyFa|INDIE_1750318971518_605j8qo2m|29.00|IndieShots_pro_Subscription|user4|user4@gmail.com|||||||||||6pSdSll7fkWxuRBbTESjJVztSp7wVGFD`);
-    console.log('Our pipes after email:', (hashString.split('user4@gmail.com')[1] || '').split('6pSdSll7fkWxuRBbTESjJVztSp7wVGFD')[0]);
-    console.log('PayU pipes after email:', '|||||||||||');
+    console.log('Hash String:', hashString);
+    console.log('Key:', params.key);
+    console.log('TxnID:', params.txnid);
+    console.log('Amount:', params.amount);
+    console.log('Product:', params.productinfo);
+    console.log('Name:', params.firstname);
+    console.log('Email:', params.email);
+    console.log('Salt:', this.config.merchantSalt);
+    
     const hash = crypto.createHash('sha512').update(hashString).digest('hex');
     console.log('Generated Hash:', hash);
     return hash;
@@ -101,7 +101,9 @@ export class PayUService {
    * Generate hash for payment response verification
    */
   generateResponseHash(response: PaymentResponse): string {
-    const hashString = `${this.config.merchantSalt}|${response.status}|||||||||||${response.email}|${response.firstname}|${response.productinfo}|${response.amount}|${response.txnid}|${this.config.merchantKey}`;
+    // Response hash formula: salt|status|||||||||||email|firstname|productinfo|amount|txnid|key
+    const hashString = `${this.config.merchantSalt}|${response.status}||||||||||${response.email}|${response.firstname}|${response.productinfo}|${response.amount}|${response.txnid}|${this.config.merchantKey}`;
+    console.log('Response Hash String:', hashString);
     return crypto.createHash('sha512').update(hashString).digest('hex');
   }
 
