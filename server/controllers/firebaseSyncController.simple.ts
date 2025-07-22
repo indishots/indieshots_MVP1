@@ -13,23 +13,31 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
     
     console.log('Firebase sync for:', firebaseUser.email);
     
-    // DYNAMIC PROMO CODE VALIDATION: Check if user has promo code usage
-    const { db } = await import('../db');
-    const { promoCodeUsage } = await import('../../shared/schema');
-    const { eq } = await import('drizzle-orm');
+    // PROPER TIER ASSIGNMENT: Default to free tier, upgrade only if promo code exists
+    let shouldBeProTier = false;
     
-    const hasPromoCode = await db.select()
-      .from(promoCodeUsage)
-      .where(eq(promoCodeUsage.userEmail, firebaseUser.email.toLowerCase()));
+    try {
+      // Check if user has any promo code usage records
+      const { db } = await import('../db');
+      const { promoCodeUsage } = await import('../../shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const hasPromoCode = await db.select()
+        .from(promoCodeUsage)
+        .where(eq(promoCodeUsage.userEmail, firebaseUser.email.toLowerCase()));
+      
+      shouldBeProTier = hasPromoCode.length > 0;
+      console.log(`Promo code check for ${firebaseUser.email}: ${shouldBeProTier ? 'Pro tier (has promo code)' : 'Free tier (no promo code)'}`);
+    } catch (error) {
+      console.log(`No promo code found for ${firebaseUser.email} - defaulting to free tier`);
+      shouldBeProTier = false;
+    }
     
-    const shouldBeProTier = hasPromoCode.length > 0;
-    console.log(`Promo code check for ${firebaseUser.email}: ${shouldBeProTier ? 'Pro tier (has promo code)' : 'Free tier (no promo code)'}`);
-    
-    // Get or create user
+    // Get or create user with proper tier assignment
     let user = await storage.getUserByEmail(firebaseUser.email.toLowerCase());
     
     if (!user) {
-      // Create new user with tier based on promo code usage
+      // Create new user - DEFAULT IS FREE TIER unless promo code exists
       const tier = shouldBeProTier ? 'pro' : 'free';
       user = await storage.createUser({
         email: firebaseUser.email.toLowerCase(),
@@ -41,18 +49,23 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
         totalPages: tier === 'pro' ? -1 : 5,
         maxShotsPerScene: tier === 'pro' ? -1 : 5,
         canGenerateStoryboards: tier === 'pro',
-        emailVerified: firebaseUser.emailVerified || false
+        emailVerified: firebaseUser.emailVerified || false,
+        firebaseUID: firebaseUser.uid,
+        displayName: firebaseUser.displayName || null
       });
-      console.log(`Created new user: ${user.email} with tier: ${tier}`);
+      console.log(`✅ Created new user: ${user.email} with ${tier} tier (promo code: ${shouldBeProTier ? 'YES' : 'NO'})`);
     } else {
-      // Update existing user if they have promo code but wrong tier
-      if (shouldBeProTier && user.tier !== 'pro') {
-        console.log(`🔧 PROMO CODE USER: Upgrading ${user.email} to pro tier`);
+      // For existing users, ensure tier is correct based on promo code usage
+      const correctTier = shouldBeProTier ? 'pro' : 'free';
+      if (user.tier !== correctTier) {
+        console.log(`🔧 TIER CORRECTION: Updating ${user.email} from ${user.tier} to ${correctTier} tier`);
         user = await storage.updateUser(user.id, {
-          tier: 'pro',
-          totalPages: -1,
-          maxShotsPerScene: -1,
-          canGenerateStoryboards: true
+          tier: correctTier,
+          totalPages: correctTier === 'pro' ? -1 : 5,
+          maxShotsPerScene: correctTier === 'pro' ? -1 : 5,
+          canGenerateStoryboards: correctTier === 'pro',
+          firebaseUID: firebaseUser.uid,
+          displayName: firebaseUser.displayName || user.displayName
         });
       }
     }

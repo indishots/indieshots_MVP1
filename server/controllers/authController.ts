@@ -59,9 +59,37 @@ export async function register(req: Request, res: Response) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(validatedData.password, salt);
     
-    // Check coupon code for premium upgrade
-    const validCouponCodes = ['DEMO2024', 'PREMIUM', 'LAUNCH', 'INDIE2025'];
-    const isPremiumCoupon = validatedData.couponCode && validCouponCodes.includes(validatedData.couponCode.toUpperCase());
+    // DEFAULT TO FREE TIER - Only upgrade if valid promo code is provided
+    let tier = 'free';
+    let totalPages = 5;
+    let maxShotsPerScene = 5;
+    let canGenerateStoryboards = false;
+    
+    // Check if user provided a valid promo code
+    if (validatedData.couponCode) {
+      try {
+        // Import PromoCodeService to validate promo code
+        const { PromoCodeService } = await import('../services/promoCodeService');
+        const promoService = new PromoCodeService();
+        
+        const validation = await promoService.validatePromoCode(
+          validatedData.couponCode,
+          validatedData.email
+        );
+        
+        if (validation.valid && validation.promoCode) {
+          tier = validation.promoCode.tier_granted || 'pro';
+          totalPages = tier === 'pro' ? -1 : 5;
+          maxShotsPerScene = tier === 'pro' ? -1 : 5;
+          canGenerateStoryboards = tier === 'pro';
+          console.log(`✅ Valid promo code ${validatedData.couponCode} - upgrading to ${tier} tier`);
+        } else {
+          console.log(`❌ Invalid promo code ${validatedData.couponCode} - keeping free tier`);
+        }
+      } catch (error) {
+        console.log(`❌ Promo code validation failed for ${validatedData.couponCode} - keeping free tier`);
+      }
+    }
     
     // Prepare user data (don't create user yet - wait for email verification)
     const userData = {
@@ -70,8 +98,10 @@ export async function register(req: Request, res: Response) {
       lastName: validatedData.lastName,
       password: hashedPassword,
       provider: 'local',
-      tier: isPremiumCoupon ? 'premium' : 'free',
-      totalPages: isPremiumCoupon ? 1000 : 20,
+      tier,
+      totalPages,
+      maxShotsPerScene,
+      canGenerateStoryboards,
       usedPages: 0,
       couponCode: validatedData.couponCode
     };
