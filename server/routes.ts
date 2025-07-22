@@ -89,7 +89,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upgradeRoutes = await import('./routes/upgrade');
   app.use('/api/upgrade', upgradeRoutes.default);
   
-  // Payment system routes - REMOVED ALL OLD SYSTEMS
+  // Fresh PayU Payment System
+  const freshPaymentRoutes = await import('./routes/freshPayment');
+  app.use('/api/payment', freshPaymentRoutes.default);
   
   const envRoutes = await import('./routes/environment-variables');
   app.use('/api/env', envRoutes.default);
