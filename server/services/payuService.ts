@@ -79,13 +79,14 @@ export class PayUService {
   generatePaymentHash(params: Omit<PaymentParams, 'hash'>): string {
     // PayU EXACT hash formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
     // CRITICAL: Must have exactly 11 pipes after email (5 UDF fields + 6 additional empty pipes)
-    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||||${this.config.merchantSalt}`;
+    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||||||${this.config.merchantSalt}`;
     
     console.log('=== PayU Hash Debug (EXACT FORMAT) ===');
     console.log('Hash String:', hashString);
     console.log('PayU Required Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt');
     console.log('Our Format (FIXED):   ', hashString);
-    console.log('Pipe Count After Email:', (hashString.split('|').length - 7), '(should be 12 total pipes)');
+    console.log('Pipe Count After Email:', (hashString.split('|').length - 7), '(should be 11 pipes after email)');
+    console.log('Total Pipes in String:', (hashString.split('|').length - 1), '(should be 17 total)');
     console.log('Key:', params.key);
     console.log('TxnID:', params.txnid);
     console.log('Amount:', params.amount);
