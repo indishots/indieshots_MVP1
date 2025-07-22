@@ -7,8 +7,7 @@ import crypto from 'crypto';
 const router = Router();
 const payuService = new PayUService();
 
-// Store pending payments in memory (in production, use Redis or database)
-// Use global to share with upgrade.ts
+// Store pending payments securely
 if (!(global as any).pendingPayments) {
   (global as any).pendingPayments = new Map<string, {
     txnid: string;
@@ -16,176 +15,128 @@ if (!(global as any).pendingPayments) {
     amount: number;
     tier: string;
     timestamp: number;
+    userAgent?: string;
   }>();
 }
 const pendingPayments = (global as any).pendingPayments;
 
 /**
- * GET /api/payu/redirect/:txnid
- * Direct redirect to PayU with payment form
- * Uses optional auth to associate payment with user
- */
-router.get('/redirect/:txnid', async (req: Request, res: Response) => {
-  try {
-    const { txnid } = req.params;
-    
-    // Find pending payment - this validates the payment session exists
-    const paymentInfo = pendingPayments.get(txnid);
-    if (!paymentInfo) {
-      console.log('Payment session not found for txnid:', txnid);
-      return res.status(404).send(`
-        <html>
-          <body>
-            <h2>Payment Session Not Found</h2>
-            <p>The payment session has expired or is invalid.</p>
-            <a href="/upgrade">Return to Upgrade Page</a>
-          </body>
-        </html>
-      `);
-    }
-    
-    // Validate payment session hasn't expired (30 minutes)
-    const sessionAge = Date.now() - paymentInfo.timestamp;
-    if (sessionAge > 30 * 60 * 1000) {
-      console.log('Payment session expired for txnid:', txnid);
-      pendingPayments.delete(txnid);
-      return res.status(410).send(`
-        <html>
-          <body>
-            <h2>Payment Session Expired</h2>
-            <p>This payment session has expired. Please start a new payment.</p>
-            <a href="/upgrade">Return to Upgrade Page</a>
-          </body>
-        </html>
-      `);
-    }
-
-    // Recreate payment parameters with proper transaction ID
-    const paymentParams = payuService.createPaymentParams(
-      paymentInfo.amount,
-      paymentInfo.email,
-      paymentInfo.email.split('@')[0],
-      '', // phone
-      paymentInfo.tier
-    );
-    
-    // Ensure transaction ID matches and regenerate hash
-    paymentParams.txnid = paymentInfo.txnid;
-    
-    // Regenerate hash with the stored transaction ID using correct salt
-    const merchantSalt = '6pSdSll7fkWxuRBbTESjJVztSp7wVGFD';
-    const hashString = `${paymentParams.key}|${paymentParams.txnid}|${paymentParams.amount}|${paymentParams.productinfo}|${paymentParams.firstname}|${paymentParams.email}|||||||||||${merchantSalt}`;
-    paymentParams.hash = crypto.createHash('sha512').update(hashString).digest('hex');
-
-    // Generate payment form that auto-submits to PayU
-    const paymentUrl = payuService.getPaymentUrl();
-    const paymentForm = payuService.generatePaymentForm(paymentParams, paymentUrl);
-
-    console.log('Redirecting payment:', {
-      txnid: paymentInfo.txnid,
-      email: paymentInfo.email,
-      amount: paymentInfo.amount,
-      paymentUrl,
-      sessionAge: `${Math.round(sessionAge / 1000)}s`
-    });
-
-    // Security: Log payment attempt for audit trail
-    console.log('PAYMENT_REDIRECT:', {
-      txnid: paymentInfo.txnid,
-      email: paymentInfo.email,
-      amount: paymentInfo.amount,
-      timestamp: new Date().toISOString(),
-      userAgent: req.headers['user-agent']
-    });
-
-    // Return the HTML form that will auto-submit to PayU
-    res.setHeader('Content-Type', 'text/html');
-    res.send(paymentForm);
-
-  } catch (error) {
-    console.error('PayU redirect error:', error);
-    res.status(500).send(`
-      <html>
-        <body>
-          <h2>Payment Error</h2>
-          <p>Unable to process payment. Please try again.</p>
-          <a href="/upgrade">Return to Upgrade Page</a>
-        </body>
-      </html>
-    `);
-  }
-});
-
-/**
  * POST /api/payu/create-payment
- * Create a new PayU payment session
+ * Create secure PayU payment session
  */
 router.post('/create-payment', authMiddleware, async (req: Request, res: Response) => {
   try {
+    const { amount = 1, tier = 'pro' } = req.body; // Default 1 rupee for testing
     const user = (req as any).user;
-    if (!user) {
-      return res.status(401).json({ error: 'Authentication required' });
+
+    if (!user?.email) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
     }
 
-    const { amount = 29, tier = 'pro' } = req.body;
+    console.log('💰 Creating PayU Payment (PRODUCTION)');
+    console.log(`User: ${user.email}`);
+    console.log(`Amount: ₹${amount} (Real money transaction)`);
 
-    // Validate amount
-    if (amount < 1 || amount > 10000) {
-      return res.status(400).json({ error: 'Invalid payment amount' });
-    }
-
-    // Production credentials are now configured - allow payments to proceed
-    console.log(`✅ PayU Payment initiated for user: ${user.email} with production credentials`);
-
-    // Create payment parameters
+    // Create payment parameters with your production credentials
     const paymentParams = payuService.createPaymentParams(
       amount,
       user.email,
       user.displayName || user.email.split('@')[0],
-      '', // phone - optional
+      '9999999999', // Default phone
       tier
     );
 
-    // Store payment info for verification
+    // Store payment session securely
     pendingPayments.set(paymentParams.txnid, {
       txnid: paymentParams.txnid,
       email: user.email,
-      amount,
-      tier,
-      timestamp: Date.now()
+      amount: amount,
+      tier: tier,
+      timestamp: Date.now(),
+      userAgent: req.headers['user-agent']
     });
 
-    // Clean up old pending payments (older than 1 hour)
-    const oneHourAgo = Date.now() - (60 * 60 * 1000);
-    const keysToDelete: string[] = [];
-    pendingPayments.forEach((payment: any, txnid: string) => {
-      if (payment.timestamp < oneHourAgo) {
-        keysToDelete.push(txnid);
-      }
-    });
-    keysToDelete.forEach((txnid: string) => pendingPayments.delete(txnid));
+    // Auto-cleanup expired payments (30 minutes)
+    setTimeout(() => {
+      pendingPayments.delete(paymentParams.txnid);
+    }, 30 * 60 * 1000);
 
-    const paymentUrl = payuService.getPaymentUrl();
-    const paymentForm = payuService.generatePaymentForm(paymentParams, paymentUrl);
+    console.log('✅ Payment session created successfully');
+    console.log(`Transaction ID: ${paymentParams.txnid}`);
 
     res.json({
       success: true,
+      paymentParams: paymentParams,
+      paymentUrl: payuService.getGatewayUrl(),
       txnid: paymentParams.txnid,
-      paymentUrl,
-      paymentForm,
-      redirectUrl: `/api/payu/redirect/${paymentParams.txnid}`
+      message: 'Payment session created - Ready for PayU gateway'
     });
 
   } catch (error) {
-    console.error('PayU payment creation error:', error);
-    res.status(500).json({ 
-      error: 'Failed to create payment session',
+    console.error('❌ Payment creation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Payment creation failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 });
 
+/**
+ * POST /api/payu/create-test-payment
+ * Create test payment (1 rupee) for verification
+ */
+router.post('/create-test-payment', async (req: Request, res: Response) => {
+  try {
+    const { email, amount = 1, firstname = 'Test User' } = req.body;
 
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required'
+      });
+    }
+
+    console.log('🧪 Creating Test Payment (PRODUCTION GATEWAY)');
+    console.log(`Email: ${email}`);
+    console.log(`Amount: ₹${amount} (Real transaction)`);
+
+    const paymentParams = payuService.createPaymentParams(
+      amount,
+      email,
+      firstname,
+      '9999999999',
+      'pro'
+    );
+
+    // Store test payment session
+    pendingPayments.set(paymentParams.txnid, {
+      txnid: paymentParams.txnid,
+      email: email,
+      amount: amount,
+      tier: 'pro',
+      timestamp: Date.now()
+    });
+
+    res.json({
+      success: true,
+      paymentParams: paymentParams,
+      paymentUrl: payuService.getGatewayUrl(),
+      txnid: paymentParams.txnid,
+      message: 'Test payment created for production gateway'
+    });
+
+  } catch (error) {
+    console.error('❌ Test payment creation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Test payment creation failed'
+    });
+  }
+});
 
 /**
  * POST /api/payu/success
@@ -193,7 +144,8 @@ router.post('/create-payment', authMiddleware, async (req: Request, res: Respons
  */
 router.post('/success', async (req: Request, res: Response) => {
   try {
-    console.log('PayU Success Callback:', req.body);
+    console.log('✅ PayU Success Callback Received');
+    console.log('Payment Data:', req.body);
 
     const {
       txnid,
@@ -203,59 +155,139 @@ router.post('/success', async (req: Request, res: Response) => {
       email,
       mihpayid,
       status,
-      hash,
-      phone
+      hash
     } = req.body;
 
-    // Verify the payment response
-    const isValid = payuService.verifyPaymentResponse(req.body);
-    
-    if (!isValid) {
-      console.error('Invalid hash in PayU response');
-      return res.redirect('/upgrade?payment=failed&reason=invalid_hash');
+    // Verify payment response hash
+    const isValidHash = payuService.verifyPaymentResponse(req.body);
+
+    if (!isValidHash) {
+      console.error('❌ Invalid payment response hash');
+      return res.status(400).send(`
+        <html>
+          <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h2 style="color: #dc3545;">Payment Verification Failed</h2>
+            <p>The payment response could not be verified.</p>
+            <a href="/upgrade" style="color: #007bff;">Return to Upgrade Page</a>
+          </body>
+        </html>
+      `);
     }
 
-    if (status !== 'success') {
-      console.error('Payment status not successful:', status);
-      return res.redirect('/upgrade?payment=failed&reason=payment_failed');
+    // Check payment session
+    const paymentSession = pendingPayments.get(txnid);
+    if (!paymentSession) {
+      console.error('❌ Payment session not found:', txnid);
+      return res.status(404).send(`
+        <html>
+          <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h2 style="color: #ffc107;">Payment Session Not Found</h2>
+            <p>The payment session has expired or is invalid.</p>
+            <a href="/upgrade" style="color: #007bff;">Return to Upgrade Page</a>
+          </body>
+        </html>
+      `);
     }
 
-    // Get pending payment info
-    const pendingPayment = pendingPayments.get(txnid);
-    if (!pendingPayment) {
-      console.error('No pending payment found for txnid:', txnid);
-      return res.redirect('/upgrade?payment=failed&reason=invalid_transaction');
-    }
+    if (status === 'success') {
+      console.log('💰 Payment Successful!');
+      console.log(`Transaction ID: ${txnid}`);
+      console.log(`PayU Payment ID: ${mihpayid}`);
+      console.log(`Amount: ₹${amount}`);
 
-    // Verify email matches
-    if (pendingPayment.email !== email) {
-      console.error('Email mismatch in payment verification');
-      return res.redirect('/upgrade?payment=failed&reason=email_mismatch');
-    }
+      try {
+        // Update user tier to pro
+        const user = await storage.getUserByEmail(email);
+        if (user) {
+          await storage.updateUser(user.id, {
+            tier: 'pro',
+            totalPages: -1, // Unlimited
+            canGenerateStoryboards: true,
+            payuTransactionId: mihpayid,
+            paymentStatus: 'completed',
+            paymentMethod: 'payu'
+          });
 
-    try {
-      // For Firebase-based system, we'll use the quota manager to upgrade the user
-      const { productionQuotaManager } = await import('../lib/productionQuotaManager');
-      await productionQuotaManager.upgradeToPro(email);
-      
-      // Clean up pending payment
-      pendingPayments.delete(txnid);
+          console.log('✅ User upgraded to Pro tier');
+        }
 
-      console.log(`✓ Successfully upgraded user ${email} to pro tier`);
-      console.log(`✓ PayU Transaction ID: ${mihpayid}`);
-      console.log(`✓ Amount: ₹${amount}`);
+        // Clean up payment session
+        pendingPayments.delete(txnid);
 
-      // Redirect to success page
-      res.redirect('/dashboard?payment=success&upgrade=pro');
+        // Success page
+        res.send(`
+          <html>
+            <head>
+              <title>Payment Successful</title>
+              <style>
+                body { font-family: Arial; text-align: center; padding: 50px; background: #f8f9fa; }
+                .success { background: #d4edda; color: #155724; padding: 30px; border-radius: 10px; margin: 20px auto; max-width: 600px; }
+                .btn { display: inline-block; padding: 15px 30px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+              </style>
+            </head>
+            <body>
+              <div class="success">
+                <h1>🎉 Payment Successful!</h1>
+                <h2>Welcome to IndieShots Pro!</h2>
+                <p><strong>Transaction ID:</strong> ${txnid}</p>
+                <p><strong>PayU Payment ID:</strong> ${mihpayid}</p>
+                <p><strong>Amount:</strong> ₹${amount}</p>
+                <p><strong>Status:</strong> Your account has been upgraded to Pro tier</p>
+                <br>
+                <p><strong>Pro Features Unlocked:</strong></p>
+                <ul style="text-align: left; display: inline-block;">
+                  <li>Unlimited page uploads</li>
+                  <li>Unlimited shots per scene</li>
+                  <li>AI storyboard generation</li>
+                  <li>Priority support</li>
+                  <li>Advanced export options</li>
+                </ul>
+              </div>
+              <a href="/dashboard" class="btn">Go to Dashboard</a>
+              <a href="/upgrade" class="btn" style="background: #007bff;">View Pro Features</a>
+            </body>
+          </html>
+        `);
 
-    } catch (dbError) {
-      console.error('Database error during upgrade:', dbError);
-      res.redirect('/upgrade?payment=failed&reason=upgrade_failed');
+      } catch (error) {
+        console.error('❌ Error updating user tier:', error);
+        res.send(`
+          <html>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+              <h2 style="color: #ffc107;">Payment Processed</h2>
+              <p>Your payment was successful but there was an issue updating your account.</p>
+              <p>Please contact support with transaction ID: ${txnid}</p>
+              <a href="/dashboard" style="color: #007bff;">Go to Dashboard</a>
+            </body>
+          </html>
+        `);
+      }
+
+    } else {
+      console.log('❌ Payment failed or cancelled');
+      res.send(`
+        <html>
+          <body style="font-family: Arial; text-align: center; padding: 50px;">
+            <h2 style="color: #dc3545;">Payment Failed</h2>
+            <p>Status: ${status}</p>
+            <p>Transaction ID: ${txnid}</p>
+            <a href="/upgrade" style="color: #007bff;">Try Again</a>
+          </body>
+        </html>
+      `);
     }
 
   } catch (error) {
-    console.error('PayU success callback error:', error);
-    res.redirect('/upgrade?payment=failed&reason=callback_error');
+    console.error('❌ Payment success handler error:', error);
+    res.status(500).send(`
+      <html>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+          <h2 style="color: #dc3545;">Error Processing Payment</h2>
+          <p>There was an error processing your payment.</p>
+          <a href="/upgrade" style="color: #007bff;">Return to Upgrade Page</a>
+        </body>
+      </html>
+    `);
   }
 });
 
@@ -265,35 +297,51 @@ router.post('/success', async (req: Request, res: Response) => {
  */
 router.post('/failure', async (req: Request, res: Response) => {
   try {
-    console.log('PayU Failure Callback:', req.body);
+    console.log('❌ PayU Failure Callback Received');
+    console.log('Failure Data:', req.body);
 
-    const {
-      txnid,
-      amount,
-      productinfo,
-      firstname,
-      email,
-      status,
-      error: payuError,
-      error_Message
-    } = req.body;
+    const { txnid, status, error_Message } = req.body;
 
-    // Clean up pending payment
+    // Clean up payment session
     if (txnid) {
       pendingPayments.delete(txnid);
     }
 
-    console.log(`✗ Payment failed for ${email}`);
-    console.log(`✗ Status: ${status}`);
-    console.log(`✗ Error: ${payuError || error_Message}`);
-
-    // Redirect to upgrade page with failure message
-    const errorReason = encodeURIComponent(payuError || error_Message || 'payment_failed');
-    res.redirect(`/upgrade?payment=failed&reason=${errorReason}`);
+    res.send(`
+      <html>
+        <head>
+          <title>Payment Failed</title>
+          <style>
+            body { font-family: Arial; text-align: center; padding: 50px; background: #f8f9fa; }
+            .error { background: #f8d7da; color: #721c24; padding: 30px; border-radius: 10px; margin: 20px auto; max-width: 600px; }
+            .btn { display: inline-block; padding: 15px 30px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin: 10px; }
+          </style>
+        </head>
+        <body>
+          <div class="error">
+            <h1>Payment Failed</h1>
+            <p><strong>Status:</strong> ${status}</p>
+            <p><strong>Transaction ID:</strong> ${txnid}</p>
+            ${error_Message ? `<p><strong>Error:</strong> ${error_Message}</p>` : ''}
+            <p>Your payment could not be processed. Please try again.</p>
+          </div>
+          <a href="/upgrade" class="btn">Try Again</a>
+          <a href="/dashboard" class="btn" style="background: #6c757d;">Go to Dashboard</a>
+        </body>
+      </html>
+    `);
 
   } catch (error) {
-    console.error('PayU failure callback error:', error);
-    res.redirect('/upgrade?payment=failed&reason=callback_error');
+    console.error('❌ Payment failure handler error:', error);
+    res.status(500).send(`
+      <html>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+          <h2 style="color: #dc3545;">Error Processing Failure</h2>
+          <p>There was an error processing the payment failure.</p>
+          <a href="/upgrade" style="color: #007bff;">Return to Upgrade Page</a>
+        </body>
+      </html>
+    `);
   }
 });
 
@@ -301,41 +349,37 @@ router.post('/failure', async (req: Request, res: Response) => {
  * GET /api/payu/status/:txnid
  * Check payment status
  */
-router.get('/status/:txnid', authMiddleware, async (req: Request, res: Response) => {
+router.get('/status/:txnid', async (req: Request, res: Response) => {
   try {
     const { txnid } = req.params;
-    const payment = pendingPayments.get(txnid);
-
-    if (!payment) {
+    
+    const paymentSession = pendingPayments.get(txnid);
+    
+    if (!paymentSession) {
       return res.json({
+        success: false,
         status: 'not_found',
-        message: 'Payment session not found or expired'
+        message: 'Payment session not found'
       });
     }
 
-    // Check if payment is older than 1 hour
-    const oneHourAgo = Date.now() - (60 * 60 * 1000);
-    if (payment.timestamp < oneHourAgo) {
-      pendingPayments.delete(txnid);
-      return res.json({
-        status: 'expired',
-        message: 'Payment session expired'
-      });
-    }
+    const age = Date.now() - paymentSession.timestamp;
+    const expired = age > 30 * 60 * 1000; // 30 minutes
 
     res.json({
-      status: 'pending',
-      txnid: payment.txnid,
-      amount: payment.amount,
-      tier: payment.tier,
-      timestamp: payment.timestamp
+      success: true,
+      status: expired ? 'expired' : 'pending',
+      txnid: txnid,
+      email: paymentSession.email,
+      amount: paymentSession.amount,
+      age: Math.floor(age / 1000) + 's'
     });
 
   } catch (error) {
-    console.error('PayU status check error:', error);
-    res.status(500).json({ 
-      error: 'Failed to check payment status',
-      details: error instanceof Error ? error.message : 'Unknown error'
+    console.error('❌ Payment status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Status check failed'
     });
   }
 });

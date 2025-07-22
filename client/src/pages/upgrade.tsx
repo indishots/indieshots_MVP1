@@ -28,10 +28,13 @@ export default function Upgrade() {
     enabled: !!user
   });
 
-  // Create checkout session mutation
+  // Create PayU payment session mutation
   const createCheckoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/upgrade/create-checkout-session');
+      const response = await apiRequest('POST', '/api/payu/create-payment', {
+        amount: 1, // 1 rupee as requested
+        tier: 'pro'
+      });
       return await response.json();
     },
     onError: (error: Error) => {
