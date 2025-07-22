@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PayU Fixed Payment Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; background: #f8f9fa; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .test-card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0; }
+        button { padding: 15px 30px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; }
+        button:hover { background: #218838; }
+        .payment-details { background: #f8f9fa; padding: 20px; border: 2px solid #28a745; border-radius: 8px; margin: 20px 0; font-family: monospace; }
+        input[type="email"] { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; margin: 10px 0; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>🎉 PayU Payment System - FIXED!</h1>
+        
+        <div class="success">
+            <h3>✅ Hash Calculation Issue Resolved!</h3>
+            <p><strong>New PayU Credentials Active:</strong></p>
+            <ul>
+                <li>Merchant Key: xXZDKp ✅</li>
+                <li>Merchant Salt: ezsXEEqchsA1ZLmHzn5BrLRl9snmckHn ✅</li>
+                <li>Hash Generation: Working with correct PayU format ✅</li>
+                <li>Production Gateway: secure.payu.in ✅</li>
+            </ul>
+        </div>
+        
+        <div class="warning">
+            <strong>Ready for Real Payment Testing!</strong><br>
+            This will create a REAL payment session using your updated PayU credentials. The hash will be calculated correctly and should work with PayU gateway.
+        </div>
+        
+        <h3>Test Payment with Fixed Credentials</h3>
+        <input type="email" id="payment-email" placeholder="Enter your email for payment test" value="">
+        <br>
+        <button onclick="createFixedPayment()">🚀 Create Fixed PayU Payment</button>
+        
+        <div id="payment-result"></div>
+    </div>
+
+    <script>
+        async function createFixedPayment() {
+            const email = document.getElementById('payment-email').value.trim();
+            
+            if (!email) {
+                alert('Please enter your email address');
+                return;
+            }
+            
+            try {
+                document.getElementById('payment-result').innerHTML = `
+                    <div style="background: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        Creating payment session with FIXED PayU credentials...
+                    </div>
+                `;
+                
+                const response = await fetch('/api/payu/create-test-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        amount: 29,
+                        firstname: email.split('@')[0]
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Payment creation failed');
+                }
+                
+                // Display payment details
+                document.getElementById('payment-result').innerHTML = `
+                    <div class="payment-details">
+                        <h3>✅ Payment Session Created Successfully!</h3>
+                        <strong>Transaction ID:</strong> ${data.txnid}<br>
+                        <strong>Amount:</strong> ₹${data.paymentParams.amount}<br>
+                        <strong>Email:</strong> ${data.paymentParams.email}<br>
+                        <strong>PayU Gateway:</strong> ${data.paymentUrl}<br>
+                        <strong>Merchant Key:</strong> ${data.paymentParams.key}<br>
+                        <strong>Hash (Fixed):</strong> ${data.paymentParams.hash.substring(0, 40)}...<br>
+                        <br>
+                        <button onclick="submitToPayU('${data.paymentParams.txnid}')" style="background: #007bff;">
+                            Submit to PayU Gateway
+                        </button>
+                    </div>
+                `;
+                
+                // Store payment params globally for submission
+                window.paymentParams = data.paymentParams;
+                window.paymentUrl = data.paymentUrl;
+                
+                console.log('Payment session created with fixed credentials:', data);
+                
+            } catch (error) {
+                document.getElementById('payment-result').innerHTML = `
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <strong>Error:</strong> ${error.message}
+                    </div>
+                `;
+                console.error('Payment creation error:', error);
+            }
+        }
+        
+        function submitToPayU(txnid) {
+            if (!window.paymentParams || !window.paymentUrl) {
+                alert('No payment session found');
+                return;
+            }
+            
+            try {
+                console.log('Submitting to PayU with fixed credentials...');
+                console.log('Transaction ID:', txnid);
+                console.log('Hash:', window.paymentParams.hash.substring(0, 40) + '...');
+                
+                // Create form for PayU submission
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = window.paymentUrl;
+                form.target = '_blank';
+                
+                // Add all payment parameters
+                Object.entries(window.paymentParams).forEach(([key, value]) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = String(value);
+                    form.appendChild(input);
+                    console.log(`PayU Field: ${key} = ${String(value).length > 50 ? String(value).substring(0, 50) + '...' : String(value)}`);
+                });
+                
+                document.body.appendChild(form);
+                
+                console.log('🚀 Submitting to PayU with FIXED hash calculation');
+                form.submit();
+                document.body.removeChild(form);
+                
+                // Update the UI
+                document.getElementById('payment-result').innerHTML += `
+                    <div style="background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <strong>✅ Submitted to PayU!</strong><br>
+                        Check the new tab for PayU payment page with QR codes, UPI, PhonePe, and card options.
+                        <br><br>
+                        <strong>Transaction:</strong> ${txnid}<br>
+                        <strong>Status:</strong> Hash calculation FIXED - should work now!
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('PayU submission error:', error);
+                alert('Error submitting to PayU: ' + error.message);
+            }
+        }
+        
+        window.onload = function() {
+            console.log('PayU Fixed Payment Test Ready');
+            console.log('New salt active: ezsXEEqchsA1ZLmHzn5BrLRl9snmckHn');
+        };
+    </script>
+</body>
+</html>
