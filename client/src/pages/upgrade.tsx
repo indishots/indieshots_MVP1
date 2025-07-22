@@ -34,6 +34,36 @@ export default function Upgrade() {
       const response = await apiRequest('POST', '/api/upgrade/create-checkout-session');
       return await response.json();
     },
+    onError: (error: Error) => {
+      console.error('Upgrade error:', error);
+      
+      // Handle different error cases with user-friendly messages
+      if (error.message.includes('400:')) {
+        const errorText = error.message.split('400: ')[1] || error.message;
+        try {
+          const errorData = JSON.parse(errorText);
+          toast({
+            title: "Account Status",
+            description: errorData.error || "There was an issue with your upgrade request.",
+            variant: "destructive",
+          });
+        } catch (e) {
+          toast({
+            title: "Account Status",
+            description: errorText.includes('Already on pro tier') 
+              ? "You already have a Pro account! You have unlimited access to all features."
+              : errorText,
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Payment Error",
+          description: "Something went wrong while setting up your payment. Please try again or contact support.",
+          variant: "destructive",
+        });
+      }
+    },
     onSuccess: (data: any) => {
       console.log('Payment response:', data);
       

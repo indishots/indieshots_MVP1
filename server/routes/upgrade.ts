@@ -111,7 +111,9 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
 
     const currentTier = getUserTierInfo(user);
     if (currentTier.tier === 'pro') {
-      return res.status(400).json({ error: 'Already on pro tier' });
+      return res.status(400).json({ 
+        error: 'You already have a Pro account with unlimited access to all features. No upgrade needed!' 
+      });
     }
 
     // Import PayU service
