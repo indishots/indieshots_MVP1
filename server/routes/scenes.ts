@@ -8,17 +8,7 @@ import { generateShotsFromScene } from '../services/shotGenerator';
 import { generateStoryboards } from '../services/imageGenerator';
 import { generateStoryboardBatch } from '../services/robustImageGenerator';
 // Import character memory service with fallback
-let characterMemoryService: any;
-try {
-  const { characterMemoryService: cms } = await import('../services/characterMemoryService');
-  characterMemoryService = cms;
-} catch (importError) {
-  console.error('Character memory service unavailable:', importError);
-  // Create fallback service
-  characterMemoryService = {
-    getMemoryStats: () => ({ characterCount: 0, characters: [] })
-  };
-}
+import { characterMemoryService } from '../services/characterMemoryService';
 import { productionQuotaManager } from '../lib/productionQuotaManager';
 import * as fs from 'fs';
 import * as path from 'path';

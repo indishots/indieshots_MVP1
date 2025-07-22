@@ -3,6 +3,7 @@ import { StripeService } from './stripeService';
 import { PayuService } from './payuService';
 import { EmailService } from './emailService';
 import { storage } from '../storage';
+import type { User } from '@shared/schema';
 
 export interface PaymentMethodInfo {
   id: string;

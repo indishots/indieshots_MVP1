@@ -29,6 +29,7 @@ export class StripeService {
       if (process.env.NODE_ENV !== 'production') {
         console.warn('⚠️  STRIPE_SECRET_KEY not found - Stripe payments will not work');
         this.stripe = null as any;
+        this.config = {} as StripeConfig;
         return;
       }
       throw new Error('STRIPE_SECRET_KEY environment variable is required');
