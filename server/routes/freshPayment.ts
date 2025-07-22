@@ -91,6 +91,12 @@ router.post('/success', async (req, res) => {
       }
     }
 
+    // Handle payment cancellation or other status
+    if (status === 'cancel') {
+      console.log(`Payment cancelled: ${txnid}`);
+      return res.redirect('/upgrade?status=cancelled&message=Payment was cancelled. You can try again anytime.');
+    }
+    
     res.redirect('/upgrade?status=error&message=Payment was not successful');
 
   } catch (error) {
@@ -115,6 +121,24 @@ router.post('/failure', async (req, res) => {
   } catch (error) {
     console.error('Failure callback error:', error);
     res.redirect('/upgrade?status=error&message=Payment processing error');
+  }
+});
+
+/**
+ * Handle PayU cancel callback (when user closes payment gateway)
+ */
+router.post('/cancel', async (req, res) => {
+  try {
+    console.log('PayU Cancel callback:', req.body);
+    
+    const { txnid } = req.body;
+    console.log(`Payment cancelled by user: ${txnid}`);
+    
+    res.redirect('/upgrade?status=cancelled&message=Payment cancelled. No charges applied to your account.');
+    
+  } catch (error) {
+    console.error('Cancel callback error:', error);
+    res.redirect('/upgrade?status=cancelled&message=Payment was cancelled');
   }
 });
 

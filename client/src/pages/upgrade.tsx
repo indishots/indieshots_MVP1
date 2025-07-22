@@ -17,6 +17,43 @@ export default function Upgrade() {
   const [, setLocation] = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Handle payment status from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    const message = urlParams.get('message');
+
+    if (status && message) {
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+      if (status === 'success') {
+        toast({
+          title: "Payment Successful!",
+          description: decodeURIComponent(message),
+        });
+      } else if (status === 'cancelled') {
+        toast({
+          title: "Payment Cancelled",
+          description: decodeURIComponent(message),
+          variant: "destructive",
+        });
+      } else if (status === 'error') {
+        toast({
+          title: "Payment Failed",
+          description: decodeURIComponent(message),
+          variant: "destructive",
+        });
+      } else if (status === 'warning') {
+        toast({
+          title: "Payment Warning",
+          description: decodeURIComponent(message),
+          variant: "destructive",
+        });
+      }
+    }
+  }, [toast]);
+
   // Get upgrade plans and current status
   const { data: plansData, isLoading } = useQuery({
     queryKey: ['/api/upgrade/plans'],
@@ -254,11 +291,10 @@ export default function Upgrade() {
           Unlock the full power of IndieShots for your filmmaking projects
         </p>
         
-        {/* Payment System Ready Notice */}
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg max-w-2xl mx-auto">
-          <p className="text-sm text-green-800">
-            ✅ <strong>Payment System Ready:</strong> Secure payments now available through PayU. 
-            Pay with UPI, PhonePe, cards, or net banking.
+        {/* Professional Payment Notice */}
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
+          <p className="text-sm text-blue-800">
+            <strong>Secure Payment Processing:</strong> Payments processed through PayU's secure gateway with multiple payment options available.
           </p>
         </div>
       </div>

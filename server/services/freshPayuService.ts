@@ -23,6 +23,7 @@ interface PaymentData {
   phone: string;
   surl: string;
   furl: string;
+  curl?: string; // Cancel URL (optional)
   hash: string;
 }
 
@@ -79,7 +80,8 @@ export class FreshPayUService {
       email: email,
       phone: phone,
       surl: `${domain}/api/payment/success`,
-      furl: `${domain}/api/payment/failure`
+      furl: `${domain}/api/payment/failure`,
+      curl: `${domain}/api/payment/cancel` // Cancel URL for when user closes payment gateway
     };
 
     const hash = this.generateHash(paymentData);
