@@ -116,11 +116,29 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
     
     console.log(`[UPGRADE] User ${user.email} - JWT tier: ${user.tier}, DB tier: ${currentTier}`);
     
+    // FORCE FREE TIER CHECK: Only block if database shows pro tier
     if (currentTier === 'pro') {
       return res.status(400).json({ 
         error: 'You already have a Pro account with unlimited access to all features. No upgrade needed!' 
       });
     }
+    
+    // Additional debug logging
+    console.log(`[UPGRADE] Processing payment for free tier user: ${user.email}`);
+    console.log(`[UPGRADE] Database confirms free tier - proceeding with payment`);
+    console.log(`[UPGRADE] User usage: ${dbUser?.usedPages || 0} pages used`);
+    
+    // Generate fresh JWT with correct tier immediately
+    const { generateToken } = await import('../auth/jwt');
+    const freshToken = generateToken(dbUser);
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/',
+    };
+    res.cookie('auth_token', freshToken, cookieOptions);
 
     // Import PayU service
     const { PayUService } = await import('../services/payuService');
