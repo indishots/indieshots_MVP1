@@ -78,12 +78,12 @@ export class PayUService {
    */
   generatePaymentHash(params: Omit<PaymentParams, 'hash'>): string {
     // PayU official hash formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
-    // UDF fields are optional user-defined fields (we don't use them, so empty)
-    // After email: udf1|udf2|udf3|udf4|udf5||||| (5 UDFs + 5 empty fields) then salt
-    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}||||||||||${this.config.merchantSalt}`;
+    // After email: 5 UDF fields (empty) + 6 deprecated fields (empty) = 11 pipes total
+    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||||${this.config.merchantSalt}`;
     
     console.log('=== PayU Hash Debug ===');
     console.log('Hash String:', hashString);
+    console.log('Pipes after email:', (hashString.split(params.email)[1] || '').split(this.config.merchantSalt)[0]);
     console.log('Key:', params.key);
     console.log('TxnID:', params.txnid);
     console.log('Amount:', params.amount);
@@ -101,8 +101,9 @@ export class PayUService {
    * Generate hash for payment response verification
    */
   generateResponseHash(response: PaymentResponse): string {
-    // Response hash formula: salt|status|||||||||||email|firstname|productinfo|amount|txnid|key
-    const hashString = `${this.config.merchantSalt}|${response.status}||||||||||${response.email}|${response.firstname}|${response.productinfo}|${response.amount}|${response.txnid}|${this.config.merchantKey}`;
+    // Response hash formula: salt|status|udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key
+    // Status + 5 UDF fields (empty) + main fields in reverse order
+    const hashString = `${this.config.merchantSalt}|${response.status}|||||${response.email}|${response.firstname}|${response.productinfo}|${response.amount}|${response.txnid}|${this.config.merchantKey}`;
     console.log('Response Hash String:', hashString);
     return crypto.createHash('sha512').update(hashString).digest('hex');
   }
