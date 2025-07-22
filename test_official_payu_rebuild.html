@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PayU REBUILT - Official Hash Formula</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 50px auto; padding: 30px; background: #f4f6f8; }
+        .critical { background: #dc3545; color: white; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; font-weight: bold; font-size: 18px; }
+        .success { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; padding: 25px; border-radius: 12px; margin: 25px 0; }
+        .rebuild { background: #e1f5fe; color: #01579b; border: 2px solid #4fc3f7; padding: 25px; border-radius: 12px; margin: 25px 0; }
+        .formula { background: #fff; border: 2px solid #6c757d; padding: 20px; border-radius: 8px; margin: 15px 0; font-family: monospace; font-size: 14px; }
+        button { padding: 18px 35px; background: #dc3545; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 18px; font-weight: bold; margin: 15px; }
+        button:hover { background: #c82333; }
+        .test { background: #28a745; }
+        .test:hover { background: #218838; }
+        .warning { background: #ffc107; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="critical">
+        <h1>🔧 PAYU PAYMENT SYSTEM - COMPLETELY REBUILT</h1>
+        <h2>Using Official PayU Documentation Hash Formula</h2>
+        <p>Root Cause: Incorrect hash calculation causing "Transaction failed due to incorrectly calculated hash parameter"</p>
+    </div>
+
+    <div class="rebuild">
+        <h3>🚀 Complete System Rebuild</h3>
+        <p><strong>New PayU Service:</strong> Built from scratch using official PayU documentation</p>
+        <p><strong>Your Credentials:</strong> Production Key (xXZDKp), Salt (32 chars), Client ID, Client Secret</p>
+        <p><strong>Gateway:</strong> https://secure.payu.in (LIVE PRODUCTION)</p>
+        <p><strong>Hash Formula:</strong> EXACT official PayU specification</p>
+        
+        <div class="formula">
+            <strong>Official PayU Hash Formula (from docs):</strong><br>
+            sha512(key|txnid|amount|productinfo|firstname|email|||||||||||SALT)<br><br>
+            
+            <strong>Key Points:</strong><br>
+            • 11 empty pipes after email (for UDF fields)<br>
+            • Total pipes in hash string: 16<br>
+            • SHA512 algorithm (lowercase hex)<br>
+            • UTF-8 encoding<br>
+            • Server-side generation only
+        </div>
+    </div>
+
+    <div class="success">
+        <h3>✅ Technical Implementation</h3>
+        <ul>
+            <li><strong>Service:</strong> PayUProductionService class</li>
+            <li><strong>Routes:</strong> /api/payu-new/* endpoints</li>
+            <li><strong>Hash Generation:</strong> Official formula implementation</li>
+            <li><strong>Response Verification:</strong> Reverse hash validation</li>
+            <li><strong>Security:</strong> Server-side hash generation only</li>
+            <li><strong>Logging:</strong> Comprehensive payment tracking</li>
+        </ul>
+    </div>
+
+    <button onclick="testRebuiltPayU()" class="test">🧪 Test Rebuilt PayU System</button>
+    <button onclick="compareHashFormulas()" class="warning">📊 Compare Hash Formulas</button>
+    <button onclick="submitRealPayment()" class="test">💰 Submit Real ₹1 Payment</button>
+    
+    <div id="results"></div>
+
+    <script>
+        let paymentData = null;
+        
+        async function testRebuiltPayU() {
+            document.getElementById('results').innerHTML = `
+                <div class="rebuild" style="text-align: center;">
+                    <h3>🔄 Testing Rebuilt PayU System...</h3>
+                    <p>Generating hash with official PayU formula</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch('/api/payu-new/create-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'rebuilt@system.com',
+                        firstname: 'Rebuilt System',
+                        amount: 1
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    paymentData = data;
+                    
+                    document.getElementById('results').innerHTML = \`
+                        <div class="success">
+                            <h3>✅ REBUILT PAYU SYSTEM - WORKING!</h3>
+                            <div class="formula">
+                                <strong>Generated Payment Parameters:</strong><br>
+                                Transaction ID: \${data.txnid}<br>
+                                Merchant Key: \${data.paymentParams.key}<br>
+                                Amount: ₹\${data.paymentParams.amount}<br>
+                                Hash: \${data.paymentParams.hash.substring(0, 64)}...<br>
+                                Hash Length: \${data.paymentParams.hash.length} characters<br>
+                                Payment URL: \${data.paymentUrl}
+                            </div>
+                            <p><strong>Status:</strong> Hash generated using official PayU formula</p>
+                            <p><strong>Ready:</strong> Can now submit to PayU production gateway</p>
+                        </div>
+                    \`;
+                } else {
+                    throw new Error(data.error || 'Hash generation failed');
+                }
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = \`
+                    <div class="critical">
+                        <h3>❌ Rebuilt System Test Failed</h3>
+                        <p>Error: \${error.message}</p>
+                        <p>Check server logs for details</p>
+                    </div>
+                \`;
+            }
+        }
+        
+        function compareHashFormulas() {
+            document.getElementById('results').innerHTML = `
+                <div class="rebuild">
+                    <h3>📊 Hash Formula Comparison</h3>
+                    <div class="formula">
+                        <strong>❌ OLD (Wrong):</strong><br>
+                        key|txnid|amount|productinfo|firstname|email|||||||||SALT<br>
+                        (14 pipes total - causes PayU rejection)<br><br>
+                        
+                        <strong>✅ NEW (Correct - Official PayU):</strong><br>
+                        key|txnid|amount|productinfo|firstname|email|||||||||||SALT<br>
+                        (16 pipes total - matches PayU requirements)<br><br>
+                        
+                        <strong>Key Difference:</strong><br>
+                        • OLD: 7 pipes after email<br>
+                        • NEW: 11 pipes after email (for UDF1-5 fields)<br>
+                        • PayU validates exact pipe count for security
+                    </div>
+                    <p><strong>Result:</strong> Rebuilt system uses official PayU documentation formula</p>
+                </div>
+            `;
+        }
+        
+        function submitRealPayment() {
+            if (!paymentData) {
+                alert('Please test the rebuilt system first to generate payment data');
+                return;
+            }
+            
+            // Create hidden form and submit to PayU
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = paymentData.paymentUrl;
+            form.target = '_blank';
+            
+            // Add all payment parameters as hidden fields
+            Object.entries(paymentData.paymentParams).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = String(value);
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+            
+            document.getElementById('results').innerHTML += \`
+                <div class="success" style="margin-top: 25px; text-align: center;">
+                    <h3>🚨 REAL PAYMENT SUBMITTED TO PAYU!</h3>
+                    <p><strong>Transaction:</strong> \${paymentData.txnid}</p>
+                    <p><strong>Amount:</strong> ₹1.00 (Real money transaction)</p>
+                    <p><strong>Check PayU tab:</strong> If it loads the payment page without hash errors, THE REBUILD IS SUCCESSFUL!</p>
+                    <div class="formula">
+                        <strong>If PayU shows payment options (QR, UPI, Cards), the hash error is FIXED!</strong>
+                    </div>
+                </div>
+            \`;
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            setTimeout(testRebuiltPayU, 1000);
+        };
+    </script>
+</body>
+</html>

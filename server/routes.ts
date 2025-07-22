@@ -93,6 +93,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const payuRoutes = await import('./routes/payu');
   app.use('/api/payu', payuRoutes.default);
   
+  // New PayU service - REBUILT FROM SCRATCH
+  const payuNewRoutes = await import('./routes/payuNew');
+  app.use('/api/payu-new', payuNewRoutes.default);
+  
   // PayU test routes (development)
   if (process.env.NODE_ENV === 'development') {
     const payuTestRoutes = await import('./routes/payu-test');
