@@ -89,31 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upgradeRoutes = await import('./routes/upgrade');
   app.use('/api/upgrade', upgradeRoutes.default);
   
-  // Payment system routes
-  const payuRoutes = await import('./routes/payu');
-  app.use('/api/payu', payuRoutes.default);
-  
-  // New PayU service - REBUILT FROM SCRATCH
-  const payuNewRoutes = await import('./routes/payuNew');
-  app.use('/api/payu-new', payuNewRoutes.default);
-  
-  // PayU test routes (development)
-  if (process.env.NODE_ENV === 'development') {
-    const payuTestRoutes = await import('./routes/payu-test');
-    app.use('/api/payu', payuTestRoutes.default);
-  }
-  
-  const stripeRoutes = await import('./routes/stripe');
-  app.use('/api/stripe', stripeRoutes.default);
-  
-  const webhookRoutes = await import('./routes/webhooks');
-  app.use('/api/webhooks', webhookRoutes.default);
-  
-  const paymentRoutes = await import('./routes/payments');
-  app.use('/api/payments', paymentRoutes.default);
-  
-  const paymentSuccessRoutes = await import('./routes/payment-success');
-  app.use('/payment', paymentSuccessRoutes.default);
+  // Payment system routes - REMOVED ALL OLD SYSTEMS
   
   const envRoutes = await import('./routes/environment-variables');
   app.use('/api/env', envRoutes.default);
