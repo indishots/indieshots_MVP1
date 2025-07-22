@@ -73,9 +73,7 @@ export interface IStorage {
   deleteUserSessions(userId: string): Promise<void>;
 }
 
-// Use the extended storage with payment methods
-import { ExtendedDatabaseStorage } from './storage-extensions';
-const storage = new ExtendedDatabaseStorage();
+// Storage instance will be created at the end of the file
 
 export class DatabaseStorage implements IStorage {
   // User operations
@@ -607,5 +605,5 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// Export singleton extended storage instance with payment methods  
-export { storage };
+// Create and export storage instance
+export const storage = new DatabaseStorage();

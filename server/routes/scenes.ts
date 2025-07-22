@@ -10,7 +10,8 @@ import { generateStoryboardBatch } from '../services/robustImageGenerator';
 // Import character memory service with fallback
 let characterMemoryService: any;
 try {
-  characterMemoryService = require('../services/characterMemoryService').characterMemoryService;
+  const { characterMemoryService: cms } = await import('../services/characterMemoryService');
+  characterMemoryService = cms;
 } catch (importError) {
   console.error('Character memory service unavailable:', importError);
   // Create fallback service

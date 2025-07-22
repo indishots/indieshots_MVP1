@@ -1,10 +1,9 @@
-import { DatabaseStorage } from './storage';
 import { users, type User } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
-// Extend DatabaseStorage with payment-related methods
-export class ExtendedDatabaseStorage extends DatabaseStorage {
+// Payment-related storage methods
+export class PaymentStorage {
   // Additional user operations for payment system
   async getUserById(id: string): Promise<User | undefined> {
     // Try to find by Firebase UID (string ID) or numeric ID
