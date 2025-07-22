@@ -77,26 +77,41 @@ export class PayUService {
    * Generate hash for payment request
    */
   generatePaymentHash(params: Omit<PaymentParams, 'hash'>): string {
-    // PayU EXACT hash formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
-    // CRITICAL: Must have exactly 11 pipes after email (5 UDF fields + 6 additional empty pipes)
-    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|||||||||||||${this.config.merchantSalt}`;
+    // PayU OFFICIAL hash formula from docs: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+    // UDF fields: |udf1|udf2|udf3|udf4|udf5| (5 pipes) + ||||||  (6 empty pipes) = 11 pipes after email
+    const udf1 = params.udf1 || '';
+    const udf2 = params.udf2 || '';
+    const udf3 = params.udf3 || '';
+    const udf4 = params.udf4 || '';
+    const udf5 = params.udf5 || '';
     
-    console.log('=== PayU Hash Debug (EXACT FORMAT) ===');
+    const hashString = `${params.key}|${params.txnid}|${params.amount}|${params.productinfo}|${params.firstname}|${params.email}|${udf1}|${udf2}|${udf3}|${udf4}|${udf5}||||||${this.config.merchantSalt}`;
+    
+    console.log('=== PayU Hash Debug (OFFICIAL DOCS FORMAT) ===');
     console.log('Hash String:', hashString);
-    console.log('PayU Required Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt');
-    console.log('Our Format (FIXED):   ', hashString);
-    console.log('Pipe Count After Email:', (hashString.split('|').length - 7), '(should be 11 pipes after email)');
-    console.log('Total Pipes in String:', (hashString.split('|').length - 1), '(should be 17 total)');
+    console.log('PayU Official Format: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt');
+    console.log('Our Format (OFFICIAL): ', hashString);
+    
+    // Count pipes after email manually
+    const afterEmail = `|${udf1}|${udf2}|${udf3}|${udf4}|${udf5}||||||`;
+    console.log('After Email Part:', afterEmail);
+    console.log('Pipe Count After Email:', (afterEmail.match(/\|/g) || []).length, '(PayU requires 11)');
+    
     console.log('Key:', params.key);
     console.log('TxnID:', params.txnid);
     console.log('Amount:', params.amount);
     console.log('Product:', params.productinfo);
     console.log('Name:', params.firstname);
     console.log('Email:', params.email);
+    console.log('UDF1:', udf1 || '(empty)');
+    console.log('UDF2:', udf2 || '(empty)');
+    console.log('UDF3:', udf3 || '(empty)');
+    console.log('UDF4:', udf4 || '(empty)');
+    console.log('UDF5:', udf5 || '(empty)');
     console.log('Salt:', this.config.merchantSalt);
     
-    const hash = crypto.createHash('sha512').update(hashString).digest('hex');
-    console.log('Generated Hash (FIXED):', hash);
+    const hash = crypto.createHash('sha512').update(hashString).digest('hex').toLowerCase();
+    console.log('Generated Hash (OFFICIAL & LOWERCASE):', hash);
     return hash;
   }
 
@@ -105,10 +120,16 @@ export class PayUService {
    */
   generateResponseHash(response: PaymentResponse): string {
     // PayU response hash formula (reverse order): salt|status|udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key
-    const hashString = `${this.config.merchantSalt}|${response.status}|||||${response.email}|${response.firstname}|${response.productinfo}|${response.amount}|${response.txnid}|${this.config.merchantKey}`;
+    const udf1 = (response as any).udf1 || '';
+    const udf2 = (response as any).udf2 || '';
+    const udf3 = (response as any).udf3 || '';
+    const udf4 = (response as any).udf4 || '';
+    const udf5 = (response as any).udf5 || '';
+    
+    const hashString = `${this.config.merchantSalt}|${response.status}|${udf5}|${udf4}|${udf3}|${udf2}|${udf1}|${response.email}|${response.firstname}|${response.productinfo}|${response.amount}|${response.txnid}|${this.config.merchantKey}`;
     console.log('=== PayU Response Hash Debug ===');
     console.log('Response Hash String:', hashString);
-    return crypto.createHash('sha512').update(hashString).digest('hex');
+    return crypto.createHash('sha512').update(hashString).digest('hex').toLowerCase();
   }
 
   /**
