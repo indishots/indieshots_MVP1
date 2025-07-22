@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { Request, Response } from 'express';
 import { authMiddleware } from '../auth/jwt';
 import { getUserTierInfo } from '../middleware/tierLimits';
+import { generateToken } from '../auth/jwt';
 const router = Router();
 
 /**
@@ -109,17 +110,48 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
       return res.status(400).json({ error: 'User email required for checkout' });
     }
 
-    // Get fresh user data from database to avoid cached tier issues
+    // BYPASS JWT COMPLETELY - Always check fresh database data
     const { storage } = await import('../storage');
     const dbUser = await storage.getUserByEmail(user.email);
-    const currentTier = dbUser ? dbUser.tier : 'free';
+    
+    if (!dbUser) {
+      return res.status(404).json({ error: 'User not found in database' });
+    }
+    
+    const currentTier = dbUser.tier;
     
     console.log(`[UPGRADE] User ${user.email} - JWT tier: ${user.tier}, DB tier: ${currentTier}`);
     
-    // FORCE FREE TIER CHECK: Only block if database shows pro tier
-    if (currentTier === 'pro') {
+    // Only premium@demo.com should be blocked from upgrading
+    if (currentTier === 'pro' && user.email !== 'premium@demo.com') {
+      // Check if they have a valid promo code - if yes, they should be pro
+      const { db } = await import('../db');
+      const { promoCodeUsage } = await import('../../shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
+      const hasPromoCode = await db.select()
+        .from(promoCodeUsage)
+        .where(eq(promoCodeUsage.userEmail, user.email.toLowerCase()));
+      
+      if (hasPromoCode.length > 0) {
+        return res.status(400).json({ 
+          error: 'You already have a Pro account with unlimited access to all features. No upgrade needed!' 
+        });
+      } else {
+        // They don't have promo code but database shows pro - fix this immediately
+        console.log(`🔧 FIXING INCORRECT PRO TIER: ${user.email} has no promo code, correcting to free tier`);
+        await storage.updateUser(dbUser.id, {
+          tier: 'free',
+          totalPages: 5,
+          maxShotsPerScene: 5,
+          canGenerateStoryboards: false
+        });
+      }
+    }
+    
+    if (user.email === 'premium@demo.com') {
       return res.status(400).json({ 
-        error: 'You already have a Pro account with unlimited access to all features. No upgrade needed!' 
+        error: 'Demo account already has pro access. This is a test account.' 
       });
     }
     
@@ -127,9 +159,9 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
     console.log(`[UPGRADE] Processing payment for free tier user: ${user.email}`);
     console.log(`[UPGRADE] Database confirms free tier - proceeding with payment`);
     console.log(`[UPGRADE] User usage: ${dbUser?.usedPages || 0} pages used`);
+    console.log(`[UPGRADE] Proceeding with PayU payment setup for free tier user`);
     
-    // Generate fresh JWT with correct tier immediately
-    const { generateToken } = await import('../auth/jwt');
+    // Generate fresh JWT with correct tier immediately to fix any cache issues
     const freshToken = generateToken(dbUser);
     const cookieOptions = {
       httpOnly: true,
@@ -355,6 +387,54 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error getting upgrade status:', error);
     res.status(500).json({ error: 'Failed to get upgrade status' });
+  }
+});
+
+/**
+ * POST /api/upgrade/clear-cache
+ * Clear authentication cache and force database tier check
+ */
+router.post('/clear-cache', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user;
+    if (!user?.email) {
+      return res.status(400).json({ error: 'User email required' });
+    }
+
+    // Get fresh user data from database
+    const { storage } = await import('../storage');
+    const dbUser = await storage.getUserByEmail(user.email);
+    
+    if (!dbUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Generate fresh JWT with correct tier
+    const freshToken = generateToken(dbUser);
+    
+    // Set new cookie
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      path: '/',
+    };
+    
+    res.cookie('auth_token', freshToken, cookieOptions);
+    
+    console.log(`[CLEAR CACHE] Updated tier for ${user.email}: ${dbUser.tier}`);
+    
+    res.json({
+      message: 'Cache cleared and tier refreshed',
+      tier: dbUser.tier,
+      totalPages: dbUser.totalPages,
+      canGenerateStoryboards: dbUser.canGenerateStoryboards
+    });
+    
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+    res.status(500).json({ error: 'Failed to clear cache' });
   }
 });
 
