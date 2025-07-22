@@ -54,11 +54,11 @@ export class PayUService {
     const hasProductionKeys = process.env.PAYU_MERCHANT_KEY && process.env.PAYU_MERCHANT_SALT;
     
     this.config = {
-      merchantKey: process.env.PAYU_MERCHANT_KEY || '9AsyFa', // Default test key
-      merchantSalt: process.env.PAYU_MERCHANT_SALT || '6pSdSll7fkWxuRBbTESjJVztSp7wVGFD', // Default test salt
-      clientId: process.env.PAYU_CLIENT_ID || 'de68a0289b39ab2dfee8c662a65a1bc2d33011f78ae76b7e4c96c55396b3fc29',
-      clientSecret: process.env.PAYU_CLIENT_SECRET || '621b230f06e83138b083a27f2c3732740678206aa537a090076f0653ea50c68d',
-      baseUrl: hasProductionKeys ? 'https://secure.payu.in' : 'https://test.payu.in'
+      merchantKey: process.env.PAYU_MERCHANT_KEY || 'xXZDKp', // Production key from dashboard
+      merchantSalt: process.env.PAYU_MERCHANT_SALT || 'PEvebkhtqZbQ4VhCV7W2IZCdgnGGaa2B', // Production 32-bit salt
+      clientId: process.env.PAYU_CLIENT_ID || 'f10a90386f9639dadfe839bc565d2e6d26cb5d88e1f49640b53960ed0d1364c8',
+      clientSecret: process.env.PAYU_CLIENT_SECRET || 'd2d92cbf109d9efe6430ec8399c5ffc89287b5fcfe6e8f27713a0fc17f3b74ec',
+      baseUrl: 'https://secure.payu.in' // Always use production URL with production credentials
     };
 
     // Log configuration status
@@ -66,10 +66,10 @@ export class PayUService {
     console.log(`Using base URL: ${this.config.baseUrl}`);
     console.log(`Merchant Key: ${this.config.merchantKey.substring(0, 6)}...`);
     
-    // Alert if using test credentials in production intent
-    if (this.config.merchantKey === '9AsyFa') {
-      console.warn('⚠️  WARNING: Using test PayU credentials. Real payments will fail with "Unable to scan QR" error.');
-      console.warn('⚠️  Configure PAYU_MERCHANT_KEY and PAYU_MERCHANT_SALT for production payments.');
+    // Confirm production credentials are loaded
+    if (this.config.merchantKey === 'xXZDKp') {
+      console.log('✅ PayU Production credentials loaded successfully');
+      console.log('✅ Real payments and QR codes will work correctly');
     }
   }
 

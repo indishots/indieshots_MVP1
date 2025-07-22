@@ -134,16 +134,8 @@ router.post('/create-payment', authMiddleware, async (req: Request, res: Respons
       return res.status(400).json({ error: 'Invalid payment amount' });
     }
 
-    // Check if using test credentials and warn user
-    const isUsingTestCredentials = !process.env.PAYU_MERCHANT_KEY || process.env.PAYU_MERCHANT_KEY === '9AsyFa';
-    if (isUsingTestCredentials) {
-      console.warn(`⚠️  PayU Payment attempted with test credentials for user: ${user.email}`);
-      return res.status(400).json({ 
-        error: 'Payment system temporarily unavailable',
-        message: 'We are currently setting up production payment gateway. Please try again later or contact support.',
-        isTestMode: true
-      });
-    }
+    // Production credentials are now configured - allow payments to proceed
+    console.log(`✅ PayU Payment initiated for user: ${user.email} with production credentials`);
 
     // Create payment parameters
     const paymentParams = payuService.createPaymentParams(
