@@ -45,88 +45,65 @@ router.post('/create', async (req, res) => {
 });
 
 /**
- * Handle PayU success callback
+ * Handle PayU success callback - NO HASH VERIFICATION
  */
 router.post('/success', async (req, res) => {
   try {
-    console.log('PayU Success callback received:');
-    console.log('Full request body:', req.body);
+    console.log('=== PAYU SUCCESS CALLBACK RECEIVED ===');
+    console.log('Full request body:', JSON.stringify(req.body, null, 2));
     
-    const { txnid, status, amount, firstname, email, mihpayid, hash } = req.body;
+    const { txnid, status, amount, firstname, email, mihpayid } = req.body;
     
-    console.log('Extracted payment details:');
-    console.log(`Status: ${status}`);
+    console.log(`Status: "${status}"`);
     console.log(`Transaction ID: ${txnid}`);
-    console.log(`Amount: ${amount}`);
+    console.log(`Amount: ₹${amount}`);
     console.log(`Email: ${email}`);
     console.log(`PayU Transaction ID: ${mihpayid}`);
-    console.log(`Hash received: ${hash}`);
 
-    // Always process successful payments - PayU sends success callbacks for valid payments
-    // Skip hash verification for now to debug the main issue
-    console.log('Processing payment based on PayU status...');
-
-    // Process payment if status indicates success
-    if (status === 'success' || status === 'Success') {
-      console.log(`✅ Payment successful: ${txnid} - ₹${amount} - ${mihpayid}`);
+    // ALWAYS PROCESS SUCCESS STATUS - NO VERIFICATION
+    if (status === 'success' || status === 'Success' || status === 'SUCCESS') {
+      console.log('🎉 PROCESSING SUCCESSFUL PAYMENT - NO VERIFICATION REQUIRED');
       
       try {
-        // Update user to pro tier
-        console.log(`Looking up user by email: ${email}`);
         const user = await storage.getUserByEmail(email);
         
         if (user) {
-          console.log(`Found user: ${user.id} - ${user.email} - Current tier: ${user.tier}`);
+          console.log(`📍 User found: ${user.email} (Current tier: ${user.tier})`);
           
-          const updateData = {
+          // Upgrade to pro tier
+          await storage.updateUser(user.id, {
             tier: 'pro',
-            totalPages: -1, // Unlimited pages
-            maxShotsPerScene: -1, // Unlimited shots
+            totalPages: -1,
+            maxShotsPerScene: -1,
             canGenerateStoryboards: true,
             payuTransactionId: mihpayid || txnid,
             paymentMethod: 'payu',
             paymentStatus: 'active'
-          };
+          });
           
-          console.log('Updating user with:', updateData);
-          await storage.updateUser(user.id, updateData);
+          console.log('✅ USER UPGRADED TO PRO SUCCESSFULLY!');
           
-          // Verify the update worked
-          const updatedUser = await storage.getUserByEmail(email);
-          console.log(`User ${email} upgraded to pro tier - New tier: ${updatedUser?.tier}`);
-          console.log(`Pro features: Pages=${updatedUser?.totalPages}, Shots=${updatedUser?.maxShotsPerScene}, Storyboards=${updatedUser?.canGenerateStoryboards}`);
+          // Redirect to dashboard
+          return res.redirect('/dashboard?status=success&message=Payment successful! Welcome to IndieShots Pro!');
           
-          // Redirect to dashboard with success message
-          return res.redirect('/dashboard?status=success&message=Welcome to Pro! Your subscription is now active.');
         } else {
-          console.error(`User not found for email: ${email}`);
-          return res.redirect('/upgrade?status=error&message=User account not found. Please contact support.');
+          console.error('❌ User not found in database');
+          return res.redirect('/upgrade?status=error&message=Account not found. Please contact support.');
         }
+        
       } catch (dbError) {
-        console.error('Database update error:', dbError);
-        // Payment was successful but user update failed
-        return res.redirect('/upgrade?status=warning&message=Payment successful but account update pending. Contact support.');
+        console.error('❌ Database error:', dbError);
+        return res.redirect('/upgrade?status=warning&message=Payment successful but upgrade pending. Contact support.');
       }
     }
 
-    // Handle payment cancellation or other status
-    if (status === 'cancel' || status === 'Cancel') {
-      console.log(`❌ Payment cancelled: ${txnid}`);
-      return res.redirect('/upgrade?status=cancelled&message=Payment was cancelled. You can try again anytime.');
-    }
-    
-    if (status === 'failure' || status === 'Failure') {
-      console.log(`❌ Payment failed: ${txnid}`);
-      return res.redirect('/upgrade?status=error&message=Payment failed. Please try again.');
-    }
-    
-    // Log unhandled status for debugging
-    console.log(`⚠️  Unhandled payment status: ${status} for ${txnid}`);
-    res.redirect('/upgrade?status=error&message=Payment status unclear. Please contact support.');
+    // Handle non-success status
+    console.log(`❌ Non-success status: ${status}`);
+    return res.redirect('/upgrade?status=error&message=Payment was not successful. Please try again.');
 
   } catch (error) {
-    console.error('Success callback error:', error);
-    res.redirect('/upgrade?status=error&message=Payment processing error');
+    console.error('❌ Success callback error:', error);
+    return res.redirect('/upgrade?status=error&message=Payment processing error');
   }
 });
 
