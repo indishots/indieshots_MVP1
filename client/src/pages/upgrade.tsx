@@ -169,6 +169,9 @@ export default function Upgrade() {
 
     setIsProcessing(true);
     try {
+      // Log upgrade attempt for debugging
+      console.log('Starting upgrade process for user:', user.email);
+      
       await createCheckoutMutation.mutateAsync();
     } finally {
       setIsProcessing(false);
