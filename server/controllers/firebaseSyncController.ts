@@ -179,17 +179,9 @@ export async function firebaseSync(req: Request, res: Response) {
         user = await storage.updateUser(user.id, updates);
       }
       
-      // CRITICAL ACCOUNT PROTECTION: Immediate pro tier assignment for accounts with INDIE2025
-      const criticalProAccounts = [
-        'premium@demo.com',
-        'dhulipallagopichandu@gmail.com',
-        'gopichandudhulipalla@gmail.com'
-      ];
-      
-      const isCriticalAccount = user.email && criticalProAccounts.includes(user.email);
-      
-      if (isCriticalAccount && user.tier !== 'pro') {
-        console.log(`🔧 CRITICAL ACCOUNT: Upgrading ${user.email} to pro tier in Firebase sync`);
+      // Only premium@demo.com gets special protection
+      if (user.email === 'premium@demo.com' && user.tier !== 'pro') {
+        console.log(`🔧 DEMO ACCOUNT: Upgrading premium@demo.com to pro tier in Firebase sync`);
         
         user = await storage.updateUser(user.id, {
           tier: 'pro',
@@ -201,7 +193,7 @@ export async function firebaseSync(req: Request, res: Response) {
       
       // UNIVERSAL INDIE2025 VALIDATION: Check promo code usage for other users
       try {
-        if (!isCriticalAccount && user.email) {
+        if (user.email !== 'premium@demo.com' && user.email) {
           const { db } = await import('../db.js');
           const promoUsageCheck = await db.execute(`
             SELECT pc.code FROM promo_code_usage pcu 

@@ -153,24 +153,17 @@ class AuthManager {
       if (response.ok) {
         const userData = await response.json();
         
-        // Frontend protection for critical accounts with INDIE2025 promo codes
-        const criticalProAccounts = [
-          'premium@demo.com',
-          'dhulipallagopichandu@gmail.com',
-          'gopichandudhulipalla@gmail.com'
-        ];
-        const isCriticalProAccount = criticalProAccounts.includes(userData.email);
-        
+        // Use ONLY the database-provided tier information
         this.user = {
           id: userData.id,
           email: userData.email,
           displayName: userData.displayName || userData.email?.split('@')[0] || 'User',
           provider: userData.provider || 'password',
-          tier: isCriticalProAccount ? 'pro' : userData.tier,
+          tier: userData.tier,
           usedPages: userData.usedPages,
-          totalPages: isCriticalProAccount ? -1 : userData.totalPages,
-          maxShotsPerScene: isCriticalProAccount ? -1 : userData.maxShotsPerScene,
-          canGenerateStoryboards: isCriticalProAccount ? true : userData.canGenerateStoryboards
+          totalPages: userData.totalPages,
+          maxShotsPerScene: userData.maxShotsPerScene,
+          canGenerateStoryboards: userData.canGenerateStoryboards
         };
         
         console.log('🎯 USER AUTHENTICATED:', {
@@ -179,12 +172,8 @@ class AuthManager {
           totalPages: this.user.totalPages,
           maxShotsPerScene: this.user.maxShotsPerScene,
           canGenerateStoryboards: this.user.canGenerateStoryboards,
-          isCriticalProAccount: isCriticalProAccount
+          dataSource: 'database'
         });
-        
-        if (isCriticalProAccount) {
-          console.log('🔒 FRONTEND: Applied pro tier protection for critical account:', this.user.email);
-        }
         this.authState = 'authenticated';
         console.log('Backend session created for:', this.user.email, 'with tier:', this.user.tier);
         
