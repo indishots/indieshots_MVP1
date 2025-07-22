@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PayU Direct Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .result { padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px; }
+        .payu-form { background: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>PayU Direct Submission Test</h1>
+    
+    <button onclick="createAndSubmitPayment()">Create Payment & Submit to PayU</button>
+    
+    <div id="result"></div>
+    <div id="form-container"></div>
+
+    <script>
+        async function createAndSubmitPayment() {
+            try {
+                document.getElementById('result').innerHTML = '<div class="result">Creating payment session...</div>';
+                
+                // Create payment session
+                const response = await fetch('/api/payu/create-test-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        amount: 29,
+                        firstname: 'Test User'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to create payment');
+                }
+                
+                document.getElementById('result').innerHTML = `
+                    <div class="result success">
+                        Payment session created successfully!<br>
+                        Transaction ID: ${data.txnid}<br>
+                        Amount: ₹${data.paymentParams.amount}<br>
+                        Email: ${data.paymentParams.email}
+                    </div>
+                `;
+                
+                // Create and display the PayU form
+                const formHtml = createPayUForm(data.paymentParams, data.paymentUrl);
+                document.getElementById('form-container').innerHTML = formHtml;
+                
+                // Auto-submit after 2 seconds
+                setTimeout(() => {
+                    console.log('Auto-submitting to PayU...');
+                    document.getElementById('payu-form').submit();
+                }, 2000);
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <div class="result error">
+                        Error: ${error.message}
+                    </div>
+                `;
+                console.error('Payment test error:', error);
+            }
+        }
+        
+        function createPayUForm(params, paymentUrl) {
+            const fields = Object.entries(params)
+                .map(([key, value]) => `<input type="hidden" name="${key}" value="${value}">`)
+                .join('\n');
+            
+            return `
+                <div class="payu-form">
+                    <h3>PayU Payment Form (Auto-submitting in 2 seconds...)</h3>
+                    <p><strong>Gateway:</strong> ${paymentUrl}</p>
+                    <p><strong>Transaction:</strong> ${params.txnid}</p>
+                    <p><strong>Hash:</strong> ${params.hash.substring(0, 40)}...</p>
+                    
+                    <form id="payu-form" method="POST" action="${paymentUrl}" target="_blank">
+                        ${fields}
+                        <button type="submit">Submit to PayU Gateway</button>
+                    </form>
+                </div>
+            `;
+        }
+        
+        // Test on page load
+        window.onload = function() {
+            console.log('PayU test page loaded. Click button to test payment submission.');
+        };
+    </script>
+</body>
+</html>
