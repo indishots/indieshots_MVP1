@@ -66,23 +66,35 @@ router.post('/success', async (req, res) => {
       
       try {
         // Update user to pro tier
+        console.log(`Looking up user by email: ${email}`);
         const user = await storage.getUserByEmail(email);
+        
         if (user) {
-          await storage.updateUser(user.id, {
+          console.log(`Found user: ${user.id} - ${user.email} - Current tier: ${user.tier}`);
+          
+          const updateData = {
             tier: 'pro',
             totalPages: -1, // Unlimited pages
             maxShotsPerScene: -1, // Unlimited shots
             canGenerateStoryboards: true,
-            payuTransactionId: mihpayid || txnid
-          });
+            payuTransactionId: mihpayid || txnid,
+            paymentMethod: 'payu',
+            paymentStatus: 'active'
+          };
           
-          console.log(`User ${email} upgraded to pro tier`);
+          console.log('Updating user with:', updateData);
+          await storage.updateUser(user.id, updateData);
           
-          // TODO: Send confirmation email here
-          console.log(`Confirmation email should be sent to ${email}`);
+          // Verify the update worked
+          const updatedUser = await storage.getUserByEmail(email);
+          console.log(`User ${email} upgraded to pro tier - New tier: ${updatedUser?.tier}`);
+          console.log(`Pro features: Pages=${updatedUser?.totalPages}, Shots=${updatedUser?.maxShotsPerScene}, Storyboards=${updatedUser?.canGenerateStoryboards}`);
           
           // Redirect to dashboard with success message
           return res.redirect('/dashboard?status=success&message=Welcome to Pro! Your subscription is now active.');
+        } else {
+          console.error(`User not found for email: ${email}`);
+          return res.redirect('/upgrade?status=error&message=User account not found. Please contact support.');
         }
       } catch (dbError) {
         console.error('Database update error:', dbError);
