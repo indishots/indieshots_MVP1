@@ -24,9 +24,11 @@ export default function Dashboard() {
       // User just completed payment, refresh auth data immediately
       console.log('Payment success detected, refreshing user data...');
       
-      // Force refresh user data from multiple sources
+      // Force refresh user data and upgrade status from multiple sources
       queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/upgrade/status"] });
       queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.refetchQueries({ queryKey: ["/api/upgrade/status"] });
       refreshUserData(); // Also refresh through auth provider
       
       // Show success toast
@@ -50,28 +52,45 @@ export default function Dashboard() {
   const { data: parseJobs = [], isLoading: isLoadingJobs } = useQuery({
     queryKey: ["/api/jobs"],
   });
+
+  // Fetch upgrade status for accurate tier information (critical for post-payment scenarios)
+  const { data: upgradeStatus } = useQuery({
+    queryKey: ["/api/upgrade/status"],
+    enabled: !!user,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
   
   // Calculate usage statistics based on tier
   const isPremiumDemo = user?.email === 'premium@demo.com';
   
-  // Check multiple sources for tier information to handle post-payment scenarios
+  // Use upgrade status as primary source for tier information (handles post-payment scenarios)
   const userTier = isPremiumDemo ? 'pro' : 
-    (user?.tier || 
+    ((upgradeStatus as any)?.tier || 
+     user?.tier || 
      (user as any)?.tier || 
      ((user as any)?.totalPages === -1 ? 'pro' : 'free'));
   
-  const pagesUsed = (user as any)?.usedPages || 0;
-  const totalPages = userTier === 'pro' ? -1 : ((user as any)?.totalPages || 5);
+  const pagesUsed = (upgradeStatus as any)?.limits?.usedPages || (user as any)?.usedPages || 0;
+  const totalPages = userTier === 'pro' ? -1 : ((upgradeStatus as any)?.limits?.totalPages || (user as any)?.totalPages || 10);
   const usagePercentage = totalPages === -1 ? 0 : Math.min(100, Math.round((pagesUsed / totalPages) * 100));
   const pagesRemaining = totalPages === -1 ? 'unlimited' : Math.max(0, totalPages - pagesUsed);
+  const canGenerateStoryboards = userTier === 'pro' ? true : ((upgradeStatus as any)?.limits?.canGenerateStoryboards || (user as any)?.canGenerateStoryboards || false);
   
   // Debug tier detection for troubleshooting
   console.log('Dashboard tier detection:', {
     email: user?.email,
     userTier,
     totalPages,
-    canGenerateStoryboards: (user as any)?.canGenerateStoryboards,
-    rawUserData: user
+    pagesUsed,
+    canGenerateStoryboards,
+    upgradeStatusTier: (upgradeStatus as any)?.tier,
+    upgradeStatusLimits: (upgradeStatus as any)?.limits,
+    rawUserData: user,
+    rawUpgradeStatus: upgradeStatus
   });
   
   return (

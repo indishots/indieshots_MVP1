@@ -49,7 +49,7 @@ router.get('/plans', authMiddleware, async (req: Request, res: Response) => {
         currency: 'USD',
         interval: 'month',
         features: [
-          'Up to 5 pages per month',
+          'Up to 10 pages per month',
           'Maximum 5 shots per scene',
           'Basic shot generation',
           'CSV export',
@@ -89,7 +89,7 @@ router.get('/plans', authMiddleware, async (req: Request, res: Response) => {
       currentTier: finalTier,
       usage: {
         pagesUsed: actualUsedPages,
-        totalPages: finalTier === 'pro' ? -1 : 5,
+        totalPages: finalTier === 'pro' ? -1 : 10,
         canGenerateStoryboards: finalTier === 'pro'
       }
     });
