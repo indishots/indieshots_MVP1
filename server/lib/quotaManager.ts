@@ -13,7 +13,7 @@ export interface UserQuota {
 
 export const TIER_LIMITS = {
   free: {
-    totalPages: 5,
+    totalPages: 10,
     maxShotsPerScene: 5,
     canGenerateStoryboards: false,
   },

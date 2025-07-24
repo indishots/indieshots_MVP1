@@ -50,7 +50,7 @@ router.get('/plans', authMiddleware, async (req: Request, res: Response) => {
         interval: 'month',
         features: [
           'Up to 10 pages per month',
-          'Maximum 5 shots per scene',
+          'Maximum 5 shots per scene', 
           'Basic shot generation',
           'CSV export',
           'Email support'

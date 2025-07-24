@@ -49,7 +49,7 @@ export class PaymentStorage {
         canGenerateStoryboards: true,
       }),
       ...(tier === 'free' && {
-        totalPages: 5,
+        totalPages: 10,
         maxShotsPerScene: 5,
         canGenerateStoryboards: false,
       }),

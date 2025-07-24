@@ -16,7 +16,7 @@ export interface UserQuota {
 
 export const TIER_LIMITS = {
   free: {
-    totalPages: 5,
+    totalPages: 10,
     maxShotsPerScene: 5, // Free tier limited to 5 shots
     canGenerateStoryboards: false,
   },
