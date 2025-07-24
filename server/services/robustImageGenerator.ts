@@ -3,8 +3,7 @@ import { storage } from "../storage";
 import { costController } from "./costController";
 import { generateValidFallbackImage } from "./fallbackImageGenerator";
 import { contentPolicyDetector } from "./contentPolicyDetector";
-import { promptAgent } from "./promptAgent";
-import { characterAgent } from "./characterAgent";
+import { characterMemoryService } from "./characterMemoryService";
 
 // Configure OpenAI with cost-optimized settings
 const openai = new OpenAI({
@@ -425,7 +424,7 @@ async function generateSingleShotImage(
 }
 
 /**
- * Generate enhanced prompt for image generation using PromptAgent and CharacterAgent
+ * Generate enhanced prompt for image generation using available services
  */
 async function generateSafePrompt(shot: any): Promise<string | null> {
   try {
@@ -434,33 +433,29 @@ async function generateSafePrompt(shot: any): Promise<string | null> {
       description: shot.shotDescription,
     });
 
-    // Use PromptAgent to process the shot data comprehensively
+    // Build comprehensive prompt using shot data
+    const basePrompt = buildShotPrompt(shot);
+    console.log(`📝 Base prompt generated:`, basePrompt.substring(0, 200) + "...");
+
+    // Enhance with character consistency using character memory service
     try {
-      console.log(`🎬 Using PromptAgent for comprehensive scene analysis...`);
-      const enhancedPrompt = await promptAgent.processExcelRow(shot);
-      console.log(
-        `📝 PromptAgent generated detailed prompt:`,
-        enhancedPrompt.substring(0, 200) + "...",
-      );
-
-      // Enhance with character consistency using CharacterAgent
       console.log(`🎭 Enhancing prompt with character memory...`);
-      const characterEnhancedPrompt =
-        await characterAgent.enhancePromptWithCharacters(enhancedPrompt);
-
-      if (characterEnhancedPrompt && characterEnhancedPrompt.length > 10) {
-        return sanitizePrompt(characterEnhancedPrompt);
+      const enhancedPrompt = await characterMemoryService.buildEnhancedPrompt(basePrompt);
+      
+      if (enhancedPrompt && enhancedPrompt.length > 10) {
+        console.log(`✅ Character-enhanced prompt ready`);
+        return sanitizePrompt(enhancedPrompt);
       }
-
-      return sanitizePrompt(enhancedPrompt);
-    } catch (promptAgentError: any) {
-      console.error("PromptAgent processing failed:", {
-        type: promptAgentError.constructor?.name,
-        message: promptAgentError.message,
-        status: promptAgentError.status,
+      
+      console.log(`⚠️ Character enhancement returned empty, using base prompt`);
+      return sanitizePrompt(basePrompt);
+    } catch (characterError: any) {
+      console.error("Character memory enhancement failed:", {
+        type: characterError.constructor?.name,
+        message: characterError.message,
       });
 
-      // Fallback to original prompt enhancement system
+      // Fallback to base prompt
       console.log("🔄 Falling back to basic prompt enhancement...");
       const basicPrompt = buildShotPrompt(shot);
 
