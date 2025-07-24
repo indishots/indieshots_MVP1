@@ -109,52 +109,10 @@ export class DatabaseStorage implements IStorage {
       };
     }
     
-    // DYNAMIC PROMO CODE VALIDATION: Check if user has any active promo code (INDIE2025 or future codes)
-    try {
-      if (user.email) {
-        // Use Drizzle ORM to properly check promo code usage
-        const promoUsageList = await db
-          .select({
-            code: promoCodes.code,
-            grantedTier: promoCodeUsage.grantedTier
-          })
-          .from(promoCodeUsage)
-          .innerJoin(promoCodes, eq(promoCodeUsage.promoCodeId, promoCodes.id))
-          .where(
-            and(
-              eq(promoCodeUsage.userEmail, user.email.toLowerCase()),
-              eq(promoCodeUsage.grantedTier, 'pro')
-            )
-          );
-        
-        const hasProPromoCode = promoUsageList.length > 0;
-        
-        if (hasProPromoCode && user.tier !== 'pro') {
-          console.log(`🎯 PROMO CODE DETECTED: Upgrading ${user.email} from ${user.tier} to pro tier (Code: ${promoUsageList[0].code})`);
-          
-          // Update user in database immediately
-          await this.updateUser(user.id, {
-            tier: 'pro',
-            totalPages: -1,
-            maxShotsPerScene: -1,
-            canGenerateStoryboards: true
-          });
-          
-          // Return corrected user object
-          return {
-            ...user,
-            tier: 'pro',
-            totalPages: -1,
-            maxShotsPerScene: -1,
-            canGenerateStoryboards: true
-          };
-        } else if (hasProPromoCode && user.tier === 'pro') {
-          console.log(`✓ PROMO CODE VALIDATED: ${user.email} has correct pro tier (Code: ${promoUsageList[0].code})`);
-        }
-      }
-    } catch (error) {
-      console.log('Dynamic promo code check failed:', error);
-    }
+    // REMOVED AUTO-UPGRADE LOGIC - This was incorrectly upgrading new users to pro tier
+    // Promo code tier assignment should ONLY happen during signup/verification process
+    // NOT during regular user lookups which would affect all new users
+    console.log(`✅ USER LOOKUP: ${user.email} - tier: ${user.tier} - no automatic upgrades`)
     
     return user;
   }

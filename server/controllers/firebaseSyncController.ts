@@ -85,12 +85,24 @@ export async function firebaseSync(req: Request, res: Response) {
       
       console.log('Creating new user from Firebase:', firebaseUser.email);
       
-      // Special handling for premium demo account
+      // CRITICAL FIX: Default to FREE tier for all new users except premium demo
       const isDemo = firebaseUser.email === 'premium@demo.com';
-      const finalTier = isDemo ? 'pro' : tierFromFirebase;
+      
+      // NEW USERS SHOULD BE FREE BY DEFAULT
+      // Only upgrade to pro if they have valid Firebase custom claims with tier: 'pro'
+      let finalTier = 'free';
       
       if (isDemo) {
+        finalTier = 'pro';
         console.log(`🔒 DEMO ACCOUNT: Creating premium@demo.com with pro tier`);
+      } else if (tierFromFirebase === 'pro' && firebaseCustomClaims && (firebaseCustomClaims as any).tier === 'pro') {
+        // Only assign pro tier if Firebase explicitly has pro tier in custom claims
+        finalTier = 'pro';
+        console.log(`🎯 PRO TIER: Creating ${firebaseUser.email} with pro tier from Firebase custom claims`);
+      } else {
+        // Default to free tier for all new signups
+        finalTier = 'free';
+        console.log(`🆓 FREE TIER: Creating ${firebaseUser.email} with FREE tier (default for new users)`);
       }
       
       user = await storage.createUser({
@@ -149,19 +161,19 @@ export async function firebaseSync(req: Request, res: Response) {
           console.log(`🔄 DEMO FIX: Restored pro tier for premium@demo.com`);
         }
       } else {
-        // Sync tier information from Firebase custom claims (critical for promo code users)
-        if (tierFromFirebase !== user.tier) {
-          updates.tier = tierFromFirebase;
-          updates.totalPages = tierFromFirebase === 'pro' ? -1 : 10;
-          updates.maxShotsPerScene = tierFromFirebase === 'pro' ? -1 : 5;
-          updates.canGenerateStoryboards = tierFromFirebase === 'pro';
-          console.log(`🔄 TIER SYNC: ${user.email} - PostgreSQL tier: ${user.tier} → Firebase tier: ${tierFromFirebase}`);
-          console.log(`🔄 TIER SYNC: Setting totalPages: ${updates.totalPages}, maxShots: ${updates.maxShotsPerScene}, storyboards: ${updates.canGenerateStoryboards}`);
-          
-          // Special validation for INDIE2025 promo code users
-          if (tierFromFirebase === 'pro') {
-            console.log(`🎯 PRO TIER SYNC: Applying unlimited access for ${user.email}`);
-          }
+        // RESTRICTED TIER SYNC: Only sync if Firebase explicitly has pro tier AND it comes from valid custom claims
+        if (tierFromFirebase === 'pro' && firebaseCustomClaims && (firebaseCustomClaims as any).tier === 'pro' && user.tier !== 'pro') {
+          // Only upgrade if Firebase explicitly says pro AND we have valid custom claims
+          updates.tier = 'pro';
+          updates.totalPages = -1;
+          updates.maxShotsPerScene = -1;
+          updates.canGenerateStoryboards = true;
+          console.log(`🎯 VALID PRO UPGRADE: ${user.email} - Upgrading from ${user.tier} to pro (Firebase custom claims validated)`);
+        } else if (tierFromFirebase === 'free' && user.tier === 'pro' && user.email !== 'premium@demo.com') {
+          // Don't downgrade pro users automatically - this could be a Firebase sync issue
+          console.log(`⚠️ TIER SYNC PREVENTED: ${user.email} - Won't downgrade pro to free (could be temporary Firebase issue)`);
+        } else if (tierFromFirebase !== user.tier) {
+          console.log(`ℹ️ TIER SYNC SKIPPED: ${user.email} - PostgreSQL: ${user.tier}, Firebase: ${tierFromFirebase} (no auto-sync to prevent incorrect upgrades)`)
         } else {
           console.log(`✓ TIER SYNC: ${user.email} - Tiers already match: ${tierFromFirebase}`);
           
@@ -191,36 +203,9 @@ export async function firebaseSync(req: Request, res: Response) {
         });
       }
       
-      // UNIVERSAL INDIE2025 VALIDATION: Check promo code usage for other users
-      try {
-        if (user.email !== 'premium@demo.com' && user.email) {
-          const { db } = await import('../db.js');
-          const promoUsageCheck = await db.execute(`
-            SELECT pc.code FROM promo_code_usage pcu 
-            JOIN promo_codes pc ON pcu.promo_code_id = pc.id 
-            WHERE pcu.user_email = '${user.email.toLowerCase()}' AND pc.code = 'INDIE2025'
-          `);
-          
-          const hasINDIE2025 = promoUsageCheck && (promoUsageCheck as any).rows && (promoUsageCheck as any).rows.length > 0;
-        
-          if (hasINDIE2025 && user.tier !== 'pro') {
-            console.log(`🔧 INDIE2025 UNIVERSAL FIX: Upgrading ${user.email} from ${user.tier} to pro tier`);
-            
-            user = await storage.updateUser(user.id, {
-              tier: 'pro',
-              totalPages: -1,
-              maxShotsPerScene: -1,
-              canGenerateStoryboards: true
-            });
-            
-            console.log(`✅ INDIE2025 UNIVERSAL: ${user.email} now has pro tier access`);
-          } else if (hasINDIE2025 && user.tier === 'pro') {
-            console.log(`✓ INDIE2025 UNIVERSAL: ${user.email} already has correct pro tier`);
-          }
-        }
-      } catch (error) {
-        console.log('INDIE2025 universal check skipped (non-critical):', error);
-      }
+      // REMOVED UNIVERSAL PROMO CODE AUTO-UPGRADE - This was causing new users to get pro tier
+      // Promo code validation should only happen during signup, not during regular Firebase sync
+      console.log(`✅ FIREBASE SYNC COMPLETE: ${user.email} - no automatic tier changes`)
     
     // Generate JWT token for session with premium demo overrides
     const userForToken = applyPremiumDemoOverrides(user);
@@ -268,9 +253,9 @@ export async function firebaseSync(req: Request, res: Response) {
     
     console.log('✓ Sending response with user data:', { id: userData.id, email: userData.email });
     
-      res.status(200).json(responseData);
-    } catch (error) {
-      console.error('Firebase sync error:', error);
-      res.status(500).json({ message: 'Failed to sync user data' });
-    }
+    res.status(200).json(responseData);
+  } catch (error) {
+    console.error('Firebase sync error:', error);
+    res.status(500).json({ message: 'Failed to sync user data' });
+  }
 }

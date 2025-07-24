@@ -61,7 +61,7 @@ export async function register(req: Request, res: Response) {
     
     // DEFAULT TO FREE TIER - Only upgrade if valid promo code is provided
     let tier = 'free';
-    let totalPages = 5;
+    let totalPages = 10; // Updated to 10 pages per month for free tier
     let maxShotsPerScene = 5;
     let canGenerateStoryboards = false;
     
@@ -77,9 +77,9 @@ export async function register(req: Request, res: Response) {
           validatedData.email
         );
         
-        if (validation.valid && validation.promoCode) {
-          tier = validation.promoCode.tier_granted || 'pro';
-          totalPages = tier === 'pro' ? -1 : 5;
+        if (validation.isValid && validation.tier) {
+          tier = validation.tier || 'pro';
+          totalPages = tier === 'pro' ? -1 : 10; // Free tier gets 10 pages
           maxShotsPerScene = tier === 'pro' ? -1 : 5;
           canGenerateStoryboards = tier === 'pro';
           console.log(`✅ Valid promo code ${validatedData.couponCode} - upgrading to ${tier} tier`);
