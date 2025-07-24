@@ -7,6 +7,7 @@ import { Upload, Eye, Download, ArrowRight, ChevronRight, Crown, Zap, TestTube, 
 import { formatDate, truncate } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { usePostPaymentRefresh } from "@/hooks/usePostPaymentRefresh";
+import { useEffect } from "react";
 import { ForceProTierCheck } from "@/components/ForceProTierCheck";
 import { PostPaymentAlert } from "@/components/PostPaymentAlert";
 
