@@ -60,10 +60,40 @@ export async function registerWithOTP(req: Request, res: Response) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(validatedData.password, salt);
     
-    // Check coupon code
-    const validCoupons = ['DEMO2024', 'PREMIUM', 'LAUNCH', 'INDIE2025'];
-    const isPremium = validatedData.couponCode && 
-      validCoupons.includes(validatedData.couponCode.toUpperCase());
+    // DEFAULT TO FREE TIER - Only upgrade if valid promo code is provided
+    let tier = 'free';
+    let totalPages = 10;
+    let maxShotsPerScene = 5;
+    let canGenerateStoryboards = false;
+    
+    // Check if user provided a valid promo code
+    if (validatedData.couponCode) {
+      try {
+        // Import PromoCodeService to validate promo code
+        const { PromoCodeService } = await import('../services/promoCodeService');
+        const promoService = new PromoCodeService();
+        
+        const validation = await promoService.validatePromoCode(
+          validatedData.couponCode,
+          validatedData.email.toLowerCase()
+        );
+        
+        if (validation.isValid) {
+          console.log(`✓ Valid promo code ${validatedData.couponCode} - upgrading to pro tier`);
+          tier = 'pro';
+          totalPages = -1; // Unlimited for pro
+          maxShotsPerScene = -1; // Unlimited for pro
+          canGenerateStoryboards = true;
+        } else {
+          console.log(`❌ Invalid promo code ${validatedData.couponCode} - staying on free tier`);
+        }
+      } catch (error) {
+        console.error('Promo code validation failed:', error);
+        // Continue with free tier if promo code validation fails
+      }
+    }
+    
+    console.log(`Creating new user with tier: ${tier}, pages: ${totalPages}, storyboards: ${canGenerateStoryboards}`);
     
     // Prepare user data
     const userData = {
@@ -72,7 +102,10 @@ export async function registerWithOTP(req: Request, res: Response) {
       lastName: validatedData.lastName || '',
       password: hashedPassword,
       provider: 'local',
-      tier: isPremium ? 'premium' : 'free',
+      tier: tier,
+      totalPages: totalPages,
+      maxShotsPerScene: maxShotsPerScene,
+      canGenerateStoryboards: canGenerateStoryboards,
       totalPages: isPremium ? 1000 : 20,
       usedPages: 0,
       couponCode: validatedData.couponCode
