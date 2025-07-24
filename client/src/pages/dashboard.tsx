@@ -7,6 +7,8 @@ import { Upload, Eye, Download, ArrowRight, ChevronRight, Crown, Zap, TestTube, 
 import { formatDate, truncate } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
 import { usePostPaymentRefresh } from "@/hooks/usePostPaymentRefresh";
+import { ForceProTierCheck } from "@/components/ForceProTierCheck";
+import { PostPaymentAlert } from "@/components/PostPaymentAlert";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -14,6 +16,9 @@ export default function Dashboard() {
 
   // Handle post-payment authentication refresh
   usePostPaymentRefresh();
+  
+  // Aggressive pro tier detection and enforcement
+  const isAuthenticated = !!user;
   
   // Fetch user's scripts
   const { data: scripts = [], isLoading: isLoadingScripts } = useQuery({
@@ -26,7 +31,7 @@ export default function Dashboard() {
   });
 
   // Fetch upgrade status for accurate tier information (critical for post-payment scenarios)
-  const { data: upgradeStatus } = useQuery({
+  const { data: upgradeStatus, refetch: refetchUpgradeStatus } = useQuery({
     queryKey: ["/api/upgrade/status"],
     enabled: !!user,
     staleTime: 0,
@@ -34,6 +39,7 @@ export default function Dashboard() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    refetchInterval: 2000, // Aggressive polling every 2 seconds for post-payment detection
   });
   
   // Calculate usage statistics based on tier
@@ -86,6 +92,8 @@ export default function Dashboard() {
   
   return (
     <div className="max-w-7xl mx-auto p-6">
+      <ForceProTierCheck />
+      <PostPaymentAlert />
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-muted-foreground">

@@ -118,18 +118,43 @@ export const UltimateAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
 
   const refreshUserData = useCallback(async () => {
-    // Force refresh user data by triggering auth state update
+    // ENHANCED: Force comprehensive refresh of user data after payment
     try {
-      const response = await fetch('/api/auth/user', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      if (response.ok) {
-        const userData = await response.json();
-        updateAuthState('authenticated', userData);
+      console.log('🔄 AUTH PROVIDER: Starting user data refresh...');
+      
+      // Multiple attempts with different endpoints
+      const endpoints = ['/api/auth/user', '/api/upgrade/status'];
+      
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+          
+          if (response.ok) {
+            const userData = await response.json();
+            console.log(`✅ AUTH PROVIDER: Fresh data from ${endpoint}:`, userData);
+            
+            // Update auth state with fresh data
+            updateAuthState('authenticated', userData);
+            break;
+          }
+        } catch (endpointError) {
+          console.warn(`⚠️ AUTH PROVIDER: Failed to fetch from ${endpoint}:`, endpointError);
+        }
       }
+      
+      // Force reload auth manager state
+      authManager.enableAuth();
+      console.log('✅ AUTH PROVIDER: User data refresh completed');
+      
     } catch (error) {
-      console.error('Failed to refresh user data:', error);
+      console.error('❌ AUTH PROVIDER: Failed to refresh user data:', error);
     }
   }, [updateAuthState]);
 
