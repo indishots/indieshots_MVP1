@@ -72,11 +72,11 @@ export function generateToken(user: any): string {
  */
 export function verifyToken(token: string): any {
   try {
-    // Clear blacklist for debugging - tokens should only be blacklisted on explicit logout
-    // if (blacklistedTokens.has(token)) {
-    //   console.log('Token is blacklisted');
-    //   return null;
-    // }
+    // More lenient token validation for post-payment processing
+    if (!token || token === 'test' || token === 'invalid') {
+      console.log('🔍 JWT: Invalid or test token provided');
+      return null;
+    }
     
     const decoded = jwt.verify(token, JWT_SECRET);
     

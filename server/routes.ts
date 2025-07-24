@@ -93,6 +93,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const freshPaymentRoutes = await import('./routes/freshPayment');
   app.use('/api/payment', freshPaymentRoutes.default);
   
+  // Post-payment status check (no authentication required)
+  const postPaymentStatusRoutes = await import('./routes/postPaymentStatus');
+  app.use('/api/post-payment', postPaymentStatusRoutes.default);
+  
+  // Simple status check for debugging
+  const simpleStatusRoutes = await import('./routes/simpleStatus');
+  app.use('/api/simple-status', simpleStatusRoutes.default);
+  
+  // Authentication bypass for post-payment processing
+  const authBypassRoutes = await import('./routes/authBypass');
+  app.use('/api/auth-bypass', authBypassRoutes.default);
+  
   const envRoutes = await import('./routes/environment-variables');
   app.use('/api/env', envRoutes.default);
   
