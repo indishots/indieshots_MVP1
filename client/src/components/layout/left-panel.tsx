@@ -63,7 +63,10 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
   // Get tier info from backend (upgrade status endpoint handles all promo code logic)
   // Only special override for premium demo account for development purposes
   const isPremiumDemo = user?.email === 'premium@demo.com';
-  const userTier = isPremiumDemo ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
+  const userTier = isPremiumDemo ? 'pro' : 
+    ((upgradeStatus as any)?.tier || 
+     (user as any)?.tier || 
+     ((upgradeStatus as any)?.limits?.totalPages === -1 ? 'pro' : 'free'));
   const isProUser = userTier === 'pro';
   const usageData = isPremiumDemo ? 
     { totalPages: -1, usedPages: 0, maxShotsPerScene: -1, canGenerateStoryboards: true } :

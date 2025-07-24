@@ -38,13 +38,39 @@ export default function AppLayout({ children }: AppLayoutProps) {
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
-  // Get tier information from backend (upgrade status endpoint handles all promo code logic)
-  // Only special override for premium demo account for development purposes
+  // Also fetch user data to get the most current tier information
+  const { data: currentUser } = useQuery({
+    queryKey: ['/api/auth/user'],
+    enabled: isAuthenticated,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+
+  // Get tier information from multiple sources for accuracy
   const isPremiumDemo = user?.email === 'premium@demo.com';
-  const userTier = isPremiumDemo ? 'pro' : ((upgradeStatus as any)?.tier || (user as any)?.tier || 'free');
+  const userTier = isPremiumDemo ? 'pro' : 
+    ((currentUser as any)?.tier || 
+     (upgradeStatus as any)?.tier || 
+     (user as any)?.tier || 
+     ((currentUser as any)?.totalPages === -1 ? 'pro' : 'free'));
+  
   const isProUser = userTier === 'pro';
+  
+  // Debug header tier detection
+  console.log('Header tier detection:', {
+    email: user?.email,
+    userTier,
+    isProUser,
+    currentUserTier: (currentUser as any)?.tier,
+    upgradeStatusTier: (upgradeStatus as any)?.tier,
+    totalPages: (currentUser as any)?.totalPages
+  });
   
   if (isPremiumDemo) {
     console.log('🔒 HEADER: Applied pro tier override for premium@demo.com');

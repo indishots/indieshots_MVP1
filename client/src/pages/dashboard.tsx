@@ -51,14 +51,28 @@ export default function Dashboard() {
     queryKey: ["/api/jobs"],
   });
   
-  // Calculate usage statistics based on tier (backend handles all promo code logic)
-  // Only special override for premium demo account for development purposes
+  // Calculate usage statistics based on tier
   const isPremiumDemo = user?.email === 'premium@demo.com';
-  const userTier = isPremiumDemo ? 'pro' : ((user as any)?.tier || 'free');
+  
+  // Check multiple sources for tier information to handle post-payment scenarios
+  const userTier = isPremiumDemo ? 'pro' : 
+    (user?.tier || 
+     (user as any)?.tier || 
+     ((user as any)?.totalPages === -1 ? 'pro' : 'free'));
+  
   const pagesUsed = (user as any)?.usedPages || 0;
   const totalPages = userTier === 'pro' ? -1 : ((user as any)?.totalPages || 5);
   const usagePercentage = totalPages === -1 ? 0 : Math.min(100, Math.round((pagesUsed / totalPages) * 100));
   const pagesRemaining = totalPages === -1 ? 'unlimited' : Math.max(0, totalPages - pagesUsed);
+  
+  // Debug tier detection for troubleshooting
+  console.log('Dashboard tier detection:', {
+    email: user?.email,
+    userTier,
+    totalPages,
+    canGenerateStoryboards: (user as any)?.canGenerateStoryboards,
+    rawUserData: user
+  });
   
   return (
     <div className="max-w-7xl mx-auto p-6">
