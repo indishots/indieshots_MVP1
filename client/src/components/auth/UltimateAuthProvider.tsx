@@ -115,9 +115,23 @@ export const UltimateAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     authManager.enableAuth();
   }, []);
 
+
+
   const refreshUserData = useCallback(async () => {
-    await authManager.refreshFromDatabase();
-  }, []);
+    // Force refresh user data by triggering auth state update
+    try {
+      const response = await fetch('/api/auth/user', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        updateAuthState('authenticated', userData);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  }, [updateAuthState]);
 
   // Memoize the entire context value to prevent unnecessary re-renders
   const contextValue = useMemo<AuthContextType>(() => ({

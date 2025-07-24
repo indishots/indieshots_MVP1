@@ -1,13 +1,45 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/components/auth/UltimateAuthProvider";
 import { Upload, Eye, Download, ArrowRight, ChevronRight, Crown, Zap, TestTube, MessageSquare } from "lucide-react";
 import { formatDate, truncate } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
+import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Check for payment success parameters and refresh auth
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    const message = urlParams.get('message');
+    
+    if (status === 'success' && message) {
+      // User just completed payment, refresh auth data immediately
+      console.log('Payment success detected, refreshing user data...');
+      
+      // Force refresh user data from multiple sources
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      refreshUserData(); // Also refresh through auth provider
+      
+      // Show success toast
+      toast({
+        title: "Payment Successful!",
+        description: decodeURIComponent(message),
+        variant: "default",
+      });
+      
+      // Clean up URL parameters after showing message
+      window.history.replaceState(null, '', '/dashboard');
+    }
+  }, [queryClient, toast, refreshUserData]);
   
   // Fetch user's scripts
   const { data: scripts = [], isLoading: isLoadingScripts } = useQuery({

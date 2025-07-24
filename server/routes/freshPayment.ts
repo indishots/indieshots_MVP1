@@ -82,6 +82,23 @@ router.post('/success', async (req, res) => {
           });
           
           console.log('✅ USER UPGRADED TO PRO SUCCESSFULLY!');
+
+          // CRITICAL FIX: Generate new JWT token with pro tier
+          const { generateToken } = await import('../auth/jwt.js');
+          const updatedUser = await storage.getUserByEmail(email); // Get fresh user data
+          const newToken = generateToken(updatedUser);
+          
+          // Update the user's session cookie with new pro tier token
+          const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+            path: '/',
+          };
+          res.cookie('auth_token', newToken, cookieOptions);
+          
+          console.log(`🔄 JWT token regenerated with pro tier for ${email}`);
           
           // Redirect to dashboard
           return res.redirect('/dashboard?status=success&message=Payment successful! Welcome to IndieShots Pro!');
