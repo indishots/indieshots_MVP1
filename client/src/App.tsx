@@ -7,6 +7,7 @@ import { UltimateAuthProvider } from "@/components/auth/UltimateAuthProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthConsistencyFix } from "@/components/AuthConsistencyFix";
 import { ProTierProtection } from "@/components/ProTierProtection";
+import { PostPaymentLock } from "@/components/PostPaymentLock";
 import AppLayout from "@/components/layout/app-layout";
 import AuthLayout from "@/components/layout/auth-layout";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -45,6 +46,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <UltimateAuthProvider>
+          <PostPaymentLock />
           <AuthConsistencyFix />
           <ProTierProtection />
           <TooltipProvider>
