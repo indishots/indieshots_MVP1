@@ -42,7 +42,7 @@ export async function fixPromoCodeUsers() {
         providerId: firebaseUser.uid,
         emailVerified: firebaseUser.emailVerified || false,
         tier: tierFromFirebase,
-        totalPages: tierFromFirebase === 'pro' ? -1 : 5,
+        totalPages: tierFromFirebase === 'pro' ? -1 : 10,
         usedPages: 0,
         maxShotsPerScene: tierFromFirebase === 'pro' ? -1 : 5,
         canGenerateStoryboards: tierFromFirebase === 'pro',

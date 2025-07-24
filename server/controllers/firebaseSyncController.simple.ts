@@ -46,7 +46,7 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
         provider: provider || 'firebase',
         providerId: firebaseUser.uid,
         tier,
-        totalPages: tier === 'pro' ? -1 : 5,
+        totalPages: tier === 'pro' ? -1 : 10,
         maxShotsPerScene: tier === 'pro' ? -1 : 5,
         canGenerateStoryboards: tier === 'pro',
         emailVerified: firebaseUser.emailVerified || false,
@@ -61,7 +61,7 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
         console.log(`🔧 TIER CORRECTION: Updating ${user.email} from ${user.tier} to ${correctTier} tier`);
         user = await storage.updateUser(user.id, {
           tier: correctTier,
-          totalPages: correctTier === 'pro' ? -1 : 5,
+          totalPages: correctTier === 'pro' ? -1 : 10,
           maxShotsPerScene: correctTier === 'pro' ? -1 : 5,
           canGenerateStoryboards: correctTier === 'pro',
           firebaseUID: firebaseUser.uid,

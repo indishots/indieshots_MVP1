@@ -66,7 +66,7 @@ router.get('/user', authMiddleware, async (req: Request, res: Response) => {
       email: jwtUser.email,
       displayName: jwtUser.displayName || jwtUser.email?.split('@')[0],
       tier: isPremiumDemo ? 'pro' : (jwtUser.tier || 'free'),
-      totalPages: isPremiumDemo ? -1 : (jwtUser.totalPages || (jwtUser.tier === 'pro' ? -1 : 5)),
+      totalPages: isPremiumDemo ? -1 : (jwtUser.totalPages || (jwtUser.tier === 'pro' ? -1 : 10)),
       usedPages: jwtUser.usedPages || 0,
       maxShotsPerScene: isPremiumDemo ? -1 : (jwtUser.maxShotsPerScene || (jwtUser.tier === 'pro' ? -1 : 5)),
       canGenerateStoryboards: isPremiumDemo ? true : (jwtUser.canGenerateStoryboards !== undefined ? jwtUser.canGenerateStoryboards : (jwtUser.tier === 'pro'))
@@ -143,7 +143,7 @@ router.post('/refresh-session', authMiddleware, async (req: Request, res: Respon
       email: user.email,
       displayName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || jwtUser.displayName,
       tier: user.tier || 'free',
-      totalPages: user.tier === 'pro' ? -1 : 5,
+      totalPages: user.tier === 'pro' ? -1 : 10,
       usedPages: user.usedPages || 0,
       maxShotsPerScene: user.tier === 'pro' ? -1 : 5,
       canGenerateStoryboards: user.tier === 'pro'
