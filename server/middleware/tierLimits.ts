@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 
 export interface TierLimits {
   free: {
-    totalPages: 5;
+    totalPages: 10;
     maxShotsPerScene: 5;
     canGenerateStoryboards: false;
   };
@@ -15,7 +15,7 @@ export interface TierLimits {
 
 export const TIER_LIMITS: TierLimits = {
   free: {
-    totalPages: 5,
+    totalPages: 10,
     maxShotsPerScene: 5,
     canGenerateStoryboards: false,
   },

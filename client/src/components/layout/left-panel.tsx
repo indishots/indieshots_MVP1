@@ -120,7 +120,7 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
                       Unlimited pages
                     </span>
                   ) : (
-                    `${usageData?.totalPages || 5} pages/month`
+                    `${usageData?.totalPages || 10} pages/month`
                   )}
                 </p>
               </div>
@@ -140,7 +140,7 @@ export default function LeftPanel({ collapsed }: LeftPanelProps) {
                   ></div>
                 </div>
                 <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                  <span className="font-medium">{usageData?.usedPages ?? 0}/{usageData?.totalPages ?? 5} pages used</span>
+                  <span className="font-medium">{usageData?.usedPages ?? 0}/{usageData?.totalPages ?? 10} pages used</span>
                   <span>{Math.round(((usageData?.usedPages ?? 0) / (usageData?.totalPages ?? 1)) * 100)}%</span>
                 </div>
               </>

@@ -425,7 +425,7 @@ export default function Settings() {
                   {(upgradeStatus as any)?.limits?.usedPages || 0} / {
                     (upgradeStatus as any)?.limits?.totalPages === -1 
                       ? 'Unlimited' 
-                      : (upgradeStatus as any)?.limits?.totalPages || 5
+                      : (upgradeStatus as any)?.limits?.totalPages || 10
                   }
                 </span>
               </div>
@@ -435,7 +435,7 @@ export default function Settings() {
                   style={{ 
                     width: (upgradeStatus as any)?.limits?.totalPages === -1 
                       ? '100%' 
-                      : `${Math.min(100, ((upgradeStatus as any)?.limits?.usedPages || 0) / ((upgradeStatus as any)?.limits?.totalPages || 5) * 100)}%` 
+                      : `${Math.min(100, ((upgradeStatus as any)?.limits?.usedPages || 0) / ((upgradeStatus as any)?.limits?.totalPages || 10) * 100)}%` 
                   }}
                 ></div>
               </div>

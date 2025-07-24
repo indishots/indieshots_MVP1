@@ -64,7 +64,7 @@ export async function firebaseLogin(req: Request, res: Response) {
       provider: provider || 'password',
       tier: 'free', // Default tier for all new users
       usedPages: 0,
-      totalPages: 5, // Free tier limit
+      totalPages: 10, // Free tier limit
       maxShotsPerScene: 5, // Free tier limit
       canGenerateStoryboards: false, // Pro feature only
       createdAt: new Date().toISOString()
