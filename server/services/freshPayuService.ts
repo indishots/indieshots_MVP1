@@ -74,7 +74,7 @@ export class FreshPayUService {
     const paymentData: Omit<PaymentData, 'hash'> = {
       key: this.config.merchantKey,
       txnid: txnid,
-      amount: '1.00', // 1 rupee subscription
+      amount: '999.00', // ₹999 subscription (updated from ₹1)
       productinfo: 'IndieShots Pro Subscription',
       firstname: firstname,
       email: email,

@@ -73,6 +73,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', indexRoutes);
   app.use('/api/scripts', scriptRoutes);
   app.use('/api/jobs', jobRoutes);
+  
+  // Import and mount currency routes
+  const currencyRoutes = (await import('./routes/currency')).default;
+  app.use('/api/currency', currencyRoutes);
   app.use('/api/scenes', scenesRoutes);
   app.use('/api', scenesRoutes); // Also mount scenes routes at /api for shots endpoints
   app.use('/api/test', testRoutes);

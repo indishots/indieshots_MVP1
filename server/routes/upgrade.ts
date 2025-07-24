@@ -65,8 +65,8 @@ router.get('/plans', authMiddleware, async (req: Request, res: Response) => {
       {
         id: 'pro',
         name: 'Pro',
-        price: 29,
-        currency: 'USD',
+        price: 999,
+        currency: 'INR',
         interval: 'month',
         features: [
           'Unlimited pages',
@@ -197,7 +197,7 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
     res.cookie('auth_token', freshToken, cookieOptions);
 
     // Import PayU service
-    const { PayUService } = await import('../services/payuService');
+    const { FreshPayUService } = await import('../services/freshPayuService');
     const payuService = new PayUService();
 
     // Create payment parameters

@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { CheckCircle, X, Crown, Zap, Image, Infinity, FileText, Camera, Headphones, Sparkles, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
+import CurrencyDisplay, { CompactCurrencyDisplay } from '@/components/CurrencyDisplay';
 
 export default function Upgrade() {
   const { user } = useAuth();
@@ -291,7 +292,16 @@ export default function Upgrade() {
           Unlock the full power of IndieShots for your filmmaking projects
         </p>
         
-
+        {/* Currency conversion info */}
+        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">
+            Global Pricing with Live Currency Conversion
+          </h3>
+          <CurrencyDisplay className="max-w-md mx-auto" />
+          <p className="text-sm text-blue-700 dark:text-blue-300 mt-3">
+            We use PayU India for secure payment processing. All transactions are processed in Indian Rupees (₹) and converted to your local currency for reference.
+          </p>
+        </div>
       </div>
 
       {/* Current Usage Display */}
@@ -350,10 +360,19 @@ export default function Upgrade() {
                     {plan.name}
                   </CardTitle>
                   <CardDescription className="mt-2">
-                    <span className="text-3xl font-bold">
-                      ${plan.price}
-                    </span>
-                    {plan.price > 0 && <span className="text-muted-foreground">/{plan.interval}</span>}
+                    {plan.id === 'pro' ? (
+                      <div className="space-y-2">
+                        <CompactCurrencyDisplay className="text-3xl font-bold" />
+                        <span className="text-muted-foreground text-sm block">one-time payment</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold">
+                          ${plan.price}
+                        </span>
+                        {plan.price > 0 && <span className="text-muted-foreground">/{plan.interval}</span>}
+                      </>
+                    )}
                   </CardDescription>
                 </div>
                 {plan.current && (

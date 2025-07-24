@@ -63,7 +63,7 @@ router.post('/payu', async (req: Request, res: Response) => {
         customerName: firstname,
         customerEmail: email,
         amount: parseFloat(amount),
-        currency: 'inr',
+        currency: 'INR',
         transactionId: mihpayid || txnid,
         tier: 'pro',
         paymentMethod: `PayU (${mode})`,
