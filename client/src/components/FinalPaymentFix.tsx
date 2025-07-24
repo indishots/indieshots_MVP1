@@ -109,10 +109,7 @@ export const FinalPaymentFix = () => {
         window.history.replaceState(null, '', newUrl);
       }, 5000);
       
-      // Force page reload after setup to ensure clean state
-      setTimeout(() => {
-        window.location.reload();
-      }, 6000);
+      // No page reload - maintain locked state immediately
       
       console.log('✅ FINAL FIX: Pro status permanently locked');
     }

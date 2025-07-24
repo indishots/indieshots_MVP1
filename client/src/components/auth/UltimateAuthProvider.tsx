@@ -158,9 +158,18 @@ export const UltimateAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   }, [updateAuthState]);
 
+  // Override user data if pro is locked from payment
+  const displayUser = localStorage.getItem('instant_pro_lock') === 'true' && authData.user ? {
+    ...authData.user,
+    tier: 'pro',
+    totalPages: -1,
+    maxShotsPerScene: -1,
+    canGenerateStoryboards: true
+  } : authData.user;
+
   // Memoize the entire context value to prevent unnecessary re-renders
   const contextValue = useMemo<AuthContextType>(() => ({
-    user: authData.user,
+    user: displayUser,
     loading: authData.authState === 'loading',
     isAuthenticated: authData.authState === 'authenticated',
     authState: authData.authState,
@@ -169,7 +178,7 @@ export const UltimateAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     logout,
     enableAuth,
     refreshUserData,
-  }), [authData, signIn, signUp, logout, enableAuth, refreshUserData]);
+  }), [displayUser, authData.authState, signIn, signUp, logout, enableAuth, refreshUserData]);
 
   return (
     <AuthContext.Provider value={contextValue}>
