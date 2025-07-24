@@ -106,7 +106,6 @@ export async function registerWithOTP(req: Request, res: Response) {
       totalPages: totalPages,
       maxShotsPerScene: maxShotsPerScene,
       canGenerateStoryboards: canGenerateStoryboards,
-      totalPages: isPremium ? 1000 : 20,
       usedPages: 0,
       couponCode: validatedData.couponCode
     };

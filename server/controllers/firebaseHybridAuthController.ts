@@ -273,21 +273,10 @@ export async function hybridVerifyOTP(req: Request, res: Response) {
         );
 
         if (applied) {
-          // Double-check tier assignment for promo codes
-          if (userData.couponCode.toUpperCase() === 'INDIE2025') {
-            finalTier = 'pro'; // Force pro tier for INDIE2025
-            console.log(`🎯 INDIE2025 SUCCESS: Pro tier activated for ${userData.email}`);
-            console.log(`🎯 INDIE2025 BENEFITS: Unlimited pages (-1), unlimited shots (-1), storyboards (true)`);
-          }
           console.log(`✅ PROMO CODE APPLIED: ${userData.couponCode} for ${userData.email} - Tier: ${finalTier}`);
         } else {
-          console.error(`❌ CRITICAL ERROR: Failed to apply promo code ${userData.couponCode} for ${userData.email}`);
-          
-          // FAILSAFE: For INDIE2025, still apply pro tier even if database application failed
-          if (userData.couponCode.toUpperCase() === 'INDIE2025') {
-            finalTier = 'pro';
-            console.log(`🔧 INDIE2025 FAILSAFE: Applying pro tier despite application failure for ${userData.email}`);
-          }
+          console.error(`❌ PROMO CODE ERROR: Failed to apply promo code ${userData.couponCode} for ${userData.email}`);
+          console.log(`User will be created with free tier - promo code application failed`);
         }
       } else {
         console.log(`📋 No promo code for user: ${userData.email} - Creating ${finalTier} tier account`);

@@ -40,11 +40,11 @@ export const ForceProTierCheck = () => {
               const upgradeData = await upgradeResponse.json();
               console.log(`✅ FORCE PRO CHECK: Upgrade data (attempt ${attempt}):`, upgradeData);
               
-              // Check if user is now pro
+              // Check if user is now pro (read-only check)
               if (upgradeData.tier === 'pro' || upgradeData.limits?.totalPages === -1) {
-                console.log('🎉 FORCE PRO CHECK: PRO TIER DETECTED! Refreshing all authentication...');
+                console.log('✅ FORCE PRO CHECK: Pro tier confirmed after payment');
                 
-                // Force refresh auth
+                // Simply refresh to show pro status - no forcing
                 await refreshUserData();
                 
                 // Force refetch all queries

@@ -84,63 +84,54 @@ export class PromoCodeUniversalValidator {
   }
 
   /**
-   * Fix user tier if they have INDIE2025 but wrong tier
+   * Check user tier status (read-only, no automatic fixes)
    */
-  static async fixUserPromoTier(email: string): Promise<boolean> {
+  static async checkUserPromoTier(email: string): Promise<boolean> {
     try {
       const validation = await this.validateUserPromoTier(email);
       
       if (!validation.needsUpdate) {
-        console.log(`✓ ${email} tier is already correct`);
+        console.log(`✓ ${email} tier is already correct`);      
         return true;
       }
 
-      // Update user to pro tier
-      await db.update(users)
-        .set({
-          tier: 'pro',
-          totalPages: -1,
-          maxShotsPerScene: -1,
-          canGenerateStoryboards: true,
-          updatedAt: new Date()
-        })
-        .where(eq(users.email, email.toLowerCase()));
-
-      console.log(`🔧 FIXED: Updated ${email} from ${validation.currentTier} to pro tier`);
-      return true;
+      // Log issue but don't automatically fix
+      console.log(`ℹ️ TIER MISMATCH: ${email} has promo code but is ${validation.currentTier} tier`);
+      console.log(`User should contact support or complete payment process if pro tier is expected`);
+      return false;
       
     } catch (error) {
-      console.error(`Failed to fix promo tier for ${email}:`, error);
+      console.error(`Failed to check promo tier for ${email}:`, error);
       return false;
     }
   }
 
   /**
-   * Ensure INDIE2025 works universally for any user
+   * Check if INDIE2025 user has correct tier (read-only)
    */
-  static async ensureINDIE2025Universal(email: string, couponCode: string): Promise<boolean> {
+  static async checkINDIE2025Status(email: string, couponCode: string): Promise<boolean> {
     if (couponCode.toUpperCase() !== 'INDIE2025') {
       return false;
     }
 
-    console.log(`🎯 ENSURING UNIVERSAL INDIE2025: ${email}`);
+    console.log(`🔍 CHECKING INDIE2025 STATUS: ${email}`);
     
     try {
-      // First validate current state
+      // Check current state
       const validation = await this.validateUserPromoTier(email);
       
-      // If user needs pro tier, apply it
+      // Log status but don't automatically fix
       if (validation.needsUpdate || !validation.shouldBePro) {
-        await this.fixUserPromoTier(email);
-        console.log(`✅ INDIE2025 UNIVERSAL: Pro tier ensured for ${email}`);
-        return true;
+        console.log(`ℹ️ INDIE2025 MISMATCH: ${email} has promo code but tier is ${validation.currentTier}`);
+        console.log(`User should complete signup process or contact support for tier correction`);
+        return false;
       }
       
-      console.log(`✓ INDIE2025 UNIVERSAL: ${email} already has correct pro tier`);
+      console.log(`✓ INDIE2025 STATUS: ${email} already has correct pro tier`);
       return true;
       
     } catch (error) {
-      console.error(`INDIE2025 universal error for ${email}:`, error);
+      console.error(`INDIE2025 status check error for ${email}:`, error);
       return false;
     }
   }

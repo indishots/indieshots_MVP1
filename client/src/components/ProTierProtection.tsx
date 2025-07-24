@@ -21,40 +21,9 @@ export const ProTierProtection = () => {
         localStorage.setItem(`pro_tier_${user.email}`, 'true');
         console.log('✅ PRO PROTECTION: Pro tier status saved');
       } else if ((wasProTier || forceProStatus || hasPaymentSuccess) && user.tier === 'free') {
-        // EMERGENCY: Pro user detected as free - immediate fix
-        console.log('🚨 PRO PROTECTION: EMERGENCY - Pro user showing as free after payment!');
-        
-        // Force database update to pro first
-        fetch('/api/auth-bypass/force-pro', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email }),
-          credentials: 'include'
-        }).then(response => {
-          if (response.ok) {
-            console.log('✅ PRO PROTECTION: Database forced to pro');
-            
-            // Then force refresh authentication
-            return fetch(`/api/force-refresh/${encodeURIComponent(user.email)}`, {
-              method: 'POST',
-              credentials: 'include',
-              cache: 'no-cache'
-            });
-          }
-        }).then(response => {
-          if (response && response.ok) {
-            console.log('✅ PRO PROTECTION: Emergency refresh successful');
-            queryClient.clear();
-            setTimeout(() => {
-              window.location.reload();
-            }, 500);
-          }
-        }).catch(error => {
-          console.log('❌ PRO PROTECTION: Emergency fix failed, forcing reload');
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        });
+        // Log situation but don't automatically upgrade - let legitimate processes handle tier changes
+        console.log('ℹ️ PRO PROTECTION: User previously had pro status but is now free tier - no automatic upgrade');
+        console.log('User should contact support or complete payment process again if this is incorrect');
       }
     };
 

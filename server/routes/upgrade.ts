@@ -122,55 +122,12 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
     
     console.log(`[UPGRADE] User ${user.email} - JWT tier: ${user.tier}, DB tier: ${currentTier}`);
     
-    // AUTOMATIC TIER CORRECTION: Fix any accounts with incorrect pro tier
-    if (currentTier === 'pro' && user.email !== 'premium@demo.com') {
-      // Check if they have a valid promo code - if yes, they should be pro
-      const { db } = await import('../db');
-      const { promoCodeUsage } = await import('../../shared/schema');
-      const { eq } = await import('drizzle-orm');
-      
-      const hasPromoCode = await db.select()
-        .from(promoCodeUsage)
-        .where(eq(promoCodeUsage.userEmail, user.email.toLowerCase()));
-      
-      if (hasPromoCode.length > 0) {
-        console.log(`✅ VALID PRO ACCOUNT: ${user.email} has promo code, blocking upgrade`);
-        return res.status(400).json({ 
-          error: 'You already have a Pro account with unlimited access to all features. No upgrade needed!' 
-        });
-      } else {
-        // They don't have promo code but database shows pro - fix this immediately
-        console.log(`🔧 AUTO-FIXING INCORRECT PRO TIER: ${user.email} has no promo code, correcting to free tier`);
-        await storage.updateUser(dbUser.id, {
-          tier: 'free',
-          totalPages: 10,
-          maxShotsPerScene: 5,
-          canGenerateStoryboards: false
-        });
-        
-        // Generate fresh JWT with corrected tier
-        const correctedToken = generateToken({
-          ...dbUser,
-          tier: 'free',
-          totalPages: 10,
-          maxShotsPerScene: 5,
-          canGenerateStoryboards: false
-        });
-        
-        // Update cookie immediately
-        const cookieOptions = {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax' as const,
-          maxAge: 30 * 24 * 60 * 60 * 1000,
-          path: '/',
-        };
-        res.cookie('auth_token', correctedToken, cookieOptions);
-        
-        console.log(`✅ TIER CORRECTED: ${user.email} now has free tier and fresh JWT token`);
-        
-        // Continue with upgrade process since they're now confirmed free tier
-      }
+    // CHECK TIER STATUS: Check if user already has pro tier
+    if (currentTier === 'pro') {
+      console.log(`✅ USER ALREADY PRO: ${user.email} has pro tier - no upgrade needed`);
+      return res.status(400).json({ 
+        error: 'You already have a Pro account with unlimited access to all features. No upgrade needed!' 
+      });
     }
     
     if (user.email === 'premium@demo.com') {
