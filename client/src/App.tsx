@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { UltimateAuthProvider } from "@/components/auth/UltimateAuthProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthConsistencyFix } from "@/components/AuthConsistencyFix";
 import AppLayout from "@/components/layout/app-layout";
 import AuthLayout from "@/components/layout/auth-layout";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -43,6 +44,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <UltimateAuthProvider>
+          <AuthConsistencyFix />
           <TooltipProvider>
             <Switch>
               {/* Authentication routes with clean layout */}

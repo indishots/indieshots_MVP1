@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
  */
 export const usePostPaymentRefresh = () => {
   const queryClient = useQueryClient();
-  const { refreshUserData } = useAuth();
+  const { refreshUserData, user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -29,44 +29,50 @@ export const usePostPaymentRefresh = () => {
           queryClient.clear();
           console.log('✅ POST-PAYMENT: Cleared all cached queries');
           
-          // 2. Multiple attempts to refresh user data
-          for (let attempt = 1; attempt <= 3; attempt++) {
-            console.log(`🔄 POST-PAYMENT: Auth refresh attempt ${attempt}/3`);
-            
+          // 2. Force refresh authentication to fix inconsistency
+          if (user?.email) {
             try {
-              // Force refresh auth provider state
-              await refreshUserData();
-              console.log(`✅ POST-PAYMENT: Auth provider refreshed (attempt ${attempt})`);
+              console.log('🔧 POST-PAYMENT: Force refreshing authentication for:', user.email);
               
-              // Force refetch specific endpoints with no cache
-              await Promise.all([
-                queryClient.refetchQueries({ 
-                  queryKey: ["/api/auth/user"],
-                  type: 'all'
-                }),
-                queryClient.refetchQueries({ 
-                  queryKey: ["/api/upgrade/status"],
-                  type: 'all' 
-                }),
-                queryClient.refetchQueries({ 
-                  queryKey: ["/api/upgrade/plans"],
-                  type: 'all'
-                })
-              ]);
-              console.log(`✅ POST-PAYMENT: All endpoints refetched (attempt ${attempt})`);
+              const forceRefreshResponse = await fetch(`/api/force-refresh/${encodeURIComponent(user.email)}`, {
+                method: 'POST',
+                credentials: 'include',
+                cache: 'no-cache'
+              });
               
-              break; // Success, exit retry loop
-              
-            } catch (retryError) {
-              console.warn(`⚠️ POST-PAYMENT: Refresh attempt ${attempt} failed:`, retryError);
-              if (attempt === 3) {
-                console.error('❌ POST-PAYMENT: All refresh attempts failed');
+              if (forceRefreshResponse.ok) {
+                const refreshData = await forceRefreshResponse.json();
+                console.log('✅ POST-PAYMENT: Force refresh successful:', refreshData);
+                
+                // Now refresh user data with fixed authentication
+                await refreshUserData();
+                console.log('✅ POST-PAYMENT: User data refreshed after force refresh');
               } else {
-                // Wait before retry
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log('❌ POST-PAYMENT: Force refresh failed, falling back to normal refresh');
+                await refreshUserData();
               }
+            } catch (forceError) {
+              console.log('❌ POST-PAYMENT: Force refresh error, using fallback:', forceError);
+              await refreshUserData();
             }
           }
+          
+          // 3. Force refetch all auth-related queries
+          await Promise.all([
+            queryClient.refetchQueries({ 
+              queryKey: ["/api/auth/user"],
+              type: 'all'
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: ["/api/upgrade/status"],
+              type: 'all' 
+            }),
+            queryClient.refetchQueries({ 
+              queryKey: ["/api/upgrade/plans"],
+              type: 'all'
+            })
+          ]);
+          console.log('✅ POST-PAYMENT: All endpoints force refetched');
           
           // 3. Force page reload as last resort to ensure fresh data
           console.log('🔄 POST-PAYMENT: Forcing page reload to ensure fresh authentication...');
@@ -101,5 +107,5 @@ export const usePostPaymentRefresh = () => {
         window.history.replaceState(null, '', newUrl);
       }, 3000);
     }
-  }, [queryClient, refreshUserData, toast]);
+  }, [queryClient, refreshUserData, user?.email, toast]);
 };

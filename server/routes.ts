@@ -105,6 +105,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const authBypassRoutes = await import('./routes/authBypass');
   app.use('/api/auth-bypass', authBypassRoutes.default);
   
+  // Debug authentication routes (development only)
+  if (process.env.NODE_ENV === 'development') {
+    const debugAuthRoutes = await import('./routes/debugAuth');
+    app.use('/api/debug-auth', debugAuthRoutes.default);
+  }
+  
+  // Force refresh authentication
+  const forceRefreshRoutes = await import('./routes/forceRefresh');
+  app.use('/api/force-refresh', forceRefreshRoutes.default);
+  
   const envRoutes = await import('./routes/environment-variables');
   app.use('/api/env', envRoutes.default);
   
