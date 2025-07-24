@@ -360,14 +360,17 @@ router.get('/status', async (req: Request, res: Response) => {
               return total + (script.pageCount || 0);
             }, 0);
             
+            // AGGRESSIVE PRO TIER PROTECTION: Force pro values for pro users
+            const isProUser = dbUser.tier === 'pro';
+            
             const response = {
-              tier: dbUser.tier || 'free',
+              tier: isProUser ? 'pro' : 'free',
               limits: {
-                tier: dbUser.tier || 'free',
-                totalPages: dbUser.totalPages !== undefined ? dbUser.totalPages : (dbUser.tier === 'pro' ? -1 : 10),
+                tier: isProUser ? 'pro' : 'free',
+                totalPages: isProUser ? -1 : 10,
                 usedPages: usedPages,
-                maxShotsPerScene: dbUser.maxShotsPerScene || (dbUser.tier === 'pro' ? -1 : 5),
-                canGenerateStoryboards: dbUser.canGenerateStoryboards !== undefined ? dbUser.canGenerateStoryboards : (dbUser.tier === 'pro')
+                maxShotsPerScene: isProUser ? -1 : 5,
+                canGenerateStoryboards: isProUser
               }
             };
             

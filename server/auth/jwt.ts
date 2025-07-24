@@ -85,19 +85,28 @@ export function verifyToken(token: string): any {
       // Special handling for premium demo account - force pro tier values
       const isPremiumDemo = (decoded as any).email === 'premium@demo.com';
       
+      // AGGRESSIVE PRO TIER PROTECTION: Once pro, always pro in token
+      const tierFromToken = (decoded as any).tier;
+      const isProTier = tierFromToken === 'pro' || isPremiumDemo;
+      
       // Normalize token format - handle both uid and id fields
       const normalizedToken = {
         id: (decoded as any).uid || (decoded as any).id,
         uid: (decoded as any).uid || (decoded as any).id,
         email: (decoded as any).email,
-        tier: isPremiumDemo ? 'pro' : ((decoded as any).tier || 'free'),
-        totalPages: isPremiumDemo ? -1 : ((decoded as any).totalPages || ((decoded as any).tier === 'pro' ? -1 : 5)),
+        tier: isProTier ? 'pro' : 'free', // Force consistency
+        totalPages: isProTier ? -1 : 10,
         usedPages: (decoded as any).usedPages || 0,
-        maxShotsPerScene: isPremiumDemo ? -1 : ((decoded as any).maxShotsPerScene || ((decoded as any).tier === 'pro' ? -1 : 5)),
-        canGenerateStoryboards: isPremiumDemo ? true : ((decoded as any).canGenerateStoryboards !== undefined ? (decoded as any).canGenerateStoryboards : ((decoded as any).tier === 'pro')),
+        maxShotsPerScene: isProTier ? -1 : 5,
+        canGenerateStoryboards: isProTier,
         displayName: (decoded as any).displayName,
         // Preserve any other fields
-        ...(decoded as any)
+        ...(decoded as any),
+        // Override with consistent values
+        tier: isProTier ? 'pro' : 'free',
+        totalPages: isProTier ? -1 : 10,
+        maxShotsPerScene: isProTier ? -1 : 5,
+        canGenerateStoryboards: isProTier
       };
       
       if (isPremiumDemo) {
