@@ -141,52 +141,45 @@ export default function PaymentMethods() {
               
               <CardContent className="space-y-4">
                 <div>
-                  <h4 className="font-medium text-sm mb-2">Supported Currencies:</h4>
+                  <h4 className="font-medium text-sm mb-2">Supported Currency:</h4>
                   <div className="flex gap-2">
-                    {method.currencies.map(currency => (
-                      <Badge key={currency} variant="secondary" className="text-xs">
-                        {currency.toUpperCase()}
-                      </Badge>
-                    ))}
+                    <Badge variant="secondary" className="text-xs">
+                      INR
+                    </Badge>
                   </div>
                 </div>
 
                 <Separator />
 
                 <div className="space-y-3">
-                  {method.currencies.map(currency => (
-                    <div key={currency} className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium">
-                          IndieShots Pro - {currency.toUpperCase()}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {currency === 'usd' && '₹999/month (~$12 USD)'}
-                          {currency === 'inr' && '₹2,400/month'}
-                          {currency === 'eur' && '€26.00/month'}
-                          {currency === 'gbp' && '£23.00/month'}
-                        </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">
+                        IndieShots Pro - INR
                       </div>
-                      
-                      <Button
-                        onClick={() => handlePayment(
-                          method.id, 
-                          currency === 'usd' ? 29 : currency === 'inr' ? 2400 : currency === 'eur' ? 26 : 23,
-                          currency
-                        )}
-                        disabled={!!isProcessing}
-                        className="min-w-[100px]"
-                      >
-                        {isProcessing === method.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <>
-                            Pay Now <ArrowRight className="h-4 w-4 ml-1" />
-                          </>
-                        )}
-                      </Button>
+                      <div className="text-sm text-gray-600">
+                        ₹999/month
+                      </div>
                     </div>
-                  ))}
+                    
+                    <Button
+                      onClick={() => handlePayment(
+                        method.id, 
+                        999,
+                        'inr'
+                      )}
+                      disabled={!!isProcessing}
+                      className="min-w-[100px]"
+                    >
+                      {isProcessing === method.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          Pay Now <ArrowRight className="h-4 w-4 ml-1" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-sm text-green-600 mt-4">
@@ -209,7 +202,7 @@ export default function PaymentMethods() {
               Let us automatically choose the best payment method for your region
             </p>
             <Button
-              onClick={() => handlePayment('auto', 29, 'usd')}
+              onClick={() => handlePayment('auto', 999, 'inr')}
               disabled={!!isProcessing}
               size="lg"
               className="min-w-[150px]"
@@ -219,7 +212,7 @@ export default function PaymentMethods() {
               ) : (
                 <>
                   <Shield className="h-4 w-4 mr-2" />
-                  Pay ₹999 (~$12 USD)
+                  Pay ₹999
                 </>
               )}
             </Button>
