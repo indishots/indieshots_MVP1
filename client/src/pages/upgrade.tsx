@@ -308,7 +308,7 @@ export default function Upgrade() {
               <div>
                 <div className="flex justify-between text-sm mb-2 text-gray-700 dark:text-gray-300">
                   <span>Pages Used</span>
-                  <span>{usage.pagesUsed || 0}/{usage.totalPages || 5} pages</span>
+                  <span>{usage.pagesUsed || 0}/{usage.totalPages || 10} pages</span>
                 </div>
                 <Progress 
                   value={usage.totalPages ? (usage.pagesUsed / usage.totalPages) * 100 : 0} 

@@ -46,7 +46,7 @@ export const faqs: FAQ[] = [
   {
     id: 'free-vs-pro-plans',
     question: "What's the difference between Free and Pro plans?",
-    answer: 'Free users can process up to 5 pages and generate 5 shots with CSV export. Pro users get unlimited pages, unlimited shots, storyboard generation with AI images, Excel export, and priority support.',
+    answer: 'Free users can process up to 10 pages per month and generate 5 shots with CSV export. Pro users get unlimited pages, unlimited shots, storyboard generation with AI images, Excel export, and priority support.',
     category: 'pricing'
   },
   {

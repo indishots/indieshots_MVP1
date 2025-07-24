@@ -143,7 +143,7 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
         console.log(`🔧 AUTO-FIXING INCORRECT PRO TIER: ${user.email} has no promo code, correcting to free tier`);
         await storage.updateUser(dbUser.id, {
           tier: 'free',
-          totalPages: 5,
+          totalPages: 10,
           maxShotsPerScene: 5,
           canGenerateStoryboards: false
         });
@@ -152,7 +152,7 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
         const correctedToken = generateToken({
           ...dbUser,
           tier: 'free',
-          totalPages: 5,
+          totalPages: 10,
           maxShotsPerScene: 5,
           canGenerateStoryboards: false
         });
@@ -367,7 +367,7 @@ router.get('/status', authMiddleware, async (req: Request, res: Response) => {
     const finalTier = isPremiumDemo || shouldBeProTier ? 'pro' : 'free';
     const finalQuota = {
       tier: finalTier,
-      totalPages: finalTier === 'pro' ? -1 : 5,
+      totalPages: finalTier === 'pro' ? -1 : 10,
       usedPages: actualUsedPages,
       maxShotsPerScene: finalTier === 'pro' ? -1 : 5,
       canGenerateStoryboards: finalTier === 'pro'

@@ -152,7 +152,7 @@ export async function firebaseSync(req: Request, res: Response) {
         // Sync tier information from Firebase custom claims (critical for promo code users)
         if (tierFromFirebase !== user.tier) {
           updates.tier = tierFromFirebase;
-          updates.totalPages = tierFromFirebase === 'pro' ? -1 : 5;
+          updates.totalPages = tierFromFirebase === 'pro' ? -1 : 10;
           updates.maxShotsPerScene = tierFromFirebase === 'pro' ? -1 : 5;
           updates.canGenerateStoryboards = tierFromFirebase === 'pro';
           console.log(`🔄 TIER SYNC: ${user.email} - PostgreSQL tier: ${user.tier} → Firebase tier: ${tierFromFirebase}`);

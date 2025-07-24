@@ -126,7 +126,7 @@ export default function TestPayment() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">5 pages per script</span>
+                    <span className="text-sm">10 pages per month</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />

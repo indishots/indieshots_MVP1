@@ -37,7 +37,7 @@ export const users = pgTable("users", {
   providerId: varchar("provider_id"), // ID from the auth provider if OAuth
   tier: varchar("tier").default("free"), // User subscription tier: free, pro
   usedPages: integer("used_pages").default(0),
-  totalPages: integer("total_pages").default(5), // Free tier: 5 pages per month
+  totalPages: integer("total_pages").default(10), // Free tier: 10 pages per month
   maxShotsPerScene: integer("max_shots_per_scene").default(5), // Free tier: 5 shots per scene
   canGenerateStoryboards: boolean("can_generate_storyboards").default(false), // Storyboard access
   stripeCustomerId: varchar("stripe_customer_id"), // Stripe customer ID for subscriptions
