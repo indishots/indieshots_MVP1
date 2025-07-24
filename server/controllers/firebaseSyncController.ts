@@ -102,7 +102,7 @@ export async function firebaseSync(req: Request, res: Response) {
         providerId: firebaseUser.uid,
         emailVerified: firebaseUser.emailVerified || false,
         tier: finalTier, // Use Firebase custom claims or force pro for demo
-        totalPages: finalTier === 'pro' ? -1 : 5, // Pro tier gets unlimited pages, free tier gets 5
+        totalPages: finalTier === 'pro' ? -1 : 10, // Pro tier gets unlimited pages, free tier gets 10
         usedPages: 0,
         maxShotsPerScene: finalTier === 'pro' ? -1 : 5, // Pro tier gets unlimited shots, free tier gets 5
         canGenerateStoryboards: finalTier === 'pro', // Pro tier can generate storyboards

@@ -55,7 +55,7 @@ export function generateToken(user: any): string {
     id: user.id,
     email: user.email,
     tier: userTier,
-    totalPages: isPremiumDemo ? -1 : (user.totalPages !== undefined ? user.totalPages : (isProTier ? -1 : 5)),
+    totalPages: isPremiumDemo ? -1 : (user.totalPages !== undefined ? user.totalPages : (isProTier ? -1 : 10)),
     usedPages: user.usedPages || 0,
     maxShotsPerScene: isPremiumDemo ? -1 : (user.maxShotsPerScene !== undefined ? user.maxShotsPerScene : (isProTier ? -1 : 5)),
     canGenerateStoryboards: isPremiumDemo ? true : (user.canGenerateStoryboards !== undefined ? user.canGenerateStoryboards : isProTier),

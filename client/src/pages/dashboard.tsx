@@ -6,42 +6,14 @@ import { useAuth } from "@/components/auth/UltimateAuthProvider";
 import { Upload, Eye, Download, ArrowRight, ChevronRight, Crown, Zap, TestTube, MessageSquare } from "lucide-react";
 import { formatDate, truncate } from "@/lib/utils";
 import { UpgradePrompt } from "@/components/upgrade/upgrade-prompt";
-import { useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { usePostPaymentRefresh } from "@/hooks/usePostPaymentRefresh";
 
 export default function Dashboard() {
-  const { user, refreshUserData } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
-  // Check for payment success parameters and refresh auth
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const status = urlParams.get('status');
-    const message = urlParams.get('message');
-    
-    if (status === 'success' && message) {
-      // User just completed payment, refresh auth data immediately
-      console.log('Payment success detected, refreshing user data...');
-      
-      // Force refresh user data and upgrade status from multiple sources
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/upgrade/status"] });
-      queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-      queryClient.refetchQueries({ queryKey: ["/api/upgrade/status"] });
-      refreshUserData(); // Also refresh through auth provider
-      
-      // Show success toast
-      toast({
-        title: "Payment Successful!",
-        description: decodeURIComponent(message),
-        variant: "default",
-      });
-      
-      // Clean up URL parameters after showing message
-      window.history.replaceState(null, '', '/dashboard');
-    }
-  }, [queryClient, toast, refreshUserData]);
+  // Handle post-payment authentication refresh
+  usePostPaymentRefresh();
   
   // Fetch user's scripts
   const { data: scripts = [], isLoading: isLoadingScripts } = useQuery({
@@ -67,11 +39,13 @@ export default function Dashboard() {
   // Calculate usage statistics based on tier
   const isPremiumDemo = user?.email === 'premium@demo.com';
   
-  // Use upgrade status as primary source for tier information (handles post-payment scenarios)
+  // ENHANCED: Use upgrade status as authoritative source for tier information
   const userTier = isPremiumDemo ? 'pro' : 
     ((upgradeStatus as any)?.tier || 
+     (upgradeStatus as any)?.limits?.tier ||
      user?.tier || 
      (user as any)?.tier || 
+     ((upgradeStatus as any)?.limits?.totalPages === -1 ? 'pro' : 'free') ||
      ((user as any)?.totalPages === -1 ? 'pro' : 'free'));
   
   const pagesUsed = (upgradeStatus as any)?.limits?.usedPages || (user as any)?.usedPages || 0;
@@ -80,13 +54,30 @@ export default function Dashboard() {
   const pagesRemaining = totalPages === -1 ? 'unlimited' : Math.max(0, totalPages - pagesUsed);
   const canGenerateStoryboards = userTier === 'pro' ? true : ((upgradeStatus as any)?.limits?.canGenerateStoryboards || (user as any)?.canGenerateStoryboards || false);
   
+  // CRITICAL: Force pro tier recognition for users with pro database values
+  const isDefinitelyProUser = (
+    userTier === 'pro' || 
+    totalPages === -1 || 
+    canGenerateStoryboards === true ||
+    (upgradeStatus as any)?.tier === 'pro' ||
+    (user as any)?.tier === 'pro'
+  );
+  
+  const finalUserTier = isDefinitelyProUser ? 'pro' : 'free';
+  const finalTotalPages = isDefinitelyProUser ? -1 : totalPages;
+  const finalCanGenerateStoryboards = isDefinitelyProUser ? true : canGenerateStoryboards;
+  
   // Debug tier detection for troubleshooting
   console.log('Dashboard tier detection:', {
     email: user?.email,
     userTier,
+    finalUserTier,
     totalPages,
+    finalTotalPages,
     pagesUsed,
     canGenerateStoryboards,
+    finalCanGenerateStoryboards,
+    isDefinitelyProUser,
     upgradeStatusTier: (upgradeStatus as any)?.tier,
     upgradeStatusLimits: (upgradeStatus as any)?.limits,
     rawUserData: user,
@@ -103,13 +94,13 @@ export default function Dashboard() {
       </div>
       
       {/* Upgrade prompt for users approaching limits */}
-      {userTier === 'free' && usagePercentage >= 80 && (
+      {finalUserTier === 'free' && usagePercentage >= 80 && (
         <div className="mb-6">
           <UpgradePrompt 
             feature="pages"
             currentUsage={pagesUsed}
-            limit={totalPages}
-            message={`You've used ${pagesUsed} out of ${totalPages} pages this month. Upgrade to Pro for unlimited script processing.`}
+            limit={finalTotalPages}
+            message={`You've used ${pagesUsed} out of ${finalTotalPages} pages this month. Upgrade to Pro for unlimited script processing.`}
             compact
           />
         </div>
@@ -120,7 +111,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="pb-3 text-center">
             <CardTitle className="text-lg font-semibold flex items-center justify-center gap-2">
-              {userTier === 'pro' ? (
+              {finalUserTier === 'pro' ? (
                 <span className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-indigo-100 to-amber-100 dark:from-indigo-900/30 dark:to-amber-900/30 rounded-full border border-indigo-200/50 dark:border-indigo-700/30">
                   <Crown className="h-4 w-4 text-amber-500 animate-pulse" />
                   <span className="font-bold text-indigo-700 dark:text-indigo-300">Pro Plan</span>
@@ -133,7 +124,7 @@ export default function Dashboard() {
               )}
             </CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              {userTier === 'pro' ? (
+              {finalUserTier === 'pro' ? (
                 <span className="bg-gradient-to-r from-indigo-600 to-amber-600 dark:from-indigo-400 dark:to-amber-400 bg-clip-text text-transparent font-medium">
                   Unlimited access
                 </span>
@@ -143,7 +134,7 @@ export default function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {userTier === 'pro' ? (
+            {finalUserTier === 'pro' ? (
               <div className="text-center py-4 px-3 bg-gradient-to-br from-indigo-50/80 to-amber-50/80 dark:from-indigo-950/10 dark:to-amber-950/10 rounded-lg border border-indigo-200/30 dark:border-indigo-800/20">
                 <div className="relative mb-3">
                   <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full"></div>
