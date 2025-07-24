@@ -2,7 +2,7 @@ import crypto from 'crypto';
 
 /**
  * Fresh PayU Service - Built from Scratch
- * Using your exact production credentials for 1 rupee subscription
+ * Using your exact production credentials for ₹999 subscription
  */
 
 interface PayUConfig {
@@ -63,7 +63,7 @@ export class FreshPayUService {
   }
 
   /**
-   * Create payment request for 1 rupee subscription
+   * Create payment request for ₹999 subscription
    */
   createPaymentRequest(email: string, firstname: string, phone: string): PaymentData {
     const txnid = `INDIE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

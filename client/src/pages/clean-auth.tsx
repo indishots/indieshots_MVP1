@@ -394,7 +394,7 @@ export default function CleanAuthPage() {
                     <h3 className="font-semibold text-lg text-slate-900 dark:text-slate-100">Pro Tier</h3>
                   </div>
                   <Badge className="bg-amber-600 hover:bg-amber-700 text-white">
-                    $29/month
+                    ₹999/month (~$12 USD)
                   </Badge>
                 </div>
                 <div className="space-y-2 text-sm text-slate-700 dark:text-slate-300 mb-4">

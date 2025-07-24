@@ -218,7 +218,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-bold mb-2">Pro</h3>
               <p className="text-4xl font-bold mb-6">
-                $29 <span className="text-muted-foreground text-base font-normal">/month</span>
+                ₹999 <span className="text-muted-foreground text-base font-normal">/month (~$12 USD)</span>
               </p>
               
               <Separator className="my-6" />

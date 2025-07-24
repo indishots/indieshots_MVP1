@@ -5,7 +5,7 @@ import { storage } from '../storage.js';
 const router = express.Router();
 
 /**
- * Create PayU payment for 1 rupee subscription
+ * Create PayU payment for ₹999 subscription
  */
 router.post('/create', async (req, res) => {
   try {
@@ -18,7 +18,7 @@ router.post('/create', async (req, res) => {
       });
     }
 
-    console.log(`Creating payment for ${email} - ₹1 subscription`);
+    console.log(`Creating payment for ${email} - ₹999 subscription`);
 
     // Generate payment data
     const paymentData = freshPayuService.createPaymentRequest(

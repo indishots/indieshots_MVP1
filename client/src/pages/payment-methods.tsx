@@ -161,7 +161,7 @@ export default function PaymentMethods() {
                           IndieShots Pro - {currency.toUpperCase()}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {currency === 'usd' && '$29.00/month'}
+                          {currency === 'usd' && '₹999/month (~$12 USD)'}
                           {currency === 'inr' && '₹2,400/month'}
                           {currency === 'eur' && '€26.00/month'}
                           {currency === 'gbp' && '£23.00/month'}
@@ -219,7 +219,7 @@ export default function PaymentMethods() {
               ) : (
                 <>
                   <Shield className="h-4 w-4 mr-2" />
-                  Pay $29.00
+                  Pay ₹999 (~$12 USD)
                 </>
               )}
             </Button>

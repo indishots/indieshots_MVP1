@@ -170,7 +170,7 @@ export default function TestPayment() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="text-3xl font-bold">$29<span className="text-lg font-normal">/month</span></div>
+                <div className="text-3xl font-bold">₹999<span className="text-lg font-normal">/month (~$12 USD)</span></div>
                 
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">

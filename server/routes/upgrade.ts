@@ -153,17 +153,15 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
     };
     res.cookie('auth_token', freshToken, cookieOptions);
 
-    // Import PayU service
+    // Import PayU service  
     const { FreshPayUService } = await import('../services/freshPayuService');
-    const payuService = new PayUService();
+    const payuService = new FreshPayUService();
 
-    // Create payment parameters
-    const paymentParams = payuService.createPaymentParams(
-      29, // $29 USD
+    // Create payment request for ₹999
+    const paymentData = payuService.createPaymentRequest(
       user.email,
       user.displayName || user.email.split('@')[0],
-      '', // phone - optional
-      'pro'
+      '' // phone - optional
     );
 
     // Store payment info for verification (simplified for demo)
@@ -171,41 +169,33 @@ router.post('/create-checkout-session', authMiddleware, async (req: Request, res
     (global as any).pendingPayments = pendingPayments;
     
     const paymentInfo = {
-      txnid: paymentParams.txnid,
+      txnid: paymentData.txnid,
       email: user.email,
-      amount: 29,
+      amount: 999, // ₹999 subscription
       tier: 'pro',
       timestamp: Date.now()
     };
     
-    pendingPayments.set(paymentParams.txnid, paymentInfo);
+    pendingPayments.set(paymentData.txnid, paymentInfo);
     console.log('Payment session created:', {
-      txnid: paymentParams.txnid,
+      txnid: paymentData.txnid,  
       email: user.email,
-      amount: 29
+      amount: 999 // ₹999 subscription
     });
     console.log('Total pending payments:', pendingPayments.size);
 
     const paymentUrl = payuService.getPaymentUrl();
     
-    // Generate complete payment form HTML for direct redirect
-    const paymentForm = payuService.generatePaymentForm(paymentParams, paymentUrl);
-    
     const response = {
       success: true,
-      redirectUrl: `/api/payu/redirect/${paymentParams.txnid}`,
-      txnid: paymentParams.txnid,
-      // For frontend testing - return both methods
-      paymentParams: paymentParams,
+      paymentData: paymentData,
       paymentUrl: paymentUrl,
-      paymentForm: paymentForm
+      txnid: paymentData.txnid
     };
     
     console.log('Sending checkout response:', {
-      redirectUrl: response.redirectUrl,
       txnid: response.txnid,
-      hasPaymentParams: !!response.paymentParams,
-      hasPaymentForm: !!response.paymentForm,
+      hasPaymentData: !!response.paymentData,
       paymentUrl: response.paymentUrl
     });
     
