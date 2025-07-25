@@ -13,25 +13,9 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
     
     console.log('Firebase sync for:', firebaseUser.email);
     
-    // PROPER TIER ASSIGNMENT: Default to free tier, upgrade only if promo code exists
-    let shouldBeProTier = false;
-    
-    try {
-      // Check if user has any promo code usage records
-      const { db } = await import('../db');
-      const { promoCodeUsage } = await import('../../shared/schema');
-      const { eq } = await import('drizzle-orm');
-      
-      const hasPromoCode = await db.select()
-        .from(promoCodeUsage)
-        .where(eq(promoCodeUsage.userEmail, firebaseUser.email.toLowerCase()));
-      
-      shouldBeProTier = hasPromoCode.length > 0;
-      console.log(`Promo code check for ${firebaseUser.email}: ${shouldBeProTier ? 'Pro tier (has promo code)' : 'Free tier (no promo code)'}`);
-    } catch (error) {
-      console.log(`No promo code found for ${firebaseUser.email} - defaulting to free tier`);
-      shouldBeProTier = false;
-    }
+    // REMOVED ALL AUTO-UPGRADE LOGIC - Users default to FREE tier only
+    console.log(`Account creation: ${firebaseUser.email} will default to FREE tier (no automatic upgrades)`);
+    const shouldBeProTier = false; // Always false - no automatic pro tier assignment
     
     // Get or create user with proper tier assignment
     let user = await storage.getUserByEmail(firebaseUser.email.toLowerCase());
@@ -55,19 +39,8 @@ export const syncFirebaseUser = async (req: Request, res: Response) => {
       });
       console.log(`✅ Created new user: ${user.email} with ${tier} tier (promo code: ${shouldBeProTier ? 'YES' : 'NO'})`);
     } else {
-      // For existing users, ensure tier is correct based on promo code usage
-      const correctTier = shouldBeProTier ? 'pro' : 'free';
-      if (user.tier !== correctTier) {
-        console.log(`🔧 TIER CORRECTION: Updating ${user.email} from ${user.tier} to ${correctTier} tier`);
-        user = await storage.updateUser(user.id, {
-          tier: correctTier,
-          totalPages: correctTier === 'pro' ? -1 : 10,
-          maxShotsPerScene: correctTier === 'pro' ? -1 : 5,
-          canGenerateStoryboards: correctTier === 'pro',
-          firebaseUID: firebaseUser.uid,
-          displayName: firebaseUser.displayName || user.displayName
-        });
-      }
+      // For existing users, NO automatic tier corrections - keep their current database tier
+      console.log(`✓ Existing user: ${user.email} - keeping current tier: ${user.tier} (no automatic changes)`);
     }
     
     // Generate JWT token

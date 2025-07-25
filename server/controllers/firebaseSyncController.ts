@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage';
 import { generateToken } from '../auth/jwt';
-import { ensurePremiumDemoProTier, applyPremiumDemoOverrides } from '../utils/premiumDemo';
+// Removed premium demo override imports
 import { PromoCodeUniversalValidator } from '../utils/promoCodeUniversalValidator';
 
 /**
@@ -148,31 +148,8 @@ export async function firebaseSync(req: Request, res: Response) {
         if (!user.lastName) updates.lastName = nameParts.slice(1).join(' ') || user.lastName;
       }
       
-      // RESTRICTED TIER SYNC: Only sync if Firebase explicitly has pro tier AND it comes from valid custom claims
-      if (tierFromFirebase === 'pro' && firebaseCustomClaims && (firebaseCustomClaims as any).tier === 'pro' && user.tier !== 'pro') {
-          // Only upgrade if Firebase explicitly says pro AND we have valid custom claims
-          updates.tier = 'pro';
-          updates.totalPages = -1;
-          updates.maxShotsPerScene = -1;
-          updates.canGenerateStoryboards = true;
-          console.log(`🎯 VALID PRO UPGRADE: ${user.email} - Upgrading from ${user.tier} to pro (Firebase custom claims validated)`);
-        } else if (tierFromFirebase === 'free' && user.tier === 'pro' && user.email !== 'premium@demo.com') {
-          // Don't downgrade pro users automatically - this could be a Firebase sync issue
-          console.log(`⚠️ TIER SYNC PREVENTED: ${user.email} - Won't downgrade pro to free (could be temporary Firebase issue)`);
-        } else if (tierFromFirebase !== user.tier) {
-          console.log(`ℹ️ TIER SYNC SKIPPED: ${user.email} - PostgreSQL: ${user.tier}, Firebase: ${tierFromFirebase} (no auto-sync to prevent incorrect upgrades)`)
-        } else {
-          console.log(`✓ TIER SYNC: ${user.email} - Tiers already match: ${tierFromFirebase}`);
-          
-          // Additional validation: Ensure pro tier users have correct unlimited values
-          if (tierFromFirebase === 'pro' && (user.totalPages !== -1 || user.maxShotsPerScene !== -1 || !user.canGenerateStoryboards)) {
-            updates.totalPages = -1;
-            updates.maxShotsPerScene = -1;
-            updates.canGenerateStoryboards = true;
-            console.log(`🔧 PRO TIER CORRECTION: Fixed unlimited access values for ${user.email}`);
-          }
-        }
-      }
+      // REMOVED ALL AUTOMATIC TIER SYNC - Users keep their database tier only
+      console.log(`✓ TIER SYNC DISABLED: ${user.email} - Using database tier: ${user.tier} (no automatic changes)`)
       
       if (Object.keys(updates).length > 0) {
         user = await storage.updateUser(user.id, updates);
@@ -184,9 +161,8 @@ export async function firebaseSync(req: Request, res: Response) {
       // Promo code validation should only happen during signup, not during regular Firebase sync
       console.log(`✅ FIREBASE SYNC COMPLETE: ${user.email} - no automatic tier changes`)
     
-    // Generate JWT token for session with premium demo overrides
-    const userForToken = applyPremiumDemoOverrides(user);
-    const token = generateToken(userForToken);
+    // Generate JWT token for session without any overrides
+    const token = generateToken(user);
     
     // Set HTTP-only cookie
     const cookieOptions = {
@@ -218,8 +194,8 @@ export async function firebaseSync(req: Request, res: Response) {
     // Return user data (excluding sensitive fields)
     const { password, ...userData } = user;
     
-    // Apply premium demo overrides to response
-    const finalUserData = applyPremiumDemoOverrides(userData);
+    // Return user data without any tier overrides
+    const finalUserData = userData;
     
     const responseData = { 
       ...finalUserData, 

@@ -65,30 +65,9 @@ export async function register(req: Request, res: Response) {
     let maxShotsPerScene = 5;
     let canGenerateStoryboards = false;
     
-    // Check if user provided a valid promo code
+    // REMOVED PROMO CODE AUTO-UPGRADE - All accounts default to FREE tier only
     if (validatedData.couponCode) {
-      try {
-        // Import PromoCodeService to validate promo code
-        const { PromoCodeService } = await import('../services/promoCodeService');
-        const promoService = new PromoCodeService();
-        
-        const validation = await promoService.validatePromoCode(
-          validatedData.couponCode,
-          validatedData.email
-        );
-        
-        if (validation.isValid && validation.tier) {
-          tier = validation.tier || 'pro';
-          totalPages = tier === 'pro' ? -1 : 10; // Free tier gets 10 pages
-          maxShotsPerScene = tier === 'pro' ? -1 : 5;
-          canGenerateStoryboards = tier === 'pro';
-          console.log(`✅ Valid promo code ${validatedData.couponCode} - upgrading to ${tier} tier`);
-        } else {
-          console.log(`❌ Invalid promo code ${validatedData.couponCode} - keeping free tier`);
-        }
-      } catch (error) {
-        console.log(`❌ Promo code validation failed for ${validatedData.couponCode} - keeping free tier`);
-      }
+      console.log(`⚠️ Promo code provided (${validatedData.couponCode}) but auto-upgrade disabled - account will be FREE tier`);
     }
     
     // Prepare user data (don't create user yet - wait for email verification)
