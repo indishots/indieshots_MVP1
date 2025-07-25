@@ -56,25 +56,18 @@ router.get('/user', authMiddleware, async (req: Request, res: Response) => {
     console.log(`[AUTH] Getting user data for: ${jwtUser.email}`);
     console.log(`[AUTH] JWT user tier: ${jwtUser.tier}`);
 
-    // For Firebase-only authentication, return the JWT user data directly
-    // since that's the authoritative source for Firebase users
-    const isPremiumDemo = jwtUser.email === 'premium@demo.com';
-    
+    // Return JWT user data directly without hardcoded premium demo overrides
     const userData = {
       id: jwtUser.id || jwtUser.uid,
       uid: jwtUser.uid || jwtUser.id,
       email: jwtUser.email,
       displayName: jwtUser.displayName || jwtUser.email?.split('@')[0],
-      tier: isPremiumDemo ? 'pro' : (jwtUser.tier || 'free'),
-      totalPages: isPremiumDemo ? -1 : (jwtUser.totalPages || (jwtUser.tier === 'pro' ? -1 : 10)),
+      tier: jwtUser.tier || 'free',
+      totalPages: jwtUser.totalPages || (jwtUser.tier === 'pro' ? -1 : 10),
       usedPages: jwtUser.usedPages || 0,
-      maxShotsPerScene: isPremiumDemo ? -1 : (jwtUser.maxShotsPerScene || (jwtUser.tier === 'pro' ? -1 : 5)),
-      canGenerateStoryboards: isPremiumDemo ? true : (jwtUser.canGenerateStoryboards !== undefined ? jwtUser.canGenerateStoryboards : (jwtUser.tier === 'pro'))
+      maxShotsPerScene: jwtUser.maxShotsPerScene || (jwtUser.tier === 'pro' ? -1 : 5),
+      canGenerateStoryboards: jwtUser.canGenerateStoryboards !== undefined ? jwtUser.canGenerateStoryboards : (jwtUser.tier === 'pro')
     };
-    
-    if (isPremiumDemo) {
-      console.log('🔒 AUTH USER ENDPOINT: Applied pro tier override for premium@demo.com');
-    }
 
     console.log(`[AUTH] Returning user data - Tier: ${userData.tier}, CanGenerateStoryboards: ${userData.canGenerateStoryboards}`);
     res.json(userData);

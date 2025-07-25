@@ -178,17 +178,7 @@ export async function firebaseSync(req: Request, res: Response) {
         user = await storage.updateUser(user.id, updates);
       }
       
-      // Only premium@demo.com gets special protection
-      if (user.email === 'premium@demo.com' && user.tier !== 'pro') {
-        console.log(`🔧 DEMO ACCOUNT: Upgrading premium@demo.com to pro tier in Firebase sync`);
-        
-        user = await storage.updateUser(user.id, {
-          tier: 'pro',
-          totalPages: -1,
-          maxShotsPerScene: -1,
-          canGenerateStoryboards: true
-        });
-      }
+      // Removed automatic premium@demo.com tier upgrade - use only database values
       
       // REMOVED UNIVERSAL PROMO CODE AUTO-UPGRADE - This was causing new users to get pro tier
       // Promo code validation should only happen during signup, not during regular Firebase sync

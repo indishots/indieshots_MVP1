@@ -314,6 +314,7 @@ Recent Changes:
 - June 13, 2025: Initial setup
 
 ## Current Status
+- **CRITICAL TIER ASSIGNMENT ISSUE COMPLETELY FIXED** - Removed all hardcoded tier overrides that were bypassing database-driven tier display; eliminated automatic pro tier assignment in Firebase sync controller and auth routes; new account creation now correctly defaults to FREE tier (10 pages, 5 shots, no storyboards) without promo codes or payments; only premium@demo.com maintains pro status through database values only
 - Application successfully running on port 5000 with external access configured
 - Production deployment live at: https://indieshots.replit.app
 - Development environment: https://workspace.indieshots.replit.app
