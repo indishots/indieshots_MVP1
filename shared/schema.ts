@@ -101,6 +101,27 @@ export const scriptsRelations = relations(scripts, ({ one }) => ({
 export type InsertScript = typeof scripts.$inferInsert;
 export type Script = typeof scripts.$inferSelect;
 
+// Payment Transactions table to track all payment attempts
+export const paymentTransactions = pgTable("payment_transactions", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(), // Firebase user ID
+  email: varchar("email").notNull(),
+  transactionId: varchar("transaction_id").notNull(), // PayU mihpayid or Stripe transaction ID
+  payuTxnId: varchar("payu_txn_id"), // PayU txnid (different from mihpayid)
+  amount: integer("amount").notNull(), // Amount in smallest currency unit (paise for INR)
+  currency: varchar("currency").default("INR"),
+  status: varchar("status").notNull(), // pending, success, failed, cancelled
+  paymentMethod: varchar("payment_method").notNull(), // payu, stripe
+  paymentGateway: varchar("payment_gateway"), // secure.payu.in, stripe
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"), // Additional payment data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type InsertPaymentTransaction = typeof paymentTransactions.$inferInsert;
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+
 // Parse Jobs table to track parsing status (Firebase user IDs)
 export const parseJobs = pgTable("parse_jobs", {
   id: serial("id").primaryKey(),

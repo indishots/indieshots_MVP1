@@ -1,6 +1,7 @@
 import express from 'express';
 import { freshPayuService } from '../services/freshPayuService.js';
 import { storage } from '../storage.js';
+import { paymentTransactionService } from '../services/paymentTransactionService.js';
 
 const router = express.Router();
 
@@ -70,6 +71,31 @@ router.post('/success', async (req, res) => {
         if (user) {
           console.log(`📍 User found: ${user.email} (Current tier: ${user.tier})`);
           
+          // Check if this transaction was already processed
+          const existingTransaction = await paymentTransactionService.getTransaction(mihpayid || txnid);
+          if (existingTransaction && existingTransaction.status === 'success') {
+            console.log(`⚠️ DUPLICATE: Transaction ${mihpayid || txnid} already processed successfully`);
+            return res.redirect('/dashboard?status=success&message=Payment already processed! Welcome to IndieShots Pro!');
+          }
+
+          // Record successful transaction
+          await paymentTransactionService.recordTransaction({
+            userId: user.firebaseUID || user.id.toString(),
+            email: user.email,
+            transactionId: mihpayid || txnid,
+            payuTxnId: txnid,
+            amount: Math.round(parseFloat(amount) * 100), // Convert to paise
+            currency: 'INR',
+            status: 'success',
+            paymentMethod: 'payu',
+            paymentGateway: 'secure.payu.in',
+            metadata: {
+              firstname,
+              originalAmount: amount,
+              processedAt: new Date().toISOString()
+            }
+          });
+          
           // Upgrade to pro tier
           await storage.updateUser(user.id, {
             tier: 'pro',
@@ -128,8 +154,34 @@ router.post('/success', async (req, res) => {
       }
     }
 
-    // Handle non-success status
+    // Handle non-success status - record failed transaction
     console.log(`❌ Non-success status: ${status}`);
+    
+    try {
+      const user = await storage.getUserByEmail(email);
+      if (user) {
+        await paymentTransactionService.recordTransaction({
+          userId: user.firebaseUID || user.id.toString(),
+          email: user.email,
+          transactionId: mihpayid || txnid || `failed_${Date.now()}`,
+          payuTxnId: txnid,
+          amount: Math.round(parseFloat(amount || '999') * 100),
+          currency: 'INR',
+          status: 'failed',
+          paymentMethod: 'payu',
+          paymentGateway: 'secure.payu.in',
+          errorMessage: `Payment failed with status: ${status}`,
+          metadata: {
+            firstname,
+            failureReason: status,
+            processedAt: new Date().toISOString()
+          }
+        });
+      }
+    } catch (recordError) {
+      console.warn('Failed to record failed transaction:', recordError);
+    }
+    
     return res.redirect('/upgrade?status=error&message=Payment was not successful. Please try again.');
 
   } catch (error) {

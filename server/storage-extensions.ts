@@ -72,37 +72,53 @@ export class PaymentStorage {
   }
 
   async getUserPaymentHistory(userId: string): Promise<any[]> {
-    // This would typically fetch from a payments table
-    // For now, return basic info from user record
-    const user = await this.getUserById(userId);
-    if (!user) return [];
-
-    const history = [];
+    // Import the payment transaction service
+    const { paymentTransactionService } = await import('./services/paymentTransactionService.js');
     
-    // Add Stripe payment info if available
-    if (user.stripeCustomerId || user.stripeSubscriptionId) {
-      history.push({
-        id: user.stripeSubscriptionId || user.stripeCustomerId,
-        method: 'stripe',
-        status: user.paymentStatus || 'active',
-        amount: 29.00,
-        currency: 'usd',
-        date: user.updatedAt || user.createdAt,
-        description: 'IndieShots Pro Subscription'
-      });
-    }
+    // Get payment history from dedicated transactions table
+    const transactions = await paymentTransactionService.getUserPaymentHistory(userId);
+    
+    // Convert to display format
+    const history = transactions.map(transaction => ({
+      id: transaction.transactionId,
+      method: transaction.paymentMethod,
+      status: transaction.status,
+      amount: transaction.amount / 100, // Convert from paise to rupees
+      currency: transaction.currency.toLowerCase(),
+      date: transaction.createdAt,
+      description: `IndieShots Pro Plan (${transaction.paymentMethod.toUpperCase()})`
+    }));
 
-    // Add PayU payment info if available
-    if (user.payuTransactionId || user.payuTxnId) {
-      history.push({
-        id: user.payuTransactionId || user.payuTxnId,
-        method: 'payu',
-        status: user.paymentStatus || 'completed',
-        amount: 29.00,
-        currency: 'inr',
-        date: user.updatedAt || user.createdAt,
-        description: 'IndieShots Pro Plan'
-      });
+    // Fallback: if no transactions found, check user record for legacy data
+    if (history.length === 0) {
+      const user = await this.getUserById(userId);
+      if (!user) return [];
+
+      // Add legacy Stripe payment info if available
+      if (user.stripeCustomerId || user.stripeSubscriptionId) {
+        history.push({
+          id: user.stripeSubscriptionId || user.stripeCustomerId,
+          method: 'stripe',
+          status: user.paymentStatus || 'active',
+          amount: 999, // Updated to ₹999
+          currency: 'inr',
+          date: user.updatedAt || user.createdAt,
+          description: 'IndieShots Pro Plan (Legacy)'
+        });
+      }
+
+      // Add legacy PayU payment info if available
+      if (user.payuTransactionId || user.payuTxnId) {
+        history.push({
+          id: user.payuTransactionId || user.payuTxnId,
+          method: 'payu',
+          status: user.paymentStatus || 'completed',
+          amount: 999, // Updated to ₹999
+          currency: 'inr',
+          date: user.updatedAt || user.createdAt,
+          description: 'IndieShots Pro Plan (Legacy)'
+        });
+      }
     }
 
     return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

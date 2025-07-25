@@ -20,6 +20,7 @@ import scenesRoutes from "./routes/scenes";
 import testRoutes from "./routes/test";
 import contactRoutes from "./routes/contact";
 import adminRoutes from "./routes/admin";
+import paymentHistoryRoutes from "./routes/payment-history";
 
 // Import utility functions
 import { estimatePageCount, parseScriptPreview } from "./utils/scriptUtils";
@@ -141,6 +142,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Admin routes
   app.use('/api/admin', adminRoutes);
+  
+  // Payment history routes
+  app.use('/api/payment-history', paymentHistoryRoutes);
 
   // Start the parse worker in background
   startParseWorker().catch(error => {
