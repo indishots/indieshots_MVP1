@@ -2,7 +2,7 @@
  * Component disabled - removed hardcoded tier forcing
  */
 export const ForceProTierCheck = () => {
-  // Component disabled to prevent hardcoded tier overrides
+  // COMPLETELY DISABLED - Prevents automatic pro tier forcing
   return null;
 
   useEffect(() => {
