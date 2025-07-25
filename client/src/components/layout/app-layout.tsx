@@ -53,9 +53,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   });
 
   // Get tier information from multiple sources for accuracy
-  const isPremiumDemo = user?.email === 'premium@demo.com';
-  const userTier = isPremiumDemo ? 'pro' : 
-    ((currentUser as any)?.tier || 
+  const userTier = ((currentUser as any)?.tier || 
      (upgradeStatus as any)?.tier || 
      (user as any)?.tier || 
      ((currentUser as any)?.totalPages === -1 ? 'pro' : 'free'));
@@ -71,10 +69,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
     upgradeStatusTier: (upgradeStatus as any)?.tier,
     totalPages: (currentUser as any)?.totalPages
   });
-  
-  if (isPremiumDemo) {
-    console.log('🔒 HEADER: Applied pro tier override for premium@demo.com');
-  }
 
   // Pages that should show the sidebar
   const sidebarPages = ['/dashboard', '/projects', '/settings', '/upload', '/columns', '/parse', '/review', '/scene-selection', '/shots', '/storyboards', '/scriptHealth', '/help'];

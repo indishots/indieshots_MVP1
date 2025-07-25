@@ -425,7 +425,7 @@ class AuthManager {
           maxShotsPerScene: -1,
           canGenerateStoryboards: true
         };
-        console.log('🔒 FRONTEND: Applied pro tier override in updateUserData for premium@demo.com');
+        // Removed pro tier override
       }
       
       this.user = { ...this.user, ...userData };

@@ -54,21 +54,16 @@ export const TierProvider: React.FC<TierProviderProps> = ({ children }) => {
   const isLoading = upgradeLoading || userLoading;
 
   // Determine tier from multiple sources with fallback logic
-  const isPremiumDemo = user?.email === 'premium@demo.com';
+  // Removed premium demo override
   
-  // Priority: Premium demo > Upgrade status > Current user > Auth user > Default free
+  // Priority: Upgrade status > Current user > Auth user > Default free
   let userTier: 'free' | 'pro' = 'free';
   let totalPages = 10;
   let usedPages = 0;
   let canGenerateStoryboards = false;
   let maxShotsPerScene = 5;
 
-  if (isPremiumDemo) {
-    userTier = 'pro';
-    totalPages = -1;
-    canGenerateStoryboards = true;
-    maxShotsPerScene = -1;
-  } else if (upgradeStatus) {
+  if (upgradeStatus) {
     userTier = (upgradeStatus as any)?.tier || 'free';
     const limits = (upgradeStatus as any)?.limits;
     if (limits) {
@@ -103,7 +98,6 @@ export const TierProvider: React.FC<TierProviderProps> = ({ children }) => {
   // Debug logging for tier detection
   console.log('🎯 TIER PROVIDER: Tier detection results:', {
     email: user?.email,
-    isPremiumDemo,
     userTier,
     isProUser,
     totalPages,
