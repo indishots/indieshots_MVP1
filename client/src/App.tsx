@@ -7,7 +7,7 @@ import { UltimateAuthProvider } from "@/components/auth/UltimateAuthProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthConsistencyFix } from "@/components/AuthConsistencyFix";
 import { ProTierProtection } from "@/components/ProTierProtection";
-// Removed automatic pro tier forcing components
+import { PaymentSuccessPopup } from "@/components/PaymentSuccessPopup";
 import AppLayout from "@/components/layout/app-layout";
 import AuthLayout from "@/components/layout/auth-layout";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -46,6 +46,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <UltimateAuthProvider>
+          <PaymentSuccessPopup />
           <TooltipProvider>
             <Switch>
               {/* Authentication routes with clean layout */}
