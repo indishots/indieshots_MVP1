@@ -3,10 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/components/auth/UltimateAuthProvider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, X, Crown, Zap, Image, Infinity, FileText, Camera, Headphones, Sparkles, ArrowRight } from 'lucide-react';
+import { CheckCircle, X, Crown, Zap, Image, Infinity, FileText, Camera, Headphones, Sparkles, ArrowRight, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 
@@ -17,6 +19,7 @@ export default function Upgrade() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
 
   // Handle payment status from URL parameters
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function Upgrade() {
         body: JSON.stringify({ 
           email: user.email,
           firstname: user.displayName.split(' ')[0] || 'User',
-          phone: '9999999999'
+          phone: phoneNumber || '9999999999'
         })
       });
 
@@ -413,7 +416,27 @@ export default function Upgrade() {
                   </div>
                 )}
 
-                <div className="pt-4">
+                <div className="pt-4 space-y-4">
+                  {plan.id === 'pro' && currentTier !== 'pro' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-sm flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        Phone Number
+                      </Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="Enter your phone number"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Required for payment processing and order confirmation
+                      </p>
+                    </div>
+                  )}
+                  
                   {plan.current ? (
                     <Button disabled className="w-full">
                       Current Plan
@@ -421,7 +444,7 @@ export default function Upgrade() {
                   ) : plan.id === 'pro' && currentTier !== 'pro' ? (
                     <Button 
                       onClick={handleUpgrade}
-                      disabled={isProcessing}
+                      disabled={isProcessing || !phoneNumber.trim()}
                       className="w-full"
                     >
                       {isProcessing ? 'Processing...' : 'Upgrade to Pro'}
