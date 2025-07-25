@@ -43,12 +43,8 @@ export default function Dashboard() {
     refetchInterval: 2000, // Aggressive polling every 2 seconds for post-payment detection
   });
   
-  // Calculate usage statistics based on tier
-  const isPremiumDemo = user?.email === 'premium@demo.com';
-  
-  // ENHANCED: Use upgrade status as authoritative source for tier information
-  const userTier = isPremiumDemo ? 'pro' : 
-    ((upgradeStatus as any)?.tier || 
+  // Calculate usage statistics based on tier - removed premium demo override
+  const userTier = ((upgradeStatus as any)?.tier || 
      (upgradeStatus as any)?.limits?.tier ||
      user?.tier || 
      (user as any)?.tier || 
@@ -61,18 +57,10 @@ export default function Dashboard() {
   const pagesRemaining = totalPages === -1 ? 'unlimited' : Math.max(0, totalPages - pagesUsed);
   const canGenerateStoryboards = userTier === 'pro' ? true : ((upgradeStatus as any)?.limits?.canGenerateStoryboards || (user as any)?.canGenerateStoryboards || false);
   
-  // CRITICAL: Force pro tier recognition for users with pro database values
-  const isDefinitelyProUser = (
-    userTier === 'pro' || 
-    totalPages === -1 || 
-    canGenerateStoryboards === true ||
-    (upgradeStatus as any)?.tier === 'pro' ||
-    (user as any)?.tier === 'pro'
-  );
-  
-  const finalUserTier = isDefinitelyProUser ? 'pro' : 'free';
-  const finalTotalPages = isDefinitelyProUser ? -1 : totalPages;
-  const finalCanGenerateStoryboards = isDefinitelyProUser ? true : canGenerateStoryboards;
+  // Use actual tier data without forced overrides
+  const finalUserTier = userTier;
+  const finalTotalPages = totalPages;
+  const finalCanGenerateStoryboards = canGenerateStoryboards;
   
   // Debug tier detection for troubleshooting
   console.log('Dashboard tier detection:', {

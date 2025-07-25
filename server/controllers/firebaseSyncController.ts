@@ -148,19 +148,8 @@ export async function firebaseSync(req: Request, res: Response) {
         if (!user.lastName) updates.lastName = nameParts.slice(1).join(' ') || user.lastName;
       }
       
-      // Special handling for premium demo account - preserve pro tier
-      if (firebaseUser.email === 'premium@demo.com') {
-        console.log(`🔒 DEMO ACCOUNT: Preserving pro tier for ${firebaseUser.email}`);
-        if (user.tier !== 'pro') {
-          updates.tier = 'pro';
-          updates.totalPages = -1;
-          updates.maxShotsPerScene = -1;
-          updates.canGenerateStoryboards = true;
-          console.log(`🔄 DEMO FIX: Restored pro tier for premium@demo.com`);
-        }
-      } else {
-        // RESTRICTED TIER SYNC: Only sync if Firebase explicitly has pro tier AND it comes from valid custom claims
-        if (tierFromFirebase === 'pro' && firebaseCustomClaims && (firebaseCustomClaims as any).tier === 'pro' && user.tier !== 'pro') {
+      // RESTRICTED TIER SYNC: Only sync if Firebase explicitly has pro tier AND it comes from valid custom claims
+      if (tierFromFirebase === 'pro' && firebaseCustomClaims && (firebaseCustomClaims as any).tier === 'pro' && user.tier !== 'pro') {
           // Only upgrade if Firebase explicitly says pro AND we have valid custom claims
           updates.tier = 'pro';
           updates.totalPages = -1;

@@ -3,12 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/auth/UltimateAuthProvider';
 
 /**
- * Component that aggressively checks for pro tier upgrades
- * Monitors URL parameters and forces immediate tier detection
+ * Component disabled - removed hardcoded tier forcing
  */
 export const ForceProTierCheck = () => {
-  const queryClient = useQueryClient();
-  const { user, refreshUserData } = useAuth();
+  // Component disabled to prevent hardcoded tier overrides
+  return null;
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
