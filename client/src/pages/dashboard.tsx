@@ -72,7 +72,6 @@ export default function Dashboard() {
     pagesUsed,
     canGenerateStoryboards,
     finalCanGenerateStoryboards,
-    isDefinitelyProUser,
     upgradeStatusTier: (upgradeStatus as any)?.tier,
     upgradeStatusLimits: (upgradeStatus as any)?.limits,
     rawUserData: user,

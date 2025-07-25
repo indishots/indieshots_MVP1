@@ -1,7 +1,3 @@
-import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/components/auth/UltimateAuthProvider';
-
 /**
  * Component disabled - removed hardcoded tier forcing
  */
