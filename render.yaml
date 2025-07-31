@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: indieshots
-    env: node
-    buildCommand: npm run build
-    startCommand: npm run start
-    envVars:
-      - key: NODE_ENV
-        value: production
