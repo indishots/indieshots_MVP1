@@ -317,11 +317,7 @@ export default function SimpleAuth() {
                   <li>• Excel export</li>
                   <li>• Priority support</li>
                 </ul>
-                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                    🎉 Use code INDIE2025 for instant Pro access!
-                  </p>
-                </div>
+
               </CardContent>
             </Card>
           </div>
