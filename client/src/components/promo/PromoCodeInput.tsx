@@ -167,15 +167,14 @@ export default function PromoCodeInput({
   };
 
   return (
-    <div className={className}>
+    <div className={className} style={{display: 'none'}}>
       <Label htmlFor="promo-code" className="block text-sm font-medium text-foreground">
-        Promo Code (Optional)
       </Label>
       <div className="mt-1 relative">
         <Input
           id="promo-code"
           type="text"
-          placeholder="Enter promo code to get premium account"
+          placeholder=""
           value={value}
           onChange={(e) => onChange(e.target.value.toUpperCase())}
           disabled={disabled}
@@ -188,13 +187,6 @@ export default function PromoCodeInput({
       </div>
       
       {getValidationMessage()}
-      
-      {/* Display current promo code system status */}
-      {value.length === 0 && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Try "INDIE2025" for premium access on valid dates
-        </p>
-      )}
     </div>
   );
 }

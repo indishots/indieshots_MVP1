@@ -256,18 +256,15 @@ export function FirebaseUnifiedAuth({ mode }: UnifiedAuthProps) {
         </div>
 
         {mode === 'register' && (
-          <div className="relative">
+          <div className="relative" style={{display: 'none'}}>
             <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Enter promo code to get premium account"
+              placeholder=""
               value={formData.couponCode}
               onChange={(e) => handleInputChange('couponCode', e.target.value)}
               className="pl-10"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              Enter a valid promo code to get premium features
-            </p>
           </div>
         )}
 

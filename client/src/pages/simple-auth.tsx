@@ -235,21 +235,16 @@ export default function SimpleAuth() {
                           disabled={isLoading}
                         />
                       </div>
-                      <div>
-                        <Label htmlFor="promo-code">Promo Code (Optional)</Label>
+                      <div style={{display: 'none'}}>
+                        <Label htmlFor="promo-code"></Label>
                         <Input
                           id="promo-code"
                           type="text"
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value)}
-                          placeholder="Enter promo code to get premium account"
+                          placeholder=""
                           disabled={isLoading}
                         />
-                        {couponCode.toUpperCase() === 'INDIE2025' && (
-                          <p className="text-sm text-green-600 mt-1">
-                            ✓ Premium access will be activated
-                          </p>
-                        )}
                       </div>
                       {error && (
                         <Alert variant="destructive">
