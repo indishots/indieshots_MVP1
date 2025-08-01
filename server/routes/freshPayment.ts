@@ -72,7 +72,7 @@ router.post('/success', async (req, res) => {
           console.log(`📍 User found: ${user.email} (Current tier: ${user.tier})`);
           
           // Check if this transaction was already processed
-          const existingTransaction = await paymentTransactionService.getTransaction(mihpayid || txnid);
+          const existingTransaction = await paymentTransactionService.getTransaction(mihpayid || txnid || '');
           if (existingTransaction && existingTransaction.status === 'success') {
             console.log(`⚠️ DUPLICATE: Transaction ${mihpayid || txnid} already processed successfully`);
             return res.redirect('/dashboard?status=success&message=Payment already processed! Welcome to IndieShots Pro!');
@@ -114,13 +114,13 @@ router.post('/success', async (req, res) => {
           const updatedUser = await storage.getUserByEmail(email); // Get fresh user data
           
           console.log(`🔍 PAYMENT: Updated user data for token generation:`, {
-            email: updatedUser.email,
-            tier: updatedUser.tier,
-            totalPages: updatedUser.totalPages,
-            canGenerateStoryboards: updatedUser.canGenerateStoryboards
+            email: updatedUser?.email,
+            tier: updatedUser?.tier,
+            totalPages: updatedUser?.totalPages,
+            canGenerateStoryboards: updatedUser?.canGenerateStoryboards
           });
           
-          const newToken = generateToken(updatedUser);
+          const newToken = updatedUser ? generateToken(updatedUser) : null;
           
           // Update the user's session cookie with new pro tier token
           const cookieOptions = {
