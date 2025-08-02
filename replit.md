@@ -46,7 +46,7 @@ The application uses a monorepo structure with a React frontend and Express.js b
 *   **Production Environment**: Deployed at https://current-stable-version-indieshots.replit.app
 *   **Development Environment**: Replit with PostgreSQL module, running on port 5000.
 *   **Build Process**: Frontend with Vite, backend with esbuild.
-*   **Environment Variables**: DATABASE_URL, OPENAI_API_KEY (working with credits), JWT_SECRET (configured), VITE_FIREBASE_API_KEY (optional), VITE_FIREBASE_PROJECT_ID (optional).
+*   **Environment Variables**: DATABASE_URL, OPENAI_API_KEY (updated and functional), JWT_SECRET (configured), VITE_FIREBASE_API_KEY (optional), VITE_FIREBASE_PROJECT_ID (optional).
 *   **Payment System**: PayU integration functional with ₹999 Pro tier upgrades working in production.
 
 ## External Dependencies
