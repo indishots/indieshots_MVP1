@@ -94,15 +94,11 @@ export function verifyToken(token: string): any {
         id: (decoded as any).uid || (decoded as any).id,
         uid: (decoded as any).uid || (decoded as any).id,
         email: (decoded as any).email,
-        tier: isProTier ? 'pro' : 'free', // Force consistency
-        totalPages: isProTier ? -1 : 10,
         usedPages: (decoded as any).usedPages || 0,
-        maxShotsPerScene: isProTier ? -1 : 5,
-        canGenerateStoryboards: isProTier,
         displayName: (decoded as any).displayName,
         // Preserve any other fields
         ...(decoded as any),
-        // Override with consistent values
+        // Override with consistent values (no duplicates)
         tier: isProTier ? 'pro' : 'free',
         totalPages: isProTier ? -1 : 10,
         maxShotsPerScene: isProTier ? -1 : 5,
