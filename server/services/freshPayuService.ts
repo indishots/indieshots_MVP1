@@ -43,6 +43,7 @@ export class FreshPayUService {
     console.log('Fresh PayU Service initialized');
     console.log(`Merchant Key: ${this.config.merchantKey}`);
     console.log(`Production Gateway: ${this.config.baseUrl}`);
+    console.log('🔧 DOMAIN FIX: Using production domain for callbacks');
   }
 
   /**
@@ -67,9 +68,8 @@ export class FreshPayUService {
    */
   createPaymentRequest(email: string, firstname: string, phone: string): PaymentData {
     const txnid = `INDIE_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const domain = process.env.REPLIT_DEV_DOMAIN 
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-      : 'http://localhost:5000';
+    // Always use production domain for deployed app
+    const domain = 'https://current-stable-version-indieshots.replit.app';
 
     const paymentData: Omit<PaymentData, 'hash'> = {
       key: this.config.merchantKey,
